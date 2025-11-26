@@ -1,0 +1,67 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Repository {
+  
+  url    String @unique
+
+  name    String
+  
+  updateConfig Json?
+
+  dataFiles DataFile[]
+
+}
+
+model DataFile {
+  id       String  @id @default(uuid()) 
+
+  repository     Repository  @relation(fields: [repositoryUrl], references: [url], onDelete: Cascade)
+  repositoryUrl   String
+
+  remoteUrl String?
+  meta Json?
+
+
+  lastSeen       DateTime?
+  createdAt       DateTime? @default(now())
+
+  dataChunks DataChunk[]
+
+
+}
+
+
+model DataChunk {
+  id       String  @id @default(uuid()) 
+
+
+  dataFile     DataFile  @relation(fields: [dataFileId], references: [id], onDelete: Cascade)
+  dataFileId   String
+
+  chunkNr  Int?
+
+  content  String?
+  
+  embeddingModel String?
+
+
+
+  lastSeen       DateTime?
+  createdAt       DateTime? @default(now())
+
+
+}
+

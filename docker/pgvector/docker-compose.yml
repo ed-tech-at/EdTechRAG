@@ -1,0 +1,38 @@
+services:
+  pgvector-edtechrag:
+    image: pgvector/pgvector:pg18
+    container_name: pgvector-edtechrag-container
+
+    restart: unless-stopped
+    # networks:
+      # - postgresql_net
+    environment:
+      POSTGRES_USER: pguser
+      POSTGRES_PASSWORD: pgpassword
+      POSTGRES_DB: mypgdb
+    volumes:
+      - ./pgdata:/var/lib/postgresql  # PostgreSQL-Datenbank wird im Host-Ordner ./pgdata gespeichert
+    ports:
+      - 5434:5432
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-edtechrag-container
+    restart: unless-stopped
+    depends_on:
+      - pgvector-edtechrag
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@ed-tech.local
+      PGADMIN_DEFAULT_PASSWORD: adminPass
+    volumes:
+      - ./pgadmin_data:/var/lib/pgadmin
+    ports:
+      - 8080:80
+
+# networks:
+#   postgresql_net:
+#     external: true
+#   traefik_net:
+#     external: true
+
