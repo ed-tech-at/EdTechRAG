@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+    import { resolve } from '$app/paths';
 
 	export let data: PageData;
 </script>
@@ -29,7 +30,7 @@
 						<td class="number">{repo.fileCount}</td>
 						<td class="number">{repo.chunkCount}</td>
 						<td class="number">
-							<a class="link" href={`/admin/ragView/${encodeURIComponent(repo.url)}`}>Open →</a>
+							<a class="link" href={resolve(`/admin/ragView/${encodeURIComponent(repo.url)}`)}>Open →</a>
 						</td>
 					</tr>
 				{/each}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
+    import { resolve } from '$app/paths';
 
 	export let data: PageData;
 	export let form: ActionData;
@@ -24,7 +25,7 @@
 
 <section class="page">
 	<div class="header">
-		<a class="link" href="/admin/DataFile">← Back to data files</a>
+		<a class="link" href={resolve('/admin/DataFile')}>← Back to data files</a>
 		<h1>Data file chunks</h1>
 		{#if form?.message}
 			<p class={`notice ${form?.success ? 'success' : 'error'}`}>{form.message}</p>

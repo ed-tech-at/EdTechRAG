@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
+    import { resolve } from '$app/paths';
 
 	export let data: PageData;
 	export let form: ActionData;
@@ -31,11 +32,11 @@
 
 <section class="page">
 	<div class="header">
-		<a class="link" href="/admin/repositories">← Back to repositories</a>
+		<a class="link" href={resolve('/admin/repositories')}>← Back to repositories</a>
 		<h1>{data.repository.name}</h1>
 		<p class="muted">URL: {data.repository.url}</p>
 		<p>
-			<a class="link" href={`/admin/repositories/${encodeURIComponent(data.repository.url)}/files`}>
+			<a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repository.url)}/files`)}>
 				View files →
 			</a>
 		</p>

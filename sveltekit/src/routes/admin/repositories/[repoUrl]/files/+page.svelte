@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
 	import type { ActionData, PageData } from './$types';
 
 	export let data: PageData;
@@ -63,7 +64,7 @@
 
 <section class="page">
 	<div class="header">
-		<a class="link" href={`/admin/repositories/${encodeURIComponent(data.repository.url)}`}>← Back to repository</a>
+		<a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repository.url)}`)}>← Back to repository</a>
 		<h1>{data.repository.name} · Files</h1>
 		<p class="muted">URL: {data.repository.url}</p>
 	</div>
@@ -130,7 +131,7 @@
 				{#each data.files as file}
 					<tr>
 						<td>
-							<a class="link" href={`/admin/DataFile/${file.id}`}>
+							<a class="link" href={resolve(`/admin/DataFile/${file.id}`)}>
 								<code>{file.id}</code>
 							</a>
 						</td>

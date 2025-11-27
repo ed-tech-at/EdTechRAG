@@ -3,6 +3,8 @@
 	import { marked } from 'marked';
 	import type { ActionData, PageData } from './$types';
 
+    import { resolve } from '$app/paths';
+
 	export let data: PageData;
 	export let form: ActionData;
 
@@ -93,7 +95,7 @@
 		const currentIdx = interactions.length - 1;
 
 		try {
-			const res = await fetch('/api/rag/search', {
+			const res = await fetch(resolve('/api/rag/search'), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -138,7 +140,7 @@
 				{ role: 'assistant', content: item.answer }
 			]);
 
-			const res = await fetch('/api/chat/llm', {
+			const res = await fetch(resolve('/api/chat/llm'), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -186,7 +188,7 @@
 <section class="page">
 	<header class="header">
 		<div>
-			<a class="link" href="/admin/ragView">← Repositories</a>
+			<a class="link" href={resolve('/admin/ragView')}>← Repositories</a>
 			<h1>RAG view · {data.repository.name}</h1>
 			<p class="muted">URL: {data.repository.url}</p>
 		</div>

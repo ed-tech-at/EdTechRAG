@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -33,7 +34,7 @@
 						</td>
 						<td>{file.remoteUrl ?? '—'}</td>
 						<td>
-							<a class="link" href={`/admin/DataFile/${file.id}`}>
+							<a class="link" href={resolve(`/admin/DataFile/${file.id}`)}>
 								<code>{file.id}</code>
 							</a>
 						</td>

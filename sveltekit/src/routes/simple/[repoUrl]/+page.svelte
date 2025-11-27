@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { resolve } from '$app/paths';
 
 	export let data: PageData;
 
@@ -19,7 +20,7 @@
 		loading = true;
 
 		try {
-			const res = await fetch(`/api/chat/${encodeURIComponent(data.repository.url)}`, {
+			const res = await fetch(resolve(`/api/chat/${encodeURIComponent(data.repository.url)}`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ prompt })
@@ -42,7 +43,12 @@
 
 <section class="page">
 	<h1>Simple Chat · {data.repository.name}</h1>
-	<p class="muted">Repository: {data.repository.url}</p>
+	<p class="muted">
+		Repository:
+		<!-- <a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repository.url)}`)}> -->
+			{data.repository.url}
+		<!-- </a> -->
+	</p>
 
 	<div class="card">
 		<label>

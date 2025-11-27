@@ -1,8 +1,10 @@
 <script lang="ts">
+import { resolve } from '$app/paths';
+
 	const links = [
-		{ href: '/admin/DataFile', label: 'Data files' },
-		{ href: '/admin/repositories', label: 'Repositories' },
-		{ href: '/admin/ragView', label: 'RAG VIEW' }
+		{ href: resolve('/admin/DataFile'), label: 'Data files' },
+		{ href: resolve('/admin/repositories'), label: 'Repositories' },
+		{ href: resolve('/admin/ragView'), label: 'RAG VIEW' }
 	];
 </script>
 

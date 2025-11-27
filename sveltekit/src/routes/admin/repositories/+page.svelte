@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { resolve } from '$app/paths';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -22,7 +23,7 @@
 				{#each data.repositories as repo}
 					<tr>
 						<td>
-							<a class="link" href={`/admin/repositories/${encodeURIComponent(repo.url)}`}>
+							<a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(repo.url)}`)}>
 								{repo.name}
 							</a>
 						</td>
