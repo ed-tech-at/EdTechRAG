@@ -11,6 +11,12 @@
 			? (form as { results?: SearchResult[] }).results
 			: undefined;
 
+	const metaValue = (result: SearchResult, key: string) => {
+		const meta = (result.meta ?? {}) as Record<string, unknown>;
+		const value = meta[key];
+		return typeof value === 'string' ? value : undefined;
+	};
+
 	type SearchResult = {
 		id: string;
 		dataFileId: string;
@@ -18,6 +24,8 @@
 		content: string | null;
 		similarity: number;
 		embeddingModel: string | null;
+		remoteUrl?: string;
+		meta?: Record<string, unknown>;
 	};
 </script>
 
@@ -62,6 +70,33 @@
 								<span class="muted">Similarity: {(result.similarity * 100).toFixed(1)}%</span>
 								{#if result.embeddingModel}
 									<span class="muted">Model: {result.embeddingModel}</span>
+								{/if}
+								{#if metaValue(result, 'url') || result.remoteUrl}
+									<span class="muted">
+										URL:
+										{#if metaValue(result, 'url')}
+											<a
+												class="link"
+												href={metaValue(result, 'url')}
+												target="_blank"
+												rel="noreferrer"
+											>
+												{metaValue(result, 'url')}
+											</a>
+										{:else if result.remoteUrl}
+											<a
+												class="link"
+												href={result.remoteUrl}
+												target="_blank"
+												rel="noreferrer"
+											>
+												{result.remoteUrl}
+											</a>
+										{/if}
+									</span>
+								{/if}
+								{#if metaValue(result, 'folder')}
+									<span class="muted">Folder: {metaValue(result, 'folder')}</span>
 								{/if}
 							</div>
 							<pre>{result.content ?? '—'}</pre>

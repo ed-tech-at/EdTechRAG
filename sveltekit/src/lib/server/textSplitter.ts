@@ -5,6 +5,11 @@ export type SplitTextOptions = {
 	chunkOverlap?: number;
 };
 
+export type MdPreprocessResult = {
+	content: string;
+	meta: Record<string, string>;
+};
+
 const DEFAULT_CHUNK_SIZE = 500;
 const DEFAULT_CHUNK_OVERLAP = 50;
 const DEFAULT_SEPARATORS = ['\n#', '\n\n', '\n', '. ', ' ', ''];
@@ -21,4 +26,32 @@ export async function splitTextIntoChunks(text: string, options: SplitTextOption
 
 	const docs = await splitter.createDocuments([text]);
 	return docs.map((doc: { pageContent: string }) => doc.pageContent.trim()).filter(Boolean);
+}
+
+/**
+ * Extracts metadata from HTML comment markers in markdown and returns cleaned content.
+ * Example: <!-- URL: https://example.com --> becomes meta.url = 'https://example.com'.
+ */
+export function getMetaDataOutOfMd(text: string): MdPreprocessResult {
+	const meta: Record<string, string> = {};
+	const commentRegex = /<!--\s*([^:>]+?)\s*:\s*([\s\S]*?)\s*-->/g;
+
+	let match: RegExpExecArray | null;
+	while ((match = commentRegex.exec(text)) !== null) {
+		const rawKey = match[1]?.trim();
+		const rawValue = match[2]?.trim();
+		if (!rawKey) continue;
+
+		const key = rawKey.toLowerCase().replace(/\s+/g, '_');
+		if (rawValue) {
+			meta[key] = rawValue;
+		}
+	}
+
+	const cleanedText = text.replace(commentRegex, '').trim();
+
+	return {
+		content: cleanedText,
+		meta
+	};
 }

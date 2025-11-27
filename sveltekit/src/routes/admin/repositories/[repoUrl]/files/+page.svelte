@@ -80,10 +80,10 @@
 			on:submit|preventDefault={ingestSequentially}
 		>
 			<label>
-				Load and embed files from URLs (one per line, processed top to bottom)
+				Load and embed files from URLs or GitLab paths (one per line, processed top to bottom)
 				<textarea
 					name="urls"
-					placeholder="https://example.com/file.txt&#10;https://example.com/another.txt"
+					placeholder="https://example.com/file.txt&#10;README.md"
 					required
 					bind:value={urlsInput}
 				></textarea>

@@ -1,4 +1,4 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, json } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
@@ -14,7 +14,29 @@ export const load: PageServerLoad = async ({ params }) => {
 		throw error(404, 'Repository not found');
 	}
 
-	return { repository };
+	const repoListRaw = await prisma.repository.findMany({
+		include: {
+			_count: { select: { dataFiles: true } },
+			dataFiles: {
+				select: {
+					_count: { select: { dataChunks: true } }
+				}
+			}
+		},
+		orderBy: { name: 'asc' }
+	});
+
+	const repositories = repoListRaw.map((repo) => {
+		const chunkCount = repo.dataFiles.reduce((sum, file) => sum + (file._count?.dataChunks ?? 0), 0);
+		return {
+			url: repo.url,
+			name: repo.name,
+			fileCount: repo._count?.dataFiles ?? 0,
+			chunkCount
+		};
+	});
+
+	return { repository, repositories };
 };
 
 export const actions: Actions = {
@@ -24,11 +46,12 @@ export const actions: Actions = {
 		const query = formData.get('query');
 
 		if (!query || typeof query !== 'string' || !query.trim()) {
-			return fail(400, { success: false, message: 'Please enter a search query.' });
+			return fail(400, { success: false, message: 'Please enter a prompt.' });
 		}
+		const prompt = query.trim();
 
 		try {
-			const vector = await embedText(query);
+			const vector = await embedText(prompt);
 			const vectorLiteral = `[${vector.join(',')}]`;
 
 			const rows = await prisma.$queryRaw<
@@ -56,13 +79,17 @@ export const actions: Actions = {
 				remoteUrl: row.remoteUrl ?? undefined
 			}));
 
+			console.log(results)
+			let resultsEncode = JSON.stringify(results);
+
 			return {
 				success: true,
-				results,
-				message: `Found ${results.length} similar chunk${results.length === 1 ? '' : 's'}.`
+				resultsData: resultsEncode
+				// query: prompt,
+				// message: `Found ${results.length} similar chunk${results.length === 1 ? '' : 's'}.`
 			};
 		} catch (err) {
-			console.error('Repository search error', err);
+			console.error('RAG view search error', err);
 			return fail(500, { success: false, message: 'Search failed. See server logs.' });
 		}
 	}

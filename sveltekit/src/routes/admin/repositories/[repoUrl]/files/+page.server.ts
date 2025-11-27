@@ -2,7 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
-import { splitTextIntoChunks } from '$lib/server/textSplitter';
+import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitter';
 
 import { EMBEDDING_MODEL } from '$env/static/private';
 
@@ -64,6 +64,26 @@ export const actions: Actions = {
 		const urlsText = formData.get('urls');
 		const singleUrl = formData.get('url');
 
+		const repository = await prisma.repository.findUnique({
+			where: { url: repoUrl }
+		});
+
+		if (!repository) {
+			return fail(404, { success: false, message: 'Repository not found.' });
+		}
+
+		const repoConfig = (repository.updateConfig ?? {}) as Record<string, unknown>;
+		const gitlabToken =
+			typeof repoConfig['PRIVATE-TOKEN'] === 'string' ? repoConfig['PRIVATE-TOKEN'] : undefined;
+		const gitlabApiUrl =
+			typeof repoConfig['gitlab_api_url'] === 'string'
+				? repoConfig['gitlab_api_url']
+				: undefined;
+		const gitlabRef =
+			typeof repoConfig['ref'] === 'string' && repoConfig['ref']
+				? repoConfig['ref']
+				: 'main';
+
 		const urls: string[] = [];
 
 		if (typeof singleUrl === 'string' && singleUrl.trim()) {
@@ -91,13 +111,27 @@ export const actions: Actions = {
 		try {
 			for (const url of urls) {
 				try {
-					const response = await fetch(url);
+					const isFullUrl = /^https?:\/\//i.test(url);
+					const resolvedUrl =
+						isFullUrl || !gitlabApiUrl || !gitlabToken
+							? url
+							: `${gitlabApiUrl}${gitlabApiUrl.endsWith('/') ? '' : '/'}${encodeURIComponent(url)}/raw?ref=${encodeURIComponent(gitlabRef)}`;
+
+					if (!isFullUrl && (!gitlabApiUrl || !gitlabToken)) {
+						throw new Error(
+							'Relative path provided but GitLab config is missing PRIVATE-TOKEN or gitlab_api_url.'
+						);
+					}
+
+					const response = await fetch(resolvedUrl, {
+						headers: !isFullUrl && gitlabToken ? { 'PRIVATE-TOKEN': gitlabToken } : undefined
+					});
 					if (!response.ok) {
 						throw new Error(`Failed to fetch (${response.status}).`);
 					}
 
-					const text = await response.text();
-					const chunks = await splitTextIntoChunks(text);
+					const { content: cleanedText, meta: mdMeta } = getMetaDataOutOfMd(await response.text());
+					const chunks = await splitTextIntoChunks(cleanedText);
 
 					if (chunks.length === 0) {
 						throw new Error('No chunks found after splitting.');
@@ -106,7 +140,7 @@ export const actions: Actions = {
 					const existingFiles = await prisma.dataFile.findMany({
 						where: {
 							repositoryUrl: repoUrl,
-							remoteUrl: url
+							remoteUrl: resolvedUrl
 						},
 						select: { id: true }
 					});
@@ -119,10 +153,16 @@ export const actions: Actions = {
 						]);
 					}
 
+					const meta: Record<string, unknown> = {
+						...(isFullUrl ? {} : { source: 'gitlab', path: url, ref: gitlabRef }),
+						...mdMeta
+					};
+
 					const dataFile = await prisma.dataFile.create({
 						data: {
 							repositoryUrl: repoUrl,
-							remoteUrl: url
+							remoteUrl: resolvedUrl,
+							meta: Object.keys(meta).length > 0 ? meta : undefined
 						}
 					});
 
@@ -145,10 +185,13 @@ export const actions: Actions = {
 								}
 							});
 
+							if (1) {
+// TODO EMBEDDING INACITVE
 							const vector = await embedText(content);
 							const vectorLiteral = `[${vector.join(',')}]`;
 							await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::vector WHERE "id" = ${chunk.id}`;
 							await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingModel" = ${EMBEDDING_MODEL} WHERE "id" = ${chunk.id}`;
+							}
 
 							createdChunks += 1;
 						} catch (err) {
