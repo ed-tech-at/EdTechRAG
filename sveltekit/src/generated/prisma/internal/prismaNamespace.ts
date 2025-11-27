@@ -386,7 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   Repository: 'Repository',
   DataFile: 'DataFile',
-  DataChunk: 'DataChunk'
+  DataChunk: 'DataChunk',
+  ChatLog: 'ChatLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -402,7 +403,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "repository" | "dataFile" | "dataChunk"
+    modelProps: "repository" | "dataFile" | "dataChunk" | "chatLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -628,6 +629,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ChatLog: {
+      payload: Prisma.$ChatLogPayload<ExtArgs>
+      fields: Prisma.ChatLogFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ChatLogFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ChatLogFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload>
+        }
+        findFirst: {
+          args: Prisma.ChatLogFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ChatLogFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload>
+        }
+        findMany: {
+          args: Prisma.ChatLogFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload>[]
+        }
+        create: {
+          args: Prisma.ChatLogCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload>
+        }
+        createMany: {
+          args: Prisma.ChatLogCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ChatLogCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload>[]
+        }
+        delete: {
+          args: Prisma.ChatLogDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload>
+        }
+        update: {
+          args: Prisma.ChatLogUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload>
+        }
+        deleteMany: {
+          args: Prisma.ChatLogDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ChatLogUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ChatLogUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload>[]
+        }
+        upsert: {
+          args: Prisma.ChatLogUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ChatLogPayload>
+        }
+        aggregate: {
+          args: Prisma.ChatLogAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateChatLog>
+        }
+        groupBy: {
+          args: Prisma.ChatLogGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChatLogGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ChatLogCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ChatLogCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -670,7 +745,8 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const RepositoryScalarFieldEnum = {
   url: 'url',
   name: 'name',
-  updateConfig: 'updateConfig'
+  updateConfig: 'updateConfig',
+  LLM_API: 'LLM_API'
 } as const
 
 export type RepositoryScalarFieldEnum = (typeof RepositoryScalarFieldEnum)[keyof typeof RepositoryScalarFieldEnum]
@@ -699,6 +775,19 @@ export const DataChunkScalarFieldEnum = {
 } as const
 
 export type DataChunkScalarFieldEnum = (typeof DataChunkScalarFieldEnum)[keyof typeof DataChunkScalarFieldEnum]
+
+
+export const ChatLogScalarFieldEnum = {
+  id: 'id',
+  question: 'question',
+  context: 'context',
+  answer: 'answer',
+  repositoryUrl: 'repositoryUrl',
+  endpoint: 'endpoint',
+  createdAt: 'createdAt'
+} as const
+
+export type ChatLogScalarFieldEnum = (typeof ChatLogScalarFieldEnum)[keyof typeof ChatLogScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -899,6 +988,7 @@ export type GlobalOmitConfig = {
   repository?: Prisma.RepositoryOmit
   dataFile?: Prisma.DataFileOmit
   dataChunk?: Prisma.DataChunkOmit
+  chatLog?: Prisma.ChatLogOmit
 }
 
 /* Types for Logging */

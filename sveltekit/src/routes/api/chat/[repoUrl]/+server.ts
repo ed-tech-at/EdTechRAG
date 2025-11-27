@@ -52,7 +52,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			history
 		});
 
-		const { client, model } = getChatClient();
+		const { client, model } = await getChatClient(repoUrl);
 		const completion = await client.chat.completions.create({
 			model,
 			messages,
@@ -60,6 +60,20 @@ export const POST: RequestHandler = async ({ request, params }) => {
 		});
 
 		const answer = completion.choices?.[0]?.message?.content ?? '';
+
+		try {
+			await prisma.chatLog.create({
+				data: {
+					question: prompt,
+					context,
+					answer,
+					repositoryUrl: repoUrl,
+					endpoint: '/api/chat/[repoUrl]'
+				}
+			});
+		} catch (err) {
+			console.error('Chat log insert failed', err);
+		}
 
 		return new Response(
 			JSON.stringify({

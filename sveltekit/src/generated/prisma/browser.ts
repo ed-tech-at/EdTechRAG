@@ -32,3 +32,8 @@ export type DataFile = Prisma.DataFileModel
  * 
  */
 export type DataChunk = Prisma.DataChunkModel
+/**
+ * Model ChatLog
+ * 
+ */
+export type ChatLog = Prisma.ChatLogModel

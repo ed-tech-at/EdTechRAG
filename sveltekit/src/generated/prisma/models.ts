@@ -11,4 +11,5 @@
 export type * from './models/Repository.ts'
 export type * from './models/DataFile.ts'
 export type * from './models/DataChunk.ts'
+export type * from './models/ChatLog.ts'
 export type * from './commonInputTypes.ts'

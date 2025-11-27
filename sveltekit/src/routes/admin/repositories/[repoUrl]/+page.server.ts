@@ -28,7 +28,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			const vector = await embedText(query);
+			const vector = await embedText(query, repoUrl);
 			const vectorLiteral = `[${vector.join(',')}]`;
 
 			const rows = await prisma.$queryRaw<

@@ -53,7 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Repository: 'Repository',
   DataFile: 'DataFile',
-  DataChunk: 'DataChunk'
+  DataChunk: 'DataChunk',
+  ChatLog: 'ChatLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -75,7 +76,8 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const RepositoryScalarFieldEnum = {
   url: 'url',
   name: 'name',
-  updateConfig: 'updateConfig'
+  updateConfig: 'updateConfig',
+  LLM_API: 'LLM_API'
 } as const
 
 export type RepositoryScalarFieldEnum = (typeof RepositoryScalarFieldEnum)[keyof typeof RepositoryScalarFieldEnum]
@@ -104,6 +106,19 @@ export const DataChunkScalarFieldEnum = {
 } as const
 
 export type DataChunkScalarFieldEnum = (typeof DataChunkScalarFieldEnum)[keyof typeof DataChunkScalarFieldEnum]
+
+
+export const ChatLogScalarFieldEnum = {
+  id: 'id',
+  question: 'question',
+  context: 'context',
+  answer: 'answer',
+  repositoryUrl: 'repositoryUrl',
+  endpoint: 'endpoint',
+  createdAt: 'createdAt'
+} as const
+
+export type ChatLogScalarFieldEnum = (typeof ChatLogScalarFieldEnum)[keyof typeof ChatLogScalarFieldEnum]
 
 
 export const SortOrder = {

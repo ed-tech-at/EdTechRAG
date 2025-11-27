@@ -1,5 +1,5 @@
 import prisma from '$lib/server/db';
-import { OPENAI_API_KEY, OPENAI_API_BASE, OPENAI_API_BASE_EMBEDDING, EMBEDDING_MODEL } from '$env/static/private';
+import { getEmbeddingConfig } from '$lib/server/openaiClient';
 
 // export const EMBEDDING_MODEL = 'embeddinggemma';
 
@@ -7,23 +7,18 @@ type EmbeddingResponse = {
 	data?: { embedding?: number[] }[];
 };
 
-const buildEmbeddingUrl = () => new URL(OPENAI_API_BASE_EMBEDDING).toString();
-// const buildEmbeddingUrl = () => new URL(OPENAI_API_BASE).toString();
-
-
-export async function embedText(text: string) {
-
-	// console.log( OPENAI_API_BASE);
-	// console.log( buildEmbeddingUrl());
+export async function embedText(text: string, repoUrl: string) {
+	const { apiKey, embeddingBase, embeddingModel } = await getEmbeddingConfig(repoUrl);
+	const buildEmbeddingUrl = () => new URL(embeddingBase).toString();
 
 	const response = await fetch(buildEmbeddingUrl(), {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			Authorization: `Bearer ${OPENAI_API_KEY}`
+			Authorization: `Bearer ${apiKey}`
 		},
 		body: JSON.stringify({
-			model: EMBEDDING_MODEL,
+			model: embeddingModel,
 			input: [text],
 			stream: false
 		})
@@ -47,18 +42,20 @@ export async function embedText(text: string) {
 export async function embedChunkById(chunkId: string) {
 	const chunk = await prisma.dataChunk.findUnique({
 		where: { id: chunkId },
-		select: { id: true, content: true }
+		select: { id: true, content: true, dataFile: { select: { repositoryUrl: true } } }
 	});
 
 	if (!chunk || !chunk.content) {
 		throw new Error('Chunk not found or empty content');
 	}
 
-	const vector = await embedText(chunk.content);
+	const vector = await embedText(chunk.content, chunk.dataFile.repositoryUrl);
 
 	const vectorLiteral = `[${vector.join(',')}]`;
 
-	await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::vector, "embeddingModel" = ${EMBEDDING_MODEL} WHERE "id" = ${chunkId}`;
+	await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::vector, "embeddingModel" = ${
+		(await getEmbeddingConfig(chunk.dataFile.repositoryUrl)).embeddingModel
+	} WHERE "id" = ${chunkId}`;
 
 	return { chunkId, dimensions: vector.length };
 }

@@ -4,7 +4,9 @@ import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
 import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitter';
 
-import { EMBEDDING_MODEL } from '$env/static/private';
+import {loadRepoConfig} from '$lib/server/openaiClient';
+
+// import { EMBEDDING_MODEL } from '$env/static/private';
 
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -186,8 +188,9 @@ export const actions: Actions = {
 							});
 
 							if (1) {
+								const EMBEDDING_MODEL = (await loadRepoConfig(repoUrl)).embeddingModel;
 // TODO EMBEDDING INACITVE
-							const vector = await embedText(content);
+							const vector = await embedText(content, repoUrl);
 							const vectorLiteral = `[${vector.join(',')}]`;
 							await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::vector WHERE "id" = ${chunk.id}`;
 							await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingModel" = ${EMBEDDING_MODEL} WHERE "id" = ${chunk.id}`;

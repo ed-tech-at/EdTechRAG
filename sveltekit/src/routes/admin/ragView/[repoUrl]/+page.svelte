@@ -62,6 +62,29 @@
 			})
 			.join('\n\n');
 
+	const logInteraction = async (payload: {
+		question: string;
+		context: string;
+		answer: string;
+		endpoint: string;
+	}) => {
+		try {
+			await fetch(resolve('/api/chat/log'), {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					question: payload.question,
+					context: payload.context,
+					answer: payload.answer,
+					repositoryUrl: data.repository.url,
+					endpoint: payload.endpoint
+				})
+			});
+		} catch (err) {
+			console.error('Log failed', err);
+		}
+	};
+
 	const handleSubmit = async (event: SubmitEvent) => {
 		event.preventDefault();
 		errorMessage = '';
@@ -146,7 +169,8 @@
 				body: JSON.stringify({
 					prompt,
 					context: contextString(currentResults),
-					history
+					history,
+					repositoryUrl: data.repository.url
 				})
 			});
 
@@ -180,6 +204,14 @@
 		interactions = interactions.map((item, idx) =>
 			idx === currentIdx ? { ...item, status: 'done' } : item
 		);
+		if (aiAnswer) {
+			logInteraction({
+				question: prompt,
+				context: contextString(currentResults),
+				answer: aiAnswer,
+				endpoint: '/admin/ragView/[repoUrl]'
+			});
+		}
 		await tick();
 		transcriptEl?.scrollTo({ top: transcriptEl.scrollHeight, behavior: 'smooth' });
 	};
@@ -190,7 +222,7 @@
 		<div>
 			<a class="link" href={resolve('/admin/ragView')}>← Repositories</a>
 			<h1>RAG view · {data.repository.name}</h1>
-			<p class="muted">URL: {data.repository.url}</p>
+			<p class="muted">URL for Simple: <a href={resolve(`/simple/${data.repository.url}`)}>{data.repository.url}</a></p>
 		</div>
 	</header>
 

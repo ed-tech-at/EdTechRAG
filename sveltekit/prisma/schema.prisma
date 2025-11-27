@@ -20,6 +20,7 @@ model Repository {
   name    String
   
   updateConfig Json?
+  LLM_API Json?
 
   dataFiles DataFile[]
 
@@ -65,3 +66,12 @@ model DataChunk {
 
 }
 
+model ChatLog {
+  id            String   @id @default(uuid())
+  question      String?
+  context       String?
+  answer        String?
+  repositoryUrl String?
+  endpoint      String?
+  createdAt     DateTime @default(now())
+}

@@ -9,6 +9,24 @@
 	let loading = false;
 	let errorMessage = '';
 
+	const logInteraction = async (payload: {
+		question: string;
+		context?: string;
+		answer?: string;
+		repositoryUrl?: string;
+		endpoint?: string;
+	}) => {
+		try {
+			await fetch(resolve('/api/chat/log'), {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+		} catch (err) {
+			console.error('Log failed', err);
+		}
+	};
+
 	const send = async () => {
 		if (!prompt.trim()) {
 			errorMessage = 'Please enter a prompt.';
@@ -33,6 +51,15 @@
 			}
 
 			answer = body?.answer ?? '';
+			// await logInteraction({
+			// 	question: prompt,
+			// 	context: body?.results
+			// 		?.map((item: any) => `CONTENT:\n${item.content ?? '—'}\nURL: ${item.meta?.url ?? item.remoteUrl ?? '—'}`)
+			// 		?.join('\n\n'),
+			// 	answer,
+			// 	repositoryUrl: data.repository.url,
+			// 	endpoint: '/simple/[repoUrl]'
+			// });
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : 'Request failed';
 		} finally {

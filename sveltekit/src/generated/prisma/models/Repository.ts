@@ -38,6 +38,7 @@ export type RepositoryCountAggregateOutputType = {
   url: number
   name: number
   updateConfig: number
+  LLM_API: number
   _all: number
 }
 
@@ -56,6 +57,7 @@ export type RepositoryCountAggregateInputType = {
   url?: true
   name?: true
   updateConfig?: true
+  LLM_API?: true
   _all?: true
 }
 
@@ -135,6 +137,7 @@ export type RepositoryGroupByOutputType = {
   url: string
   name: string
   updateConfig: runtime.JsonValue | null
+  LLM_API: runtime.JsonValue | null
   _count: RepositoryCountAggregateOutputType | null
   _min: RepositoryMinAggregateOutputType | null
   _max: RepositoryMaxAggregateOutputType | null
@@ -162,6 +165,7 @@ export type RepositoryWhereInput = {
   url?: Prisma.StringFilter<"Repository"> | string
   name?: Prisma.StringFilter<"Repository"> | string
   updateConfig?: Prisma.JsonNullableFilter<"Repository">
+  LLM_API?: Prisma.JsonNullableFilter<"Repository">
   dataFiles?: Prisma.DataFileListRelationFilter
 }
 
@@ -169,6 +173,7 @@ export type RepositoryOrderByWithRelationInput = {
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
   updateConfig?: Prisma.SortOrderInput | Prisma.SortOrder
+  LLM_API?: Prisma.SortOrderInput | Prisma.SortOrder
   dataFiles?: Prisma.DataFileOrderByRelationAggregateInput
 }
 
@@ -179,6 +184,7 @@ export type RepositoryWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.RepositoryWhereInput | Prisma.RepositoryWhereInput[]
   name?: Prisma.StringFilter<"Repository"> | string
   updateConfig?: Prisma.JsonNullableFilter<"Repository">
+  LLM_API?: Prisma.JsonNullableFilter<"Repository">
   dataFiles?: Prisma.DataFileListRelationFilter
 }, "url">
 
@@ -186,6 +192,7 @@ export type RepositoryOrderByWithAggregationInput = {
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
   updateConfig?: Prisma.SortOrderInput | Prisma.SortOrder
+  LLM_API?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.RepositoryCountOrderByAggregateInput
   _max?: Prisma.RepositoryMaxOrderByAggregateInput
   _min?: Prisma.RepositoryMinOrderByAggregateInput
@@ -198,12 +205,14 @@ export type RepositoryScalarWhereWithAggregatesInput = {
   url?: Prisma.StringWithAggregatesFilter<"Repository"> | string
   name?: Prisma.StringWithAggregatesFilter<"Repository"> | string
   updateConfig?: Prisma.JsonNullableWithAggregatesFilter<"Repository">
+  LLM_API?: Prisma.JsonNullableWithAggregatesFilter<"Repository">
 }
 
 export type RepositoryCreateInput = {
   url: string
   name: string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   dataFiles?: Prisma.DataFileCreateNestedManyWithoutRepositoryInput
 }
 
@@ -211,6 +220,7 @@ export type RepositoryUncheckedCreateInput = {
   url: string
   name: string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   dataFiles?: Prisma.DataFileUncheckedCreateNestedManyWithoutRepositoryInput
 }
 
@@ -218,6 +228,7 @@ export type RepositoryUpdateInput = {
   url?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   dataFiles?: Prisma.DataFileUpdateManyWithoutRepositoryNestedInput
 }
 
@@ -225,6 +236,7 @@ export type RepositoryUncheckedUpdateInput = {
   url?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   dataFiles?: Prisma.DataFileUncheckedUpdateManyWithoutRepositoryNestedInput
 }
 
@@ -232,24 +244,28 @@ export type RepositoryCreateManyInput = {
   url: string
   name: string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type RepositoryUpdateManyMutationInput = {
   url?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type RepositoryUncheckedUpdateManyInput = {
   url?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type RepositoryCountOrderByAggregateInput = {
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
   updateConfig?: Prisma.SortOrder
+  LLM_API?: Prisma.SortOrder
 }
 
 export type RepositoryMaxOrderByAggregateInput = {
@@ -289,12 +305,14 @@ export type RepositoryCreateWithoutDataFilesInput = {
   url: string
   name: string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type RepositoryUncheckedCreateWithoutDataFilesInput = {
   url: string
   name: string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type RepositoryCreateOrConnectWithoutDataFilesInput = {
@@ -317,12 +335,14 @@ export type RepositoryUpdateWithoutDataFilesInput = {
   url?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type RepositoryUncheckedUpdateWithoutDataFilesInput = {
   url?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 
@@ -360,6 +380,7 @@ export type RepositorySelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   url?: boolean
   name?: boolean
   updateConfig?: boolean
+  LLM_API?: boolean
   dataFiles?: boolean | Prisma.Repository$dataFilesArgs<ExtArgs>
   _count?: boolean | Prisma.RepositoryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["repository"]>
@@ -368,21 +389,24 @@ export type RepositorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   url?: boolean
   name?: boolean
   updateConfig?: boolean
+  LLM_API?: boolean
 }, ExtArgs["result"]["repository"]>
 
 export type RepositorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   url?: boolean
   name?: boolean
   updateConfig?: boolean
+  LLM_API?: boolean
 }, ExtArgs["result"]["repository"]>
 
 export type RepositorySelectScalar = {
   url?: boolean
   name?: boolean
   updateConfig?: boolean
+  LLM_API?: boolean
 }
 
-export type RepositoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"url" | "name" | "updateConfig", ExtArgs["result"]["repository"]>
+export type RepositoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"url" | "name" | "updateConfig" | "LLM_API", ExtArgs["result"]["repository"]>
 export type RepositoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   dataFiles?: boolean | Prisma.Repository$dataFilesArgs<ExtArgs>
   _count?: boolean | Prisma.RepositoryCountOutputTypeDefaultArgs<ExtArgs>
@@ -399,6 +423,7 @@ export type $RepositoryPayload<ExtArgs extends runtime.Types.Extensions.Internal
     url: string
     name: string
     updateConfig: runtime.JsonValue | null
+    LLM_API: runtime.JsonValue | null
   }, ExtArgs["result"]["repository"]>
   composites: {}
 }
@@ -826,6 +851,7 @@ export interface RepositoryFieldRefs {
   readonly url: Prisma.FieldRef<"Repository", 'String'>
   readonly name: Prisma.FieldRef<"Repository", 'String'>
   readonly updateConfig: Prisma.FieldRef<"Repository", 'Json'>
+  readonly LLM_API: Prisma.FieldRef<"Repository", 'Json'>
 }
     
 

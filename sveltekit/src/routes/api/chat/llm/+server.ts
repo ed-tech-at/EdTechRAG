@@ -3,7 +3,6 @@ import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
 
 const encoder = new TextEncoder();
-const { client, model: defaultModel } = getChatClient();
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: unknown;
@@ -25,9 +24,20 @@ export const POST: RequestHandler = async ({ request }) => {
 		body && typeof body === 'object' && 'history' in body && Array.isArray((body as any).history)
 			? ((body as any).history as { role?: string; content?: string }[])
 			: [];
+	const repositoryUrl =
+		body &&
+		typeof body === 'object' &&
+		'repositoryUrl' in body &&
+		typeof (body as any).repositoryUrl === 'string'
+			? ((body as any).repositoryUrl as string)
+			: undefined;
 
 	if (!prompt) {
 		return new Response('Missing prompt', { status: 400 });
+	}
+
+	if (!repositoryUrl) {
+		return new Response('Missing repositoryUrl', { status: 400 });
 	}
 
 	const messages = buildChatMessages({
@@ -37,6 +47,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	});
 
 	try {
+		const { client, model: defaultModel } = await getChatClient(repositoryUrl);
 		const completion = await client.chat.completions.create({
 			model: defaultModel,
 			messages,

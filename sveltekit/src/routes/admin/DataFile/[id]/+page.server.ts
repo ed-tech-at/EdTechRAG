@@ -95,16 +95,26 @@ export const actions: Actions = {
 			return fail(500, { success: false, message: 'Embedding failed. See server logs.' });
 		}
 	},
-	search: async ({ request }) => {
+	search: async ({ request, params }) => {
 		const formData = await request.formData();
 		const query = formData.get('query');
+		const dataFileId = params.id;
 
 		if (!query || typeof query !== 'string' || !query.trim()) {
 			return fail(400, { success: false, message: 'Please enter a search query.' });
 		}
 
 		try {
-			const vector = await embedText(query);
+			const dataFile = await prisma.dataFile.findUnique({
+				where: { id: dataFileId },
+				select: { repositoryUrl: true }
+			});
+
+			if (!dataFile?.repositoryUrl) {
+				return fail(404, { success: false, message: 'Data file not found.' });
+			}
+
+			const vector = await embedText(query, dataFile.repositoryUrl);
 			const vectorLiteral = `[${vector.join(',')}]`;
 
 			const rows = await prisma.$queryRaw<

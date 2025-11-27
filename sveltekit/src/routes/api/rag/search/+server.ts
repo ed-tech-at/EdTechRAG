@@ -36,7 +36,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(404, 'Repository not found');
 	}
 
-	const vector = await embedText(prompt);
+	const vector = await embedText(prompt, repoUrl);
 	const vectorLiteral = `[${vector.join(',')}]`;
 
 	const rows = await prisma.$queryRaw<
