@@ -66,6 +66,7 @@
 		aiAnswer = '';
 		generating = false;
 		searching = true;
+		promptInput = '';
 
 		const formEl = event.currentTarget as HTMLFormElement;
 		const formData = new FormData(formEl);
