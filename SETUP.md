@@ -51,7 +51,7 @@ GRANT ALL PRIVILEGES ON DATABASE edtechrag_migrations TO edtechrag_dev;
 CREATE EXTENSION IF NOT EXISTS vector;
 
 ALTER TABLE "DataChunk"
-ADD COLUMN     "embeddingVector" VECTOR(768);
+ADD COLUMN     "embeddingVector" VECTOR(1536);
 
 
 ```
