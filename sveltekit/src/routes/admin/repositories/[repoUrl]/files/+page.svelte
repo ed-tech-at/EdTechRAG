@@ -119,6 +119,7 @@
 				<tr>
 					<th>File ID</th>
 					<th>Remote URL</th>
+					<th>Path</th>
 					<th>Chunks</th>
 					<th>Last seen</th>
 					<th>Created</th>
@@ -134,6 +135,7 @@
 							</a>
 						</td>
 						<td class="muted">{file.remoteUrl ?? '—'}</td>
+						<td class="muted">{file.meta?.path ?? '—'}</td>
 						<td class="number">{file._count?.dataChunks ?? 0}</td>
 						<td>{formatDate(file.lastSeen)}</td>
 						<td>{formatDate(file.createdAt)}</td>

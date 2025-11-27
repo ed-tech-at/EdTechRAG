@@ -1,7 +1,7 @@
-import { error, fail, json } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
-import { embedText } from '$lib/server/embed';
+import { findRepositoryContext } from '$lib/server/rag';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const { repoUrl } = params;
@@ -51,42 +51,15 @@ export const actions: Actions = {
 		const prompt = query.trim();
 
 		try {
-			const vector = await embedText(prompt);
-			const vectorLiteral = `[${vector.join(',')}]`;
-
-			const rows = await prisma.$queryRaw<
-				{
-					id: string;
-					dataFileId: string;
-					chunkNr: number | null;
-					content: string | null;
-					embeddingModel: string | null;
-					remoteUrl: string | null;
-					meta: unknown;
-					distance: number;
-				}[]
-			>`SELECT dc."id", dc."dataFileId", dc."chunkNr", dc."content", dc."embeddingModel", df."remoteUrl", df."meta", (dc."embeddingVector" <=> ${vectorLiteral}::vector) AS distance
-        FROM "DataChunk" dc
-        INNER JOIN "DataFile" df ON dc."dataFileId" = df."id"
-        WHERE dc."embeddingVector" IS NOT NULL AND df."repositoryUrl" = ${repoUrl}
-        ORDER BY (dc."embeddingVector" <=> ${vectorLiteral}::vector) ASC
-        LIMIT 10`;
-
-			const results = rows.map((row) => ({
-				...row,
-				similarity: 1 / (1 + row.distance),
-				meta: row.meta ?? undefined,
-				remoteUrl: row.remoteUrl ?? undefined
-			}));
-
-			console.log(results)
-			let resultsEncode = JSON.stringify(results);
+			const { results, message } = await findRepositoryContext(repoUrl, prompt);
+			const resultsEncode = JSON.stringify(results);
 
 			return {
 				success: true,
-				resultsData: resultsEncode
-				// query: prompt,
-				// message: `Found ${results.length} similar chunk${results.length === 1 ? '' : 's'}.`
+				results,
+				resultsData: resultsEncode,
+				query: prompt,
+				message
 			};
 		} catch (err) {
 			console.error('RAG view search error', err);

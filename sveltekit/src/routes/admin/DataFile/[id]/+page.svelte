@@ -33,6 +33,9 @@
 			Repository: {data.dataFile.repository?.name ?? 'Unknown'} ({data.dataFile.repositoryUrl})
 		</p>
 		<p class="muted">Remote URL: {data.dataFile.remoteUrl ?? '—'}</p>
+		{#if data.dataFile.meta}
+			<p class="muted">Meta: <code>{JSON.stringify(data.dataFile.meta)}</code></p>
+		{/if}
 		<p class="muted">
 			Last seen: {formatDate(data.dataFile.lastSeen)} · Created: {formatDate(data.dataFile.createdAt)}
 		</p>

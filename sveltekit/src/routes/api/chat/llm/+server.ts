@@ -1,26 +1,9 @@
-import OpenAI from 'openai';
 import type { RequestHandler } from '@sveltejs/kit';
-import {
-	OPENAI_API_KEY,
-	OPENAI_API_BASE,
-	CHAT_MODEL,
-	AZURE_URL,
-	AZURE_MODEL,
-	AZURE_API_VERSION
-} from '$env/static/private';
+import { getChatClient } from '$lib/server/openaiClient';
+import { buildChatMessages } from '$lib/server/chatPrompt';
 
 const encoder = new TextEncoder();
-const isAzure = Boolean(AZURE_URL);
-
-const client = new OpenAI({
-	apiKey: OPENAI_API_KEY,
-	baseURL:
-		isAzure && AZURE_URL && AZURE_MODEL
-			? `${AZURE_URL}/openai/deployments/${AZURE_MODEL}`
-			: OPENAI_API_BASE,
-	defaultQuery: isAzure ? { 'api-version': AZURE_API_VERSION || '2024-02-01' } : undefined,
-	defaultHeaders: isAzure ? { 'api-key': OPENAI_API_KEY } : undefined
-});
+const { client, model: defaultModel } = getChatClient();
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: unknown;
@@ -47,35 +30,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		return new Response('Missing prompt', { status: 400 });
 	}
 
-	const sanitizedHistory = history
-		.filter((item) => typeof item?.role === 'string' && typeof item?.content === 'string')
-		.map((item) => ({
-			role: item.role as 'user' | 'assistant' | 'system',
-			content: item.content as string
-		}));
-
-	const messages = [
-		{
-			role: 'system',
-			content:
-				'You are a helpful assistant. Use the provided context to answer the user succinctly. If the context is insufficient, say so. Answer in Markdown, include and cite the URL in your answer from the context.'
-		},
-		...sanitizedHistory,
-		{
-			role: 'system',
-			content: `Context from Database:\n${context || 'n/a'}`
-		},
-    {
-			role: 'user',
-			content: `User-Prompt:\n${prompt}`
-		}
-	] as const;
-
-  console.log(messages);
+	const messages = buildChatMessages({
+		prompt,
+		context,
+		history
+	});
 
 	try {
 		const completion = await client.chat.completions.create({
-			model: isAzure && AZURE_MODEL ? AZURE_MODEL : CHAT_MODEL || 'gpt-4o-mini',
+			model: defaultModel,
 			messages,
 			stream: true
 		});
