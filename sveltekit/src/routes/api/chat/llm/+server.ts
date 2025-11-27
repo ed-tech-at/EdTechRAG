@@ -62,8 +62,12 @@ export const POST: RequestHandler = async ({ request }) => {
 		},
 		...sanitizedHistory,
 		{
+			role: 'system',
+			content: `Context from Database:\n${context || 'n/a'}`
+		},
+    {
 			role: 'user',
-			content: `Context:\n${context || 'n/a'}\n\nPrompt:\n${prompt}`
+			content: `User-Prompt:\n${prompt}`
 		}
 	] as const;
 

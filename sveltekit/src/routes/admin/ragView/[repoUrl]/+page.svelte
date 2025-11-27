@@ -8,14 +8,17 @@
 
 	let searching = false;
 	let generating = false;
-	let aiAnswer = '';
 	let errorMessage = '';
-	let interactions: {
+	let aiAnswer = '';
+	type Interaction = {
+		id: string;
 		prompt: string;
 		contextText: string;
 		results: SearchResult[];
 		answer: string;
-	}[] = [];
+		status: 'searching' | 'answering' | 'done' | 'error';
+	};
+	let interactions: Interaction[] = [];
 	let transcriptEl: HTMLDivElement | null = null;
 
 	type SearchResult = {
@@ -75,6 +78,18 @@
 		}
 
 		lastQuery = prompt;
+		const newInteraction: Interaction = {
+			id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+			prompt,
+			contextText: '',
+			results: [],
+			answer: '',
+			status: 'searching'
+		};
+		interactions = [...interactions, newInteraction];
+		await tick();
+		transcriptEl?.scrollTo({ top: transcriptEl.scrollHeight, behavior: 'smooth' });
+		const currentIdx = interactions.length - 1;
 
 		try {
 			const res = await fetch('/api/rag/search', {
@@ -93,12 +108,28 @@
 			currentResults = payload?.results ?? [];
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : 'Search failed';
+			interactions = interactions.map((item, idx) =>
+				idx === currentIdx ? { ...item, status: 'error' } : item
+			);
 			searching = false;
 			return;
 		}
 
+		interactions = interactions.map((item, idx) =>
+			idx === currentIdx
+				? {
+						...item,
+						contextText: contextString(currentResults),
+						results: currentResults,
+						status: 'answering'
+				  }
+				: item
+		);
 		searching = false;
 		generating = true;
+		await tick();
+		transcriptEl?.scrollTo({ top: transcriptEl.scrollHeight, behavior: 'smooth' });
+		aiAnswer = '';
 
 		try {
 			const history = interactions.flatMap((item) => [
@@ -129,24 +160,23 @@
 				const text = decoder.decode(chunk.value || new Uint8Array(), { stream: !done });
 				if (text) {
 					aiAnswer += text;
+					interactions = interactions.map((item, idx) =>
+						idx === currentIdx ? { ...item, answer: aiAnswer } : item
+					);
 				}
 			}
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : 'LLM request failed';
+			interactions = interactions.map((item, idx) =>
+				idx === currentIdx ? { ...item, status: 'error' } : item
+			);
 		} finally {
 			generating = false;
 		}
 
-		interactions = [
-			...interactions,
-			{
-				prompt,
-				contextText: contextString(currentResults),
-				results: currentResults,
-				answer: aiAnswer
-			}
-		];
-
+		interactions = interactions.map((item, idx) =>
+			idx === currentIdx ? { ...item, status: 'done' } : item
+		);
 		await tick();
 		transcriptEl?.scrollTo({ top: transcriptEl.scrollHeight, behavior: 'smooth' });
 	};
@@ -207,7 +237,9 @@
 						<div class="column context">
 							<p class="label">CONTEXT</p>
 							<div class="bubble">
-								{#if item.results.length === 0}
+								{#if item.status === 'searching'}
+									<span class="muted">Searching for context…</span>
+								{:else if item.results.length === 0}
 									<span class="muted">No context found.</span>
 								{:else}
 									<span class="label inline">CONTEXT FROM DATABASE</span><br />
@@ -239,8 +271,14 @@
 						</div>
 						<div class="column answer">
 							<p class="label">AI ANSWER</p>
-							<div class="bubble" class:loading={generating && idx === interactions.length - 1}>
-								{@html renderMarkdown(item.answer || '—')}
+							<div class="bubble" class:loading={item.status === 'answering'}>
+								{#if item.status === 'searching'}
+									<span class="muted">Waiting for context…</span>
+								{:else if item.status === 'answering' && !item.answer}
+									<span class="muted">Generating answer…</span>
+								{:else}
+									{@html renderMarkdown(item.answer || '—')}
+								{/if}
 							</div>
 						</div>
 						<div class="column prompt">
@@ -374,6 +412,10 @@
 
 	.bubble.loading {
 		opacity: 0.85;
+	}
+
+	.bubble .muted {
+		color: #777;
 	}
 
 	.label {
