@@ -79,8 +79,8 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			JSON.stringify({
 				success: true,
 				answer,
-				results,
-				message
+				// results, //HIDE in public chat api
+				// message
 			}),
 			{
 				status: 200,
