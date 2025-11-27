@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { tick } from 'svelte';
+	import { marked } from 'marked';
 	import type { ActionData, PageData } from './$types';
 
 	export let data: PageData;
@@ -8,6 +10,13 @@
 	let generating = false;
 	let aiAnswer = '';
 	let errorMessage = '';
+	let interactions: {
+		prompt: string;
+		contextText: string;
+		results: SearchResult[];
+		answer: string;
+	}[] = [];
+	let transcriptEl: HTMLDivElement | null = null;
 
 	type SearchResult = {
 		id: string;
@@ -36,6 +45,9 @@
 		const value = meta[key];
 		return typeof value === 'string' ? value : undefined;
 	};
+	marked.setOptions({ mangle: false, headerIds: false });
+
+	const renderMarkdown = (md?: string) => (md ? marked.parse(md) : '');
 
 	const contextString = (results: SearchResult[]) =>
 		results
@@ -89,12 +101,18 @@
 		generating = true;
 
 		try {
+			const history = interactions.flatMap((item) => [
+				{ role: 'user', content: item.prompt },
+				{ role: 'assistant', content: item.answer }
+			]);
+
 			const res = await fetch('/api/chat/llm', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					prompt,
-					context: contextString(currentResults)
+					context: contextString(currentResults),
+					history
 				})
 			});
 
@@ -118,6 +136,19 @@
 		} finally {
 			generating = false;
 		}
+
+		interactions = [
+			...interactions,
+			{
+				prompt,
+				contextText: contextString(currentResults),
+				results: currentResults,
+				answer: aiAnswer
+			}
+		];
+
+		await tick();
+		transcriptEl?.scrollTo({ top: transcriptEl.scrollHeight, behavior: 'smooth' });
 	};
 </script>
 
@@ -162,53 +193,65 @@
 		{/if}
 	</section> -->
 
-	<section class="context-panel">
-		<h2>Context</h2>
-		<div class="context-scroll single-block">
+	<section class="context-panel" bind:this={transcriptEl}>
+		<h2>Conversation</h2>
+		<div class="context-scroll">
 			{#if errorMessage}
 				<p class="error">{errorMessage}</p>
 			{/if}
-			{#if currentResults.length === 0 && !lastQuery}
+			{#if interactions.length === 0}
 				<p class="muted">Send a prompt below to fetch context from the database.</p>
-			{:else if currentResults.length === 0}
-				<p class="muted">No context found for this prompt.</p>
 			{:else}
-				{#if lastQuery}
-					<p class="label">PROMPT: {lastQuery}</p>
-					<br />
-				{/if}
-        <span class="label">CONTEXT FROM DATABASE</span><br />
-				{#each currentResults as result, idx}
-					{result.content ?? '—'}<br />
-					URL:
-					{#if metaValue(result, 'url')}
-						<a
-							class="link"
-							href={metaValue(result, 'url')}
-							target="_blank"
-							rel="noreferrer"
-						>
-							{metaValue(result, 'url')}
-						</a>
-					{:else if result.remoteUrl}
-						<a class="link" href={result.remoteUrl} target="_blank" rel="noreferrer">
-							{result.remoteUrl}
-						</a>
-					{:else}
-						<span>—</span>
-					{/if}
-					{#if idx !== currentResults.length - 1}
-						<br /><br />
+				{#each interactions as item, idx}
+					<article class="conversation-row">
+						<div class="column context">
+							<p class="label">CONTEXT</p>
+							<div class="bubble">
+								{#if item.results.length === 0}
+									<span class="muted">No context found.</span>
+								{:else}
+									<span class="label inline">CONTEXT FROM DATABASE</span><br />
+									{#each item.results as result, rIdx}
+										{result.content ?? '—'}<br />
+										URL:
+										{#if metaValue(result, 'url')}
+											<a
+												class="link"
+												href={metaValue(result, 'url')}
+												target="_blank"
+												rel="noreferrer"
+											>
+												{metaValue(result, 'url')}
+											</a>
+										{:else if result.remoteUrl}
+											<a class="link" href={result.remoteUrl} target="_blank" rel="noreferrer">
+												{result.remoteUrl}
+											</a>
+										{:else}
+											<span>—</span>
+										{/if}
+										{#if rIdx !== item.results.length - 1}
+											<br /><br />
+										{/if}
+									{/each}
+								{/if}
+							</div>
+						</div>
+						<div class="column answer">
+							<p class="label">AI ANSWER</p>
+							<div class="bubble" class:loading={generating && idx === interactions.length - 1}>
+								{@html renderMarkdown(item.answer || '—')}
+							</div>
+						</div>
+						<div class="column prompt">
+							<p class="label">YOUR PROMPT</p>
+							<div class="bubble user">{item.prompt}</div>
+						</div>
+					</article>
+					{#if idx === interactions.length - 1 && generating}
+						<p class="muted">Generating answer…</p>
 					{/if}
 				{/each}
-				{#if aiAnswer}
-					<br /><br />
-					<span class="label">AI ANSWER</span><br />
-					{aiAnswer}
-				{:else if generating}
-					<br />
-					<p class="muted">Generating answer…</p>
-				{/if}
 			{/if}
 		</div>
 	</section>
@@ -292,19 +335,45 @@
 	}
 
 	.context-scroll {
-		max-height: 55vh;
+		max-height: 60vh;
 		border: 1px solid #e3e3e3;
 		border-radius: 8px;
 		padding: 0.75rem;
 		overflow-y: auto;
 		background: #fafafa;
-		display: block;
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.conversation-row {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.75rem;
+		align-items: start;
+	}
+
+	.column {
+		display: grid;
+		gap: 0.35rem;
+	}
+
+	.bubble {
+		background: white;
+		border: 1px solid #dfe6f0;
+		border-radius: 6px;
+		padding: 0.65rem;
+		font-size: 0.95rem;
+		line-height: 1.45;
 		white-space: pre-wrap;
 	}
 
-	.context-scroll.single-block {
-		font-size: 0.95rem;
-		line-height: 1.45;
+	.bubble.user {
+		background: #eef4ff;
+		border-color: #cdddfc;
+	}
+
+	.bubble.loading {
+		opacity: 0.85;
 	}
 
 	.label {
@@ -313,6 +382,11 @@
 		letter-spacing: 0.02em;
 		margin: 0;
 		color: #2f3b52;
+	}
+
+	.label.inline {
+		display: inline-block;
+		margin-bottom: 0.35rem;
 	}
 
 	.error {

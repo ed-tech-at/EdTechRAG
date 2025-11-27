@@ -1,7 +1,8 @@
 <script lang="ts">
 	const links = [
 		{ href: '/admin/DataFile', label: 'Data files' },
-		{ href: '/admin/repositories', label: 'Repositories' }
+		{ href: '/admin/repositories', label: 'Repositories' },
+		{ href: '/admin/ragView', label: 'RAG VIEW' }
 	];
 </script>
 

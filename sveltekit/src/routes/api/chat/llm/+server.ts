@@ -14,7 +14,10 @@ const isAzure = Boolean(AZURE_URL);
 
 const client = new OpenAI({
 	apiKey: OPENAI_API_KEY,
-	baseURL: isAzure && AZURE_URL && AZURE_MODEL ? `${AZURE_URL}/openai/deployments/${AZURE_MODEL}` : OPENAI_API_BASE,
+	baseURL:
+		isAzure && AZURE_URL && AZURE_MODEL
+			? `${AZURE_URL}/openai/deployments/${AZURE_MODEL}`
+			: OPENAI_API_BASE,
 	defaultQuery: isAzure ? { 'api-version': AZURE_API_VERSION || '2024-02-01' } : undefined,
 	defaultHeaders: isAzure ? { 'api-key': OPENAI_API_KEY } : undefined
 });
@@ -27,24 +30,44 @@ export const POST: RequestHandler = async ({ request }) => {
 		return new Response('Invalid JSON body', { status: 400 });
 	}
 
-	const prompt = typeof (body as { prompt?: unknown }).prompt === 'string' ? (body as { prompt?: string }).prompt.trim() : '';
-	const context = typeof (body as { context?: unknown }).context === 'string' ? (body as { context?: string }).context : '';
+	const prompt =
+		typeof (body as { prompt?: unknown }).prompt === 'string'
+			? (body as { prompt?: string }).prompt.trim()
+			: '';
+	const context =
+		typeof (body as { context?: unknown }).context === 'string'
+			? (body as { context?: string }).context
+			: '';
+	const history =
+		body && typeof body === 'object' && 'history' in body && Array.isArray((body as any).history)
+			? ((body as any).history as { role?: string; content?: string }[])
+			: [];
 
 	if (!prompt) {
 		return new Response('Missing prompt', { status: 400 });
 	}
 
+	const sanitizedHistory = history
+		.filter((item) => typeof item?.role === 'string' && typeof item?.content === 'string')
+		.map((item) => ({
+			role: item.role as 'user' | 'assistant' | 'system',
+			content: item.content as string
+		}));
+
 	const messages = [
 		{
 			role: 'system',
 			content:
-				'You are a helpful assistant. Use the provided context to answer the user succinctly. If the context is insufficient, say so.'
+				'You are a helpful assistant. Use the provided context to answer the user succinctly. If the context is insufficient, say so. Answer in Markdown, include and cite the URL in your answer from the context.'
 		},
+		...sanitizedHistory,
 		{
 			role: 'user',
 			content: `Context:\n${context || 'n/a'}\n\nPrompt:\n${prompt}`
 		}
 	] as const;
+
+  console.log(messages);
 
 	try {
 		const completion = await client.chat.completions.create({

@@ -26,6 +26,7 @@
 		"@prisma/adapter-pg": "^7.0.1",
 		"@prisma/client": "^7.0.1",
 		"langchain": "^1.1.1",
+		"marked": "^17.0.1",
 		"openai": "^6.9.1"
 	}
 }
