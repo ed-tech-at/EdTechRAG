@@ -39,6 +39,20 @@
 		<p class="muted">Total chunks: {data.dataFile._count?.dataChunks ?? 0}</p>
 	</div>
 
+	<section class="ingest">
+		<h2>Replace chunks</h2>
+		<form method="POST" action="?/ingest" class="ingest-form">
+			<label>
+				Paste text to split into chunks (uses LangChain recursive splitter)
+				<textarea name="content" rows="6" required></textarea>
+			</label>
+			<div class="form-actions">
+				<button type="submit">Replace chunks</button>
+				<span class="muted">Existing chunks will be removed before inserting.</span>
+			</div>
+		</form>
+	</section>
+
 	<section class="search">
 		<form method="POST" action="?/search" class="search-form">
 			<label>
@@ -131,6 +145,31 @@
 		background: #fafafa;
 	}
 
+	.ingest {
+		display: grid;
+		gap: 0.75rem;
+		padding: 0.75rem;
+		border: 1px solid #e3e3e3;
+		border-radius: 8px;
+		background: #fafafa;
+	}
+
+	.ingest-form {
+		display: grid;
+		gap: 0.5rem;
+	}
+
+	.ingest-form textarea {
+		width: 100%;
+		min-height: 140px;
+		margin-top: 0.35rem;
+		font-family: inherit;
+		font-size: 0.95rem;
+		padding: 0.5rem;
+		border-radius: 4px;
+		border: 1px solid #d0d0d0;
+	}
+
 	.search-form {
 		display: grid;
 		gap: 0.5rem;
@@ -197,6 +236,13 @@
 	.embed-form {
 		display: flex;
 		justify-content: flex-start;
+	}
+
+	.form-actions {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+		flex-wrap: wrap;
 	}
 
 	button {

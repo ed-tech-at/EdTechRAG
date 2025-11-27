@@ -1,37 +1,11 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
-import { EMBEDDING_MODEL, embedText } from '$lib/server/embed';
+import { embedText } from '$lib/server/embed';
+import { splitTextIntoChunks } from '$lib/server/textSplitter';
 
-const splitIntoChunks = (raw: string) => {
-	const lines = raw.replace(/\r\n/g, '\n').split('\n');
-	const chunks: string[] = [];
-	let current: string[] = [];
+import { EMBEDDING_MODEL } from '$env/static/private';
 
-	const pushCurrent = () => {
-		const combined = current.join('\n').trim();
-		if (combined) {
-			chunks.push(combined);
-		}
-	};
-
-	for (const line of lines) {
-		const isHeading = line.trimStart().startsWith('#');
-
-		if (isHeading && current.length) {
-			pushCurrent();
-			current = [line];
-		} else {
-			current.push(line);
-		}
-	}
-
-	if (current.length) {
-		pushCurrent();
-	}
-
-	return chunks;
-};
 
 export const load: PageServerLoad = async ({ params }) => {
 	const { repoUrl } = params;
@@ -87,51 +61,134 @@ export const actions: Actions = {
 	ingestUrl: async ({ request, params }) => {
 		const { repoUrl } = params;
 		const formData = await request.formData();
-		const url = formData.get('url');
+		const urlsText = formData.get('urls');
+		const singleUrl = formData.get('url');
 
-		if (!url || typeof url !== 'string' || !url.trim()) {
-			return fail(400, { success: false, message: 'Please provide a URL.' });
+		const urls: string[] = [];
+
+		if (typeof singleUrl === 'string' && singleUrl.trim()) {
+			urls.push(singleUrl.trim());
 		}
 
+		if (typeof urlsText === 'string' && urlsText.trim()) {
+			urls.push(
+				...urlsText
+					.replace(/\r\n/g, '\n')
+					.split('\n')
+					.map((line) => line.trim())
+					.filter(Boolean)
+			);
+		}
+
+		if (urls.length === 0) {
+			return fail(400, { success: false, message: 'No valid URLs provided.' });
+		}
+
+		let processed = 0;
+		let totalChunks = 0;
+		const errors: string[] = [];
+
 		try {
-			const response = await fetch(url);
-			if (!response.ok) {
-				return fail(400, { success: false, message: `Failed to fetch URL (${response.status}).` });
-			}
-
-			const text = await response.text();
-			const chunks = splitIntoChunks(text);
-
-			if (chunks.length === 0) {
-				return fail(400, { success: false, message: 'No chunks found (need lines starting with #).' });
-			}
-
-			const dataFile = await prisma.dataFile.create({
-				data: {
-					repositoryUrl: repoUrl,
-					remoteUrl: url
-				}
-			});
-
-			for (const [idx, content] of chunks.entries()) {
-				const chunk = await prisma.dataChunk.create({
-					data: {
-						dataFileId: dataFile.id,
-						content,
-						chunkNr: idx + 1,
-						embeddingModel: EMBEDDING_MODEL
+			for (const url of urls) {
+				try {
+					const response = await fetch(url);
+					if (!response.ok) {
+						throw new Error(`Failed to fetch (${response.status}).`);
 					}
-				});
 
-				const vector = await embedText(content);
-				const vectorLiteral = `[${vector.join(',')}]`;
-				await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::vector WHERE "id" = ${chunk.id}`;
+					const text = await response.text();
+					const chunks = await splitTextIntoChunks(text);
+
+					if (chunks.length === 0) {
+						throw new Error('No chunks found after splitting.');
+					}
+
+					const existingFiles = await prisma.dataFile.findMany({
+						where: {
+							repositoryUrl: repoUrl,
+							remoteUrl: url
+						},
+						select: { id: true }
+					});
+
+					if (existingFiles.length > 0) {
+						const ids = existingFiles.map((f) => f.id);
+						await prisma.$transaction([
+							prisma.dataChunk.deleteMany({ where: { dataFileId: { in: ids } } }),
+							prisma.dataFile.deleteMany({ where: { id: { in: ids } } })
+						]);
+					}
+
+					const dataFile = await prisma.dataFile.create({
+						data: {
+							repositoryUrl: repoUrl,
+							remoteUrl: url
+						}
+					});
+
+					console.log('chunks count', chunks.length);
+
+					let createdChunks = 0;
+					const chunkErrors: string[] = [];
+
+					for (let idx = 0; idx < chunks.length; idx += 1) {
+						const content = chunks[idx];
+						console.log('processing chunk', idx);
+
+						try {
+							const chunk = await prisma.dataChunk.create({
+								data: {
+									dataFileId: dataFile.id,
+									content,
+									chunkNr: idx + 1,
+									// embeddingModel: EMBEDDING_MODEL
+								}
+							});
+
+							const vector = await embedText(content);
+							const vectorLiteral = `[${vector.join(',')}]`;
+							await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::vector WHERE "id" = ${chunk.id}`;
+							await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingModel" = ${EMBEDDING_MODEL} WHERE "id" = ${chunk.id}`;
+
+							createdChunks += 1;
+						} catch (err) {
+							const reason = err instanceof Error ? err.message : 'Unknown chunk error';
+							chunkErrors.push(`chunk ${idx + 1}: ${reason}`);
+							console.error('Chunk ingest error', { url, idx, reason });
+						}
+					}
+
+					processed += 1;
+					totalChunks += createdChunks;
+
+					if (chunkErrors.length === chunks.length) {
+						throw new Error(`All chunks failed for ${url}: ${chunkErrors.join(' | ')}`);
+					}
+
+					if (chunkErrors.length > 0) {
+						errors.push(`${url} partial: ${chunkErrors.join(' | ')}`);
+					}
+				} catch (err) {
+					const reason = err instanceof Error ? err.message : 'Unknown error';
+					errors.push(`${url}: ${reason}`);
+				}
 			}
+
+			if (processed === 0) {
+				return fail(400, {
+					success: false,
+					message: `All ${urls.length} URL${urls.length === 1 ? '' : 's'} failed. Details: ${errors.join(' | ')}`,
+					errors
+				});
+			}
+
+			const messageBase = `Processed ${processed}/${urls.length} URL${urls.length === 1 ? '' : 's'} (${totalChunks} chunk${totalChunks === 1 ? '' : 's'}).`;
+			const message =
+				errors.length > 0 ? `${messageBase} Errors: ${errors.join(' | ')}` : messageBase;
 
 			return {
-				success: true,
-				message: `Ingested ${chunks.length} chunk${chunks.length === 1 ? '' : 's'} from URL.`,
-				dataFileId: dataFile.id
+				success: errors.length === 0,
+				message
 			};
 		} catch (err) {
 			console.error('URL ingest error', err);

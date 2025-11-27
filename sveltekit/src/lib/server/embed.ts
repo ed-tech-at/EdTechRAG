@@ -1,15 +1,21 @@
 import prisma from '$lib/server/db';
-import { OPENAI_API_KEY, OPENAI_API_BASE } from '$env/static/private';
+import { OPENAI_API_KEY, OPENAI_API_BASE, OPENAI_API_BASE_EMBEDDING, EMBEDDING_MODEL } from '$env/static/private';
 
-export const EMBEDDING_MODEL = 'embeddinggemma';
+// export const EMBEDDING_MODEL = 'embeddinggemma';
 
 type EmbeddingResponse = {
 	data?: { embedding?: number[] }[];
 };
 
-const buildEmbeddingUrl = () => new URL('embeddings', OPENAI_API_BASE).toString();
+const buildEmbeddingUrl = () => new URL(OPENAI_API_BASE_EMBEDDING).toString();
+// const buildEmbeddingUrl = () => new URL(OPENAI_API_BASE).toString();
+
 
 export async function embedText(text: string) {
+
+	// console.log( OPENAI_API_BASE);
+	// console.log( buildEmbeddingUrl());
+
 	const response = await fetch(buildEmbeddingUrl(), {
 		method: 'POST',
 		headers: {

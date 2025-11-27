@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
 import { embedChunkById, embedText } from '$lib/server/embed';
+import { splitTextIntoChunks } from '$lib/server/textSplitter';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const { id } = params;
@@ -30,6 +31,50 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
+	ingest: async ({ request, params }) => {
+		const { id: dataFileId } = params;
+		const formData = await request.formData();
+		const content = formData.get('content');
+
+		if (!dataFileId) {
+			return fail(400, { success: false, message: 'Missing data file id.' });
+		}
+
+		if (!content || typeof content !== 'string' || !content.trim()) {
+			return fail(400, { success: false, message: 'Please paste some text to split.' });
+		}
+
+		const chunks = await splitTextIntoChunks(content);
+
+		if (chunks.length === 0) {
+			return fail(400, { success: false, message: 'No chunks found after splitting.' });
+		}
+
+		const existingDataFile = await prisma.dataFile.findUnique({
+			where: { id: dataFileId },
+			select: { id: true }
+		});
+
+		if (!existingDataFile) {
+			return fail(404, { success: false, message: 'Data file not found.' });
+		}
+
+		const data = chunks.map((chunk, idx) => ({
+			dataFileId,
+			content: chunk,
+			chunkNr: idx + 1
+		}));
+
+		await prisma.$transaction([
+			prisma.dataChunk.deleteMany({ where: { dataFileId } }),
+			prisma.dataChunk.createMany({ data })
+		]);
+
+		return {
+			success: true,
+			message: `Replaced with ${data.length} chunk${data.length === 1 ? '' : 's'}.`
+		};
+	},
 	embed: async ({ request }) => {
 		const formData = await request.formData();
 		const chunkId = formData.get('chunkId');

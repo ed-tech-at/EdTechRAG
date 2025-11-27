@@ -102,3 +102,9 @@ ALTER SEQUENCE "Lesson_id_seq" RESTART WITH 22;
 
 docker-compose pull
 docker-compose up -d
+
+
+## Langchian
+npm install langchain
+npm install @langchain/textsplitters
+

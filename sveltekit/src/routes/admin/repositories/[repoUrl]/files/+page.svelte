@@ -5,9 +5,60 @@
 	export let form: ActionData;
 
 	let ingesting = false;
+	let urlsInput = '';
+	type Status = { url: string; status: 'pending' | 'success' | 'error'; message?: string };
+	let statuses: Status[] = [];
 
 	const formatDate = (value: string | Date | null | undefined) =>
 		value ? new Date(value).toLocaleString() : '—';
+
+	const parseUrls = (input: string) =>
+		input
+			.replace(/\r\n/g, '\n')
+			.split('\n')
+			.map((line) => line.trim())
+			.filter(Boolean);
+
+	const ingestSequentially = async (event: Event) => {
+		event.preventDefault();
+		let urls = parseUrls(urlsInput);
+		if (urls.length === 0) {
+			return;
+		}
+
+		ingesting = true;
+		statuses = urls.map((url) => ({ url, status: 'pending' }));
+
+		for (const url of urls) {
+			const idx = statuses.findIndex((s) => s.url === url && s.status === 'pending');
+			try {
+				const formData = new FormData();
+				formData.set('url', url);
+				const res = await fetch('?/ingestUrl', {
+					method: 'POST',
+					body: formData,
+					headers: { accept: 'application/json' }
+				});
+				const body = await res.json();
+				const success = res.ok && body?.success !== false;
+				statuses[idx] = {
+					url,
+					status: success ? 'success' : 'error',
+					message: body?.message ?? (success ? 'Done' : 'Failed')
+				};
+			} catch (err) {
+				statuses[idx] = {
+					url,
+					status: 'error',
+					message: err instanceof Error ? err.message : 'Unknown error'
+				};
+			}
+			urls = urls.slice(1);
+			urlsInput = urls.join('\n');
+		}
+
+		ingesting = false;
+	};
 </script>
 
 <section class="page">
@@ -22,20 +73,41 @@
 	{/if}
 
 	<section class="ingest">
-		<form method="POST" action="?/ingestUrl" class="ingest-form" on:submit={() => (ingesting = true)}>
+		<form
+			method="POST"
+			action="?/ingestUrl"
+			class="ingest-form"
+			on:submit|preventDefault={ingestSequentially}
+		>
 			<label>
-				Load and embed a file from URL
-				<input type="url" name="url" placeholder="https://example.com/file.txt" required />
+				Load and embed files from URLs (one per line, processed top to bottom)
+				<textarea
+					name="urls"
+					placeholder="https://example.com/file.txt&#10;https://example.com/another.txt"
+					required
+					bind:value={urlsInput}
+				></textarea>
 			</label>
 			<div class="actions">
 				<button type="submit" disabled={ingesting}>
-					{ingesting ? 'Processing…' : 'Fetch & ingest'}
+					{ingesting ? 'Processing…' : 'Fetch & ingest all'}
 				</button>
 				{#if ingesting}
 					<span class="loader" aria-live="polite">Working…</span>
 				{/if}
 			</div>
-			<p class="muted">Content is split at lines starting with #, then embedded chunk by chunk.</p>
+			<p class="muted">
+				Each URL is fetched and ingested sequentially. Content is split into LangChain chunks and embedded.
+			</p>
+			{#if statuses.length}
+				<ul class="status-list">
+					{#each statuses as item}
+						<li class={item.status}>
+							<strong>{item.url}</strong> — {item.message ?? item.status}
+						</li>
+					{/each}
+				</ul>
+			{/if}
 		</form>
 	</section>
 
@@ -185,12 +257,14 @@
 		gap: 0.5rem;
 	}
 
-	.ingest-form input {
+	.ingest-form textarea {
 		width: 100%;
+		min-height: 120px;
 		padding: 0.5rem;
 		border-radius: 4px;
 		border: 1px solid #d0d0d0;
 		font-size: 1rem;
+		font-family: inherit;
 	}
 
 	.actions {
@@ -202,5 +276,32 @@
 	.loader {
 		color: #1f7ae0;
 		font-size: 0.95rem;
+	}
+
+	.status-list {
+		list-style: none;
+		padding: 0;
+		margin: 0.5rem 0 0;
+		display: grid;
+		gap: 0.25rem;
+		font-size: 0.95rem;
+	}
+
+	.status-list li {
+		padding: 0.35rem 0.4rem;
+		border-radius: 4px;
+		background: #f5f7fa;
+	}
+
+	.status-list li.success {
+		border: 1px solid #b7e0c2;
+		background: #e7f6ec;
+		color: #1b6b3a;
+	}
+
+	.status-list li.error {
+		border: 1px solid #f2c7c7;
+		background: #fff0f0;
+		color: #8a1c1c;
 	}
 </style>
