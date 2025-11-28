@@ -104,12 +104,13 @@
 					</header>
 					<pre>{chunk.content}</pre>
 					{#if chunk.embeddingModel}
-						<p class="muted">Embedding model: {chunk.embeddingModel}</p>
+						<p class="muted">Embedding model: {chunk.embeddingModel} · Length: {chunk.content?.length ?? 0} chars</p>
+					{:else}
+						<form method="POST" action="?/embed" class="embed-form">
+							<input type="hidden" name="chunkId" value={chunk.id} />
+							<button type="submit">Generate embedding</button>
+						</form>
 					{/if}
-					<form method="POST" action="?/embed" class="embed-form">
-						<input type="hidden" name="chunkId" value={chunk.id} />
-						<button type="submit">Generate embedding</button>
-					</form>
 				</article>
 			{/each}
 		{/if}
