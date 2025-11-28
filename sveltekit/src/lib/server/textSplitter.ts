@@ -10,9 +10,27 @@ export type MdPreprocessResult = {
 	meta: Record<string, string>;
 };
 
-const DEFAULT_CHUNK_SIZE = 500;
-const DEFAULT_CHUNK_OVERLAP = 50;
-const DEFAULT_SEPARATORS = ['\n#', '\n\n', '\n', '. ', ' ', ''];
+let DEFAULT_CHUNK_SIZE = 500;
+let DEFAULT_CHUNK_OVERLAP = 50;
+let DEFAULT_SEPARATORS = ['\n#', '\n\n', '\n', '. ', ' ', ''];
+
+DEFAULT_CHUNK_SIZE = 1000;
+DEFAULT_CHUNK_OVERLAP = 150;
+
+DEFAULT_SEPARATORS = [
+  '\n# ',      // H1
+  '\n## ',     // H2
+  '\n### ',    // H3
+  '\n#### ',   // H4+
+  '\n```',     // code fences
+  '\n- ',      // bullet lists
+  '\n* ',      // alternative bullets
+  '\n> ',      // blockquotes
+  '\n\n',      // paragraph breaks
+  '\n',        // line breaks
+  ' ',         // words
+  ''           // fallback: characters
+];
 
 /**
  * Splits raw text into smaller chunks using LangChain's RecursiveCharacterTextSplitter.
