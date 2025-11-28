@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Simple Chat</title>
+<script>
+    const repositoryUrl = "your-repo-url"; 
+    const serverUrl = "https://.../edtechrag"; 
+</script>
+<script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+<style>
+	body {
+		font-family: sans-serif;
+		margin: 0;
+		padding: 0;
+	}
+
+	/* ---------- Floating Button ---------- */
+	#chatbot-btn {
+		position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #1f7ae0;
+        color: white;
+        padding: 12px 18px;
+        border-radius: 30px;
+        cursor: pointer;
+        font-weight: bold;
+        border: none;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        z-index: 9999;
+	}
+
+	/* ---------- Chat Overlay ---------- */
+	#chat-overlay {
+        position: fixed;
+        bottom: 70px;
+        right: 20px;
+        width: 200px;
+        height: 400px;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        display: none;
+        flex-direction: column;
+        padding: 8px;
+        z-index: 9998;
+    }
+
+    #prompt {
+        width: 100%;
+        height: 80px;
+        border: 1px solid #cfd6e0;
+        border-radius: 6px;
+        padding: 4px;
+        resize: none;
+        font-size: 0.9rem;
+    }
+
+    #send-btn {
+        margin-top: 6px;
+        padding: 6px;
+        width: 100%;
+        border: 1px solid #1f7ae0;
+        background: #1f7ae0;
+        color: white;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    #answerBox {
+        margin-top: 10px;
+        border: 1px solid #ddd;
+        background: #fafafa;
+        border-radius: 6px;
+        padding: 5px;
+        font-size: 0.85rem;
+        height: 200px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+    }
+
+    #errorMsg {
+        color: #8a1c1c;
+        font-size: 0.8rem;
+        margin-top: 3px;
+        height: 16px;
+    }
+</style>
+</head>
+
+<body>
+
+<button id="chatbot-btn">Chatbot</button>
+
+<div id="chat-overlay">
+    <textarea id="prompt" placeholder="Ask…"></textarea>
+    <button id="send-btn">Send</button>
+    <div id="errorMsg"></div>
+    <div id="answerBox"></div>
+</div>
+
+<script>
+    const overlay = document.getElementById("chat-overlay");
+    const btn = document.getElementById("chatbot-btn");
+    const promptBox = document.getElementById("prompt");
+    const answerBox = document.getElementById("answerBox");
+    const errorMsg = document.getElementById("errorMsg");
+
+    let loading = false;
+
+    btn.addEventListener("click", () => {
+        overlay.style.display = overlay.style.display === "flex" ? "none" : "flex";
+    });
+
+    document.getElementById("send-btn").addEventListener("click", send);
+
+    async function send() {
+        const prompt = promptBox.value.trim();
+        if (!prompt) {
+            errorMsg.textContent = "Please enter a prompt.";
+            return;
+        }
+
+        errorMsg.textContent = "";
+        answerBox.textContent = "";
+        loading = true;
+        document.getElementById("send-btn").textContent = "Sending…";
+
+        try {
+            const res = await fetch(`${serverUrl}/api/chat/${encodeURIComponent(repositoryUrl)}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt })
+            });
+
+            const body = await res.json();
+
+            if (!res.ok || body.success === false) {
+                throw new Error(body.message || "Request failed");
+            }
+
+            answerBox.innerHTML = marked.parse(body.answer) ?? "";
+        } catch (err) {
+            errorMsg.textContent = err instanceof Error ? err.message : "Request failed";
+        } finally {
+            loading = false;
+            document.getElementById("send-btn").textContent = "Send";
+        }
+    }
+</script>
+
+</body>
+</html>

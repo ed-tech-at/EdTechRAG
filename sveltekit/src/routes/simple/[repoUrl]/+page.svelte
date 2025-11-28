@@ -2,6 +2,9 @@
 	import type { PageData } from './$types';
 	import { resolve } from '$app/paths';
 
+	import { marked } from 'marked';
+
+
 	export let data: PageData;
 
 	let prompt = '';
@@ -50,7 +53,7 @@
 				throw new Error(body?.message ?? 'Request failed');
 			}
 
-			answer = body?.answer ?? '';
+			answer = marked.parse(body?.answer) ?? '';
 			// await logInteraction({
 			// 	question: prompt,
 			// 	context: body?.results
@@ -103,7 +106,7 @@
 	{#if answer}
 		<div class="card answer">
 			<h2>Answer</h2>
-			<pre>{answer}</pre>
+			<pre>{@html answer}</pre>
 		</div>
 	{/if}
 </section>
