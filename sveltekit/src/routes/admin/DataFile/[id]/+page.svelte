@@ -236,6 +236,7 @@
 		border-radius: 6px;
 		padding: 0.65rem;
 		border: 1px solid #e3e3e3;
+		white-space: pre-line;
 	}
 
 	.embed-form {
