@@ -16,5 +16,5 @@ export const load: PageServerLoad = async ({ params }) => {
 		};
 	}
 
-	return { repository };
+	return { repositoryUrl: repository.url, repositoryName: repository.name };
 };

@@ -9,23 +9,23 @@
 	let loading = false;
 	let errorMessage = '';
 
-	const logInteraction = async (payload: {
-		question: string;
-		context?: string;
-		answer?: string;
-		repositoryUrl?: string;
-		endpoint?: string;
-	}) => {
-		try {
-			await fetch(resolve('/api/chat/log'), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
-			});
-		} catch (err) {
-			console.error('Log failed', err);
-		}
-	};
+	// const logInteraction = async (payload: {
+	// 	question: string;
+	// 	context?: string;
+	// 	answer?: string;
+	// 	repositoryUrl?: string;
+	// 	endpoint?: string;
+	// }) => {
+	// 	try {
+	// 		await fetch(resolve('/api/chat/log'), {
+	// 			method: 'POST',
+	// 			headers: { 'Content-Type': 'application/json' },
+	// 			body: JSON.stringify(payload)
+	// 		});
+	// 	} catch (err) {
+	// 		console.error('Log failed', err);
+	// 	}
+	// };
 
 	const send = async () => {
 		if (!prompt.trim()) {
@@ -38,7 +38,7 @@
 		loading = true;
 
 		try {
-			const res = await fetch(resolve(`/api/chat/${encodeURIComponent(data.repository.url)}`), {
+			const res = await fetch(resolve(`/api/chat/${encodeURIComponent(data.repositoryUrl)}`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ prompt })
@@ -69,11 +69,11 @@
 </script>
 
 <section class="page">
-	<h1>Simple Chat · {data.repository.name}</h1>
+	<h1>Simple Chat · {data.repositoryName}</h1>
 	<p class="muted">
 		Repository:
 		<!-- <a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repository.url)}`)}> -->
-			{data.repository.url}
+			{data.repositoryUrl}
 		<!-- </a> -->
 	</p>
 
