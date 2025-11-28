@@ -70,7 +70,7 @@ export async function getChatClient(repoUrl: string) {
 
 	const model = isAzure ? cfg.azureModel! : cfg.chatModel;
 
-	return { client, model, config: cfg };
+	return { client, model };
 }
 
 export async function getEmbeddingConfig(repoUrl: string) {

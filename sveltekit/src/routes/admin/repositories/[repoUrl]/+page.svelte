@@ -33,10 +33,10 @@
 <section class="page">
 	<div class="header">
 		<a class="link" href={resolve('/admin/repositories')}>← Back to repositories</a>
-		<h1>{data.repository.name}</h1>
-		<p class="muted">URL: {data.repository.url}</p>
+		<h1>{data.repositoryName}</h1>
+		<p class="muted">URL: {data.repositoryUrl}</p>
 		<p>
-			<a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repository.url)}/files`)}>
+			<a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repositoryUrl)}/files`)}>
 				View files →
 			</a>
 		</p>

@@ -28,7 +28,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		orderBy: { createdAt: 'desc' }
 	});
 
-	return { repository, files };
+	return { repositoryUrl: repository.url, repositoryName: repository.name, files };
 };
 
 export const actions: Actions = {

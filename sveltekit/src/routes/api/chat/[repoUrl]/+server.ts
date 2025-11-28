@@ -4,14 +4,30 @@ import { findRepositoryContext } from '$lib/server/rag';
 import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
 
+const corsHeaders = (_origin: string | null): Record<string, string> => ({
+	'Access-Control-Allow-Origin': '*',
+	'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+	'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+});
+
+export const OPTIONS: RequestHandler = async ({ request }) => {
+	const origin = request.headers.get('origin');
+
+	return new Response(null, {
+		status: 204,
+		headers: corsHeaders(origin)
+	});
+};
+
 export const POST: RequestHandler = async ({ request, params }) => {
 	const { repoUrl } = params;
+	const origin = request.headers.get('origin');
 
 	let body: unknown;
 	try {
 		body = await request.json();
 	} catch (err) {
-		return new Response('Invalid JSON body', { status: 400 });
+		return new Response('Invalid JSON body', { status: 400, headers: corsHeaders(origin) });
 	}
 
 	const prompt =
@@ -24,7 +40,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			: [];
 
 	if (!prompt) {
-		return new Response('Missing prompt', { status: 400 });
+		return new Response('Missing prompt', { status: 400, headers: corsHeaders(origin) });
 	}
 
 	const repository = await prisma.repository.findUnique({
@@ -32,7 +48,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	});
 
 	if (!repository) {
-		return new Response('Repository not found', { status: 404 });
+		return new Response('Repository not found', { status: 404, headers: corsHeaders(origin) });
 	}
 
 	try {
@@ -84,11 +100,14 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			}),
 			{
 				status: 200,
-				headers: { 'content-type': 'application/json' }
+				headers: { 'content-type': 'application/json', ...corsHeaders(origin) }
 			}
 		);
 	} catch (err) {
 		console.error('Chat repo endpoint error', err);
-		return new Response('Chat failed. See server logs.', { status: 500 });
+		return new Response('Chat failed. See server logs.', {
+			status: 500,
+			headers: corsHeaders(origin)
+		});
 	}
 };

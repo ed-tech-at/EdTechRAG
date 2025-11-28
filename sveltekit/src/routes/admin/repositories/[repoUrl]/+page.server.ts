@@ -14,7 +14,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		throw error(404, 'Repository not found');
 	}
 
-	return { repository };
+	return { repositoryName: repository.name, repositoryUrl: repository.url };
 };
 
 export const actions: Actions = {

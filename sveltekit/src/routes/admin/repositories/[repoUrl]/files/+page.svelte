@@ -64,9 +64,9 @@
 
 <section class="page">
 	<div class="header">
-		<a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repository.url)}`)}>← Back to repository</a>
-		<h1>{data.repository.name} · Files</h1>
-		<p class="muted">URL: {data.repository.url}</p>
+		<a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repositoryUrl)}`)}>← Back to repository</a>
+		<h1>{data.repositoryName} · Files</h1>
+		<p class="muted">URL: {data.repositoryUrl}</p>
 	</div>
 
 	{#if form?.message}

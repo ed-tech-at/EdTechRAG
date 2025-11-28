@@ -29,7 +29,7 @@
 				{#each data.dataFiles as file}
 					<tr>
 						<td>
-							<div class="repo-name">{file.repository?.name ?? 'Unknown repo'}</div>
+							<!-- <div class="repo-name">{file.repository?.name ?? 'Unknown repo'}</div> -->
 							<div class="muted">{file.repositoryUrl}</div>
 						</td>
 						<td>{file.remoteUrl ?? '—'}</td>

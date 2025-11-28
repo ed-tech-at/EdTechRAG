@@ -23,7 +23,7 @@ services:
       - pgvector-edtechrag
 
     environment:
-      PGADMIN_DEFAULT_EMAIL: dev@ed-tech.local
+      PGADMIN_DEFAULT_EMAIL: dev@ed-tech.at
       PGADMIN_DEFAULT_PASSWORD: adminPass
     volumes:
       - ./pgadmin_data:/var/lib/pgadmin
