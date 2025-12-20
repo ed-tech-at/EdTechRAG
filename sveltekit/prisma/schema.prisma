@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -14,64 +8,44 @@ datasource db {
 }
 
 model Repository {
-  
-  url    String @unique
-
-  name    String
-  
+  url          String     @unique
+  name         String
   updateConfig Json?
-  LLM_API Json?
-
-  dataFiles DataFile[]
-
+  LLM_API      Json?
+  ragConfig    Json?
+  dataFiles    DataFile[]
 }
 
 model DataFile {
-  id       String  @id @default(uuid()) 
-
-  repository     Repository  @relation(fields: [repositoryUrl], references: [url], onDelete: Cascade)
-  repositoryUrl   String
-
-  remoteUrl String?
-  meta Json?
-
-
-  lastSeen       DateTime?
-  createdAt       DateTime? @default(now())
-
-  dataChunks DataChunk[]
-
-
+  remoteUrl     String?
+  meta          Json?
+  createdAt     DateTime?   @default(now())
+  repositoryUrl String
+  chunkedAt     DateTime?
+  invalidatedAt DateTime?
+  id            Int         @id @default(autoincrement())
+  dataChunks    DataChunk[]
+  repository    Repository  @relation(fields: [repositoryUrl], references: [url], onDelete: Cascade)
 }
 
-
 model DataChunk {
-  id       String  @id @default(uuid()) 
-
-
-  dataFile     DataFile  @relation(fields: [dataFileId], references: [id], onDelete: Cascade)
-  dataFileId   String
-
-  chunkNr  Int?
-
-  content  String?
-  
+  chunkNr        Int?
+  content        String?
   embeddingModel String?
-
-
-
-  lastSeen       DateTime?
-  createdAt       DateTime? @default(now())
-
-
+  createdAt      DateTime? @default(now())
+  embeddedAt     DateTime?
+  invalidatedAt  DateTime?
+  id             Int       @id @default(autoincrement())
+  dataFileId     Int
+  dataFile       DataFile  @relation(fields: [dataFileId], references: [id], onDelete: Cascade)
 }
 
 model ChatLog {
-  id            String   @id @default(uuid())
   question      String?
   context       String?
   answer        String?
   repositoryUrl String?
   endpoint      String?
   createdAt     DateTime @default(now())
+  id            Int      @id @default(autoincrement())
 }
