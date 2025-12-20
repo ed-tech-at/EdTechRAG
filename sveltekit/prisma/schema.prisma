@@ -31,23 +31,8 @@ model DataFile {
   chunkedAt     DateTime?
   invalidatedAt DateTime?
   
-  dataChunks    DataChunk[]
 }
 
-model DataChunk {
-  id             Int       @id @default(autoincrement())
-  chunkNr        Int?
-  content        String?
-  
-  dataFileId     Int
-  dataFile       DataFile  @relation(fields: [dataFileId], references: [id], onDelete: Cascade)
-  
-  embeddingModel String?
-  
-  createdAt      DateTime? @default(now())
-  embeddedAt     DateTime?
-  invalidatedAt  DateTime?
-}
 
 model ChatLog {
   id            Int      @id @default(autoincrement())
@@ -62,14 +47,5 @@ model ChatLog {
 }
 
 model vector1536 {
-  id            Int    @id   @default(autoincrement())
-  dataChunkId   Int
-  
-  repositoryUrl String?
-  createdAt     DateTime  @default(now())
-  invalidatedAt DateTime?
-
-  embeddingVector Unsupported("vector(1536)")?
-
   @@ignore
 }

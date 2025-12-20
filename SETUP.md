@@ -47,62 +47,34 @@ GRANT ALL PRIVILEGES ON DATABASE edtechrag_migrations TO edtechrag_dev;
 ```
 
 ## vector v3
+Create manual after prisma migreate dev: 
+
+
 ```
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+DROP TABLE "vector1536";
 
 -- CreateTable
 CREATE TABLE "vector1536" (
     "id" SERIAL NOT NULL,
-    "dataChunkId" INTEGER NOT NULL,
     "repositoryUrl" TEXT,
+    "dataFileId" INTEGER,
+    "chunkNr" INTEGER,
+    "content" TEXT,
+    "embeddingModel" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "embeddedAt" TIMESTAMP(3),
     "invalidatedAt" TIMESTAMP(3),
+    "embeddingVector" vector(1536),
 
     CONSTRAINT "vector1536_pkey" PRIMARY KEY ("id")
 );
 
-CREATE EXTENSION IF NOT EXISTS vector;
-
-ALTER TABLE "vector1536" ADD COLUMN     "embeddingVector" vector(1536);
-
 
 ```
 
-
-## Vector v1
-
-```
----- https://www.prisma.io/blog/orm-6-13-0-ci-cd-workflows-and-pgvector-for-prisma-postgres
-
-CREATE EXTENSION IF NOT EXISTS vector;
-
-ALTER TABLE "DataChunk"
-ADD COLUMN     "embeddingVector" VECTOR(1536);
-```
-
-
-## DB2
-```
-CREATE EXTENSION IF NOT EXISTS vector;
-
--- Database
-GRANT ALL PRIVILEGES ON DATABASE edtechrag_dev2 TO edtechrag_dev;
-
--- Schema
-GRANT ALL PRIVILEGES ON SCHEMA public TO edtechrag_dev;
-
--- Tables
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO edtechrag_dev;
-
--- Sequences (BIGSERIAL needs this)
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO edtechrag_dev;
-
--- Functions (for completeness)
-GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO edtechrag_dev;
-
--- pgvector type visibility (CRITICAL)
-GRANT USAGE ON TYPE public.vector TO edtechrag_dev;
-
-```
 
 ## .env 
 
@@ -156,3 +128,46 @@ docker-compose up -d
 npm install langchain
 npm install @langchain/textsplitters
 
+
+
+
+
+
+
+---
+
+## OLD Vector v1
+
+```
+---- https://www.prisma.io/blog/orm-6-13-0-ci-cd-workflows-and-pgvector-for-prisma-postgres
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+ALTER TABLE "DataChunk"
+ADD COLUMN     "embeddingVector" VECTOR(1536);
+```
+
+
+## DB2
+```
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Database
+GRANT ALL PRIVILEGES ON DATABASE edtechrag_dev2 TO edtechrag_dev;
+
+-- Schema
+GRANT ALL PRIVILEGES ON SCHEMA public TO edtechrag_dev;
+
+-- Tables
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO edtechrag_dev;
+
+-- Sequences (BIGSERIAL needs this)
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO edtechrag_dev;
+
+-- Functions (for completeness)
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO edtechrag_dev;
+
+-- pgvector type visibility (CRITICAL)
+GRANT USAGE ON TYPE public.vector TO edtechrag_dev;
+
+```

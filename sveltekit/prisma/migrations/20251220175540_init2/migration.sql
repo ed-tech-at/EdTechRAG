@@ -21,20 +21,6 @@ CREATE TABLE "DataFile" (
 );
 
 -- CreateTable
-CREATE TABLE "DataChunk" (
-    "id" SERIAL NOT NULL,
-    "chunkNr" INTEGER,
-    "content" TEXT,
-    "dataFileId" INTEGER NOT NULL,
-    "embeddingModel" TEXT,
-    "createdAt" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
-    "embeddedAt" TIMESTAMP(3),
-    "invalidatedAt" TIMESTAMP(3),
-
-    CONSTRAINT "DataChunk_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "ChatLog" (
     "id" SERIAL NOT NULL,
     "repositoryUrl" TEXT,
@@ -47,11 +33,13 @@ CREATE TABLE "ChatLog" (
     CONSTRAINT "ChatLog_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "vector1536" (
+
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Repository_url_key" ON "Repository"("url");
 
 -- AddForeignKey
 ALTER TABLE "DataFile" ADD CONSTRAINT "DataFile_repositoryUrl_fkey" FOREIGN KEY ("repositoryUrl") REFERENCES "Repository"("url") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "DataChunk" ADD CONSTRAINT "DataChunk_dataFileId_fkey" FOREIGN KEY ("dataFileId") REFERENCES "DataFile"("id") ON DELETE CASCADE ON UPDATE CASCADE;
