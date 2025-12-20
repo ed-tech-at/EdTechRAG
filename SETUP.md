@@ -44,15 +44,41 @@ CREATE DATABASE edtechrag_migrations OWNER edtechrag_dev;
 
 -- Set privileges
 GRANT ALL PRIVILEGES ON DATABASE edtechrag_migrations TO edtechrag_dev;
+```
 
+## Vector v1
 
+```
 ---- https://www.prisma.io/blog/orm-6-13-0-ci-cd-workflows-and-pgvector-for-prisma-postgres
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
 ALTER TABLE "DataChunk"
 ADD COLUMN     "embeddingVector" VECTOR(1536);
+```
 
+
+## DB2
+```
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Database
+GRANT ALL PRIVILEGES ON DATABASE edtechrag_dev2 TO edtechrag_dev;
+
+-- Schema
+GRANT ALL PRIVILEGES ON SCHEMA public TO edtechrag_dev;
+
+-- Tables
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO edtechrag_dev;
+
+-- Sequences (BIGSERIAL needs this)
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO edtechrag_dev;
+
+-- Functions (for completeness)
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO edtechrag_dev;
+
+-- pgvector type visibility (CRITICAL)
+GRANT USAGE ON TYPE public.vector TO edtechrag_dev;
 
 ```
 

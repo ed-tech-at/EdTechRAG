@@ -10,42 +10,62 @@ datasource db {
 model Repository {
   url          String     @unique
   name         String
+
   updateConfig Json?
   LLM_API      Json?
   ragConfig    Json?
+
   dataFiles    DataFile[]
 }
 
 model DataFile {
+  id            Int         @id @default(autoincrement())
+
+  repositoryUrl String
+  repository    Repository  @relation(fields: [repositoryUrl], references: [url], onDelete: Cascade)
+
   remoteUrl     String?
   meta          Json?
+  
   createdAt     DateTime?   @default(now())
-  repositoryUrl String
   chunkedAt     DateTime?
   invalidatedAt DateTime?
-  id            Int         @id @default(autoincrement())
+  
   dataChunks    DataChunk[]
-  repository    Repository  @relation(fields: [repositoryUrl], references: [url], onDelete: Cascade)
 }
 
 model DataChunk {
+  id             Int       @id @default(autoincrement())
   chunkNr        Int?
   content        String?
+  
+  dataFileId     Int
+  dataFile       DataFile  @relation(fields: [dataFileId], references: [id], onDelete: Cascade)
+  
   embeddingModel String?
+  
   createdAt      DateTime? @default(now())
   embeddedAt     DateTime?
   invalidatedAt  DateTime?
-  id             Int       @id @default(autoincrement())
-  dataFileId     Int
-  dataFile       DataFile  @relation(fields: [dataFileId], references: [id], onDelete: Cascade)
 }
 
 model ChatLog {
+  id            Int      @id @default(autoincrement())
+  repositoryUrl String?
+  endpoint      String?
+  
   question      String?
   context       String?
   answer        String?
-  repositoryUrl String?
-  endpoint      String?
+  
   createdAt     DateTime @default(now())
-  id            Int      @id @default(autoincrement())
+}
+
+model vector1536 {
+  id            Int    @id   @default(autoincrement())
+  dataChunkId   Int
+  
+  repositoryUrl String?
+  createdAt     DateTime  @default(now())
+  invalidatedAt DateTime?
 }
