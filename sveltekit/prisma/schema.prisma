@@ -68,4 +68,8 @@ model vector1536 {
   repositoryUrl String?
   createdAt     DateTime  @default(now())
   invalidatedAt DateTime?
+
+  embeddingVector Unsupported("vector(1536)")?
+
+  @@ignore
 }

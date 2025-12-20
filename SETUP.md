@@ -46,6 +46,28 @@ CREATE DATABASE edtechrag_migrations OWNER edtechrag_dev;
 GRANT ALL PRIVILEGES ON DATABASE edtechrag_migrations TO edtechrag_dev;
 ```
 
+## vector v3
+```
+
+-- CreateTable
+CREATE TABLE "vector1536" (
+    "id" SERIAL NOT NULL,
+    "dataChunkId" INTEGER NOT NULL,
+    "repositoryUrl" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "invalidatedAt" TIMESTAMP(3),
+
+    CONSTRAINT "vector1536_pkey" PRIMARY KEY ("id")
+);
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+ALTER TABLE "vector1536" ADD COLUMN     "embeddingVector" vector(1536);
+
+
+```
+
+
 ## Vector v1
 
 ```

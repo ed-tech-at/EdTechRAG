@@ -47,17 +47,6 @@ CREATE TABLE "ChatLog" (
     CONSTRAINT "ChatLog_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "vector1536" (
-    "id" SERIAL NOT NULL,
-    "dataChunkId" INTEGER NOT NULL,
-    "repositoryUrl" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "invalidatedAt" TIMESTAMP(3),
-
-    CONSTRAINT "vector1536_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "Repository_url_key" ON "Repository"("url");
 
