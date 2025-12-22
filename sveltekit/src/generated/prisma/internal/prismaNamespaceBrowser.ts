@@ -53,8 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   Repository: 'Repository',
   DataFile: 'DataFile',
-  DataChunk: 'DataChunk',
-  ChatLog: 'ChatLog'
+  ChatLog: 'ChatLog',
+  User: 'User'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -77,7 +77,8 @@ export const RepositoryScalarFieldEnum = {
   url: 'url',
   name: 'name',
   updateConfig: 'updateConfig',
-  LLM_API: 'LLM_API'
+  LLM_API: 'LLM_API',
+  ragConfig: 'ragConfig'
 } as const
 
 export type RepositoryScalarFieldEnum = (typeof RepositoryScalarFieldEnum)[keyof typeof RepositoryScalarFieldEnum]
@@ -88,37 +89,38 @@ export const DataFileScalarFieldEnum = {
   repositoryUrl: 'repositoryUrl',
   remoteUrl: 'remoteUrl',
   meta: 'meta',
-  lastSeen: 'lastSeen',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  chunkedAt: 'chunkedAt',
+  invalidatedAt: 'invalidatedAt'
 } as const
 
 export type DataFileScalarFieldEnum = (typeof DataFileScalarFieldEnum)[keyof typeof DataFileScalarFieldEnum]
 
 
-export const DataChunkScalarFieldEnum = {
-  id: 'id',
-  dataFileId: 'dataFileId',
-  chunkNr: 'chunkNr',
-  content: 'content',
-  embeddingModel: 'embeddingModel',
-  lastSeen: 'lastSeen',
-  createdAt: 'createdAt'
-} as const
-
-export type DataChunkScalarFieldEnum = (typeof DataChunkScalarFieldEnum)[keyof typeof DataChunkScalarFieldEnum]
-
-
 export const ChatLogScalarFieldEnum = {
   id: 'id',
+  repositoryUrl: 'repositoryUrl',
+  endpoint: 'endpoint',
   question: 'question',
   context: 'context',
   answer: 'answer',
-  repositoryUrl: 'repositoryUrl',
-  endpoint: 'endpoint',
   createdAt: 'createdAt'
 } as const
 
 export type ChatLogScalarFieldEnum = (typeof ChatLogScalarFieldEnum)[keyof typeof ChatLogScalarFieldEnum]
+
+
+export const UserScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  repositoryJson: 'repositoryJson',
+  password: 'password',
+  cryptVersion: 'cryptVersion',
+  isDeleted: 'isDeleted',
+  createdAt: 'createdAt'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
 export const SortOrder = {

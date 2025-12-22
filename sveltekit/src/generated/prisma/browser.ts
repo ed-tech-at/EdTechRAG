@@ -28,12 +28,12 @@ export type Repository = Prisma.RepositoryModel
  */
 export type DataFile = Prisma.DataFileModel
 /**
- * Model DataChunk
- * 
- */
-export type DataChunk = Prisma.DataChunkModel
-/**
  * Model ChatLog
  * 
  */
 export type ChatLog = Prisma.ChatLogModel
+/**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel

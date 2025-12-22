@@ -33,8 +33,8 @@
 <section class="page">
 	<div class="header">
 		<a class="link" href={resolve('/admin/repositories')}>← Back to repositories</a>
-		<h1>{data.repositoryName}</h1>
-		<p class="muted">URL: {data.repositoryUrl}</p>
+		<h1>Repository: {data.repositoryName}</h1>
+		<p class="muted">EdTechRag URL: {data.repositoryUrl}</p>
 		<p>
 			<a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repositoryUrl)}/files`)}>
 				View files →

@@ -80,12 +80,12 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.0.1
- * Query Engine version: f09f2815f091dbba658cdcd2264306d88bb5bda6
+ * Prisma Client JS version: 7.2.0
+ * Query Engine version: 0c8ef2ce45c83248ab3df073180d5eda9e8be7a3
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.0.1",
-  engine: "f09f2815f091dbba658cdcd2264306d88bb5bda6"
+  client: "7.2.0",
+  engine: "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3"
 }
 
 /**
@@ -386,8 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   Repository: 'Repository',
   DataFile: 'DataFile',
-  DataChunk: 'DataChunk',
-  ChatLog: 'ChatLog'
+  ChatLog: 'ChatLog',
+  User: 'User'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +403,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "repository" | "dataFile" | "dataChunk" | "chatLog"
+    modelProps: "repository" | "dataFile" | "chatLog" | "user"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -555,80 +555,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    DataChunk: {
-      payload: Prisma.$DataChunkPayload<ExtArgs>
-      fields: Prisma.DataChunkFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.DataChunkFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.DataChunkFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload>
-        }
-        findFirst: {
-          args: Prisma.DataChunkFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.DataChunkFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload>
-        }
-        findMany: {
-          args: Prisma.DataChunkFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload>[]
-        }
-        create: {
-          args: Prisma.DataChunkCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload>
-        }
-        createMany: {
-          args: Prisma.DataChunkCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.DataChunkCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload>[]
-        }
-        delete: {
-          args: Prisma.DataChunkDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload>
-        }
-        update: {
-          args: Prisma.DataChunkUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload>
-        }
-        deleteMany: {
-          args: Prisma.DataChunkDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.DataChunkUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.DataChunkUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload>[]
-        }
-        upsert: {
-          args: Prisma.DataChunkUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$DataChunkPayload>
-        }
-        aggregate: {
-          args: Prisma.DataChunkAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateDataChunk>
-        }
-        groupBy: {
-          args: Prisma.DataChunkGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DataChunkGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.DataChunkCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.DataChunkCountAggregateOutputType> | number
-        }
-      }
-    }
     ChatLog: {
       payload: Prisma.$ChatLogPayload<ExtArgs>
       fields: Prisma.ChatLogFieldRefs
@@ -703,6 +629,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    User: {
+      payload: Prisma.$UserPayload<ExtArgs>
+      fields: Prisma.UserFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        findFirst: {
+          args: Prisma.UserFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        findMany: {
+          args: Prisma.UserFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>[]
+        }
+        create: {
+          args: Prisma.UserCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        createMany: {
+          args: Prisma.UserCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>[]
+        }
+        delete: {
+          args: Prisma.UserDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        update: {
+          args: Prisma.UserUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>[]
+        }
+        upsert: {
+          args: Prisma.UserUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserPayload>
+        }
+        aggregate: {
+          args: Prisma.UserAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUser>
+        }
+        groupBy: {
+          args: Prisma.UserGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -746,7 +746,8 @@ export const RepositoryScalarFieldEnum = {
   url: 'url',
   name: 'name',
   updateConfig: 'updateConfig',
-  LLM_API: 'LLM_API'
+  LLM_API: 'LLM_API',
+  ragConfig: 'ragConfig'
 } as const
 
 export type RepositoryScalarFieldEnum = (typeof RepositoryScalarFieldEnum)[keyof typeof RepositoryScalarFieldEnum]
@@ -757,37 +758,38 @@ export const DataFileScalarFieldEnum = {
   repositoryUrl: 'repositoryUrl',
   remoteUrl: 'remoteUrl',
   meta: 'meta',
-  lastSeen: 'lastSeen',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  chunkedAt: 'chunkedAt',
+  invalidatedAt: 'invalidatedAt'
 } as const
 
 export type DataFileScalarFieldEnum = (typeof DataFileScalarFieldEnum)[keyof typeof DataFileScalarFieldEnum]
 
 
-export const DataChunkScalarFieldEnum = {
-  id: 'id',
-  dataFileId: 'dataFileId',
-  chunkNr: 'chunkNr',
-  content: 'content',
-  embeddingModel: 'embeddingModel',
-  lastSeen: 'lastSeen',
-  createdAt: 'createdAt'
-} as const
-
-export type DataChunkScalarFieldEnum = (typeof DataChunkScalarFieldEnum)[keyof typeof DataChunkScalarFieldEnum]
-
-
 export const ChatLogScalarFieldEnum = {
   id: 'id',
+  repositoryUrl: 'repositoryUrl',
+  endpoint: 'endpoint',
   question: 'question',
   context: 'context',
   answer: 'answer',
-  repositoryUrl: 'repositoryUrl',
-  endpoint: 'endpoint',
   createdAt: 'createdAt'
 } as const
 
 export type ChatLogScalarFieldEnum = (typeof ChatLogScalarFieldEnum)[keyof typeof ChatLogScalarFieldEnum]
+
+
+export const UserScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  repositoryJson: 'repositoryJson',
+  password: 'password',
+  cryptVersion: 'cryptVersion',
+  isDeleted: 'isDeleted',
+  createdAt: 'createdAt'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -866,20 +868,6 @@ export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
 
 
 /**
- * Reference to a field of type 'DateTime'
- */
-export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime[]'
- */
-export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
-    
-
-
-/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -890,6 +878,20 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
  * Reference to a field of type 'Int[]'
  */
 export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime'
+ */
+export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime[]'
+ */
+export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
     
 
 
@@ -955,7 +957,7 @@ export type PrismaClientOptions = ({
    *  { emit: 'stdout', level: 'error' }
    * 
    * ```
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
+   * Read more in our [docs](https://pris.ly/d/logging).
    */
   log?: (LogLevel | LogDefinition)[]
   /**
@@ -983,12 +985,28 @@ export type PrismaClientOptions = ({
    * ```
    */
   omit?: GlobalOmitConfig
+  /**
+   * SQL commenter plugins that add metadata to SQL queries as comments.
+   * Comments follow the sqlcommenter format: https://google.github.io/sqlcommenter/
+   * 
+   * @example
+   * ```
+   * const prisma = new PrismaClient({
+   *   adapter,
+   *   comments: [
+   *     traceContext(),
+   *     queryInsights(),
+   *   ],
+   * })
+   * ```
+   */
+  comments?: runtime.SqlCommenterPlugin[]
 }
 export type GlobalOmitConfig = {
   repository?: Prisma.RepositoryOmit
   dataFile?: Prisma.DataFileOmit
-  dataChunk?: Prisma.DataChunkOmit
   chatLog?: Prisma.ChatLogOmit
+  user?: Prisma.UserOmit
 }
 
 /* Types for Logging */

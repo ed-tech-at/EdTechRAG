@@ -20,24 +20,36 @@ export type DataFileModel = runtime.Types.Result.DefaultSelection<Prisma.$DataFi
 
 export type AggregateDataFile = {
   _count: DataFileCountAggregateOutputType | null
+  _avg: DataFileAvgAggregateOutputType | null
+  _sum: DataFileSumAggregateOutputType | null
   _min: DataFileMinAggregateOutputType | null
   _max: DataFileMaxAggregateOutputType | null
 }
 
+export type DataFileAvgAggregateOutputType = {
+  id: number | null
+}
+
+export type DataFileSumAggregateOutputType = {
+  id: number | null
+}
+
 export type DataFileMinAggregateOutputType = {
-  id: string | null
+  id: number | null
   repositoryUrl: string | null
   remoteUrl: string | null
-  lastSeen: Date | null
   createdAt: Date | null
+  chunkedAt: Date | null
+  invalidatedAt: Date | null
 }
 
 export type DataFileMaxAggregateOutputType = {
-  id: string | null
+  id: number | null
   repositoryUrl: string | null
   remoteUrl: string | null
-  lastSeen: Date | null
   createdAt: Date | null
+  chunkedAt: Date | null
+  invalidatedAt: Date | null
 }
 
 export type DataFileCountAggregateOutputType = {
@@ -45,26 +57,37 @@ export type DataFileCountAggregateOutputType = {
   repositoryUrl: number
   remoteUrl: number
   meta: number
-  lastSeen: number
   createdAt: number
+  chunkedAt: number
+  invalidatedAt: number
   _all: number
 }
 
+
+export type DataFileAvgAggregateInputType = {
+  id?: true
+}
+
+export type DataFileSumAggregateInputType = {
+  id?: true
+}
 
 export type DataFileMinAggregateInputType = {
   id?: true
   repositoryUrl?: true
   remoteUrl?: true
-  lastSeen?: true
   createdAt?: true
+  chunkedAt?: true
+  invalidatedAt?: true
 }
 
 export type DataFileMaxAggregateInputType = {
   id?: true
   repositoryUrl?: true
   remoteUrl?: true
-  lastSeen?: true
   createdAt?: true
+  chunkedAt?: true
+  invalidatedAt?: true
 }
 
 export type DataFileCountAggregateInputType = {
@@ -72,8 +95,9 @@ export type DataFileCountAggregateInputType = {
   repositoryUrl?: true
   remoteUrl?: true
   meta?: true
-  lastSeen?: true
   createdAt?: true
+  chunkedAt?: true
+  invalidatedAt?: true
   _all?: true
 }
 
@@ -115,6 +139,18 @@ export type DataFileAggregateArgs<ExtArgs extends runtime.Types.Extensions.Inter
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: DataFileAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: DataFileSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: DataFileMinAggregateInputType
@@ -145,18 +181,23 @@ export type DataFileGroupByArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   _count?: DataFileCountAggregateInputType | true
+  _avg?: DataFileAvgAggregateInputType
+  _sum?: DataFileSumAggregateInputType
   _min?: DataFileMinAggregateInputType
   _max?: DataFileMaxAggregateInputType
 }
 
 export type DataFileGroupByOutputType = {
-  id: string
+  id: number
   repositoryUrl: string
   remoteUrl: string | null
   meta: runtime.JsonValue | null
-  lastSeen: Date | null
   createdAt: Date | null
+  chunkedAt: Date | null
+  invalidatedAt: Date | null
   _count: DataFileCountAggregateOutputType | null
+  _avg: DataFileAvgAggregateOutputType | null
+  _sum: DataFileSumAggregateOutputType | null
   _min: DataFileMinAggregateOutputType | null
   _max: DataFileMaxAggregateOutputType | null
 }
@@ -180,14 +221,14 @@ export type DataFileWhereInput = {
   AND?: Prisma.DataFileWhereInput | Prisma.DataFileWhereInput[]
   OR?: Prisma.DataFileWhereInput[]
   NOT?: Prisma.DataFileWhereInput | Prisma.DataFileWhereInput[]
-  id?: Prisma.StringFilter<"DataFile"> | string
+  id?: Prisma.IntFilter<"DataFile"> | number
   repositoryUrl?: Prisma.StringFilter<"DataFile"> | string
   remoteUrl?: Prisma.StringNullableFilter<"DataFile"> | string | null
   meta?: Prisma.JsonNullableFilter<"DataFile">
-  lastSeen?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
   createdAt?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
+  chunkedAt?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
+  invalidatedAt?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
   repository?: Prisma.XOR<Prisma.RepositoryScalarRelationFilter, Prisma.RepositoryWhereInput>
-  dataChunks?: Prisma.DataChunkListRelationFilter
 }
 
 export type DataFileOrderByWithRelationInput = {
@@ -195,24 +236,24 @@ export type DataFileOrderByWithRelationInput = {
   repositoryUrl?: Prisma.SortOrder
   remoteUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   meta?: Prisma.SortOrderInput | Prisma.SortOrder
-  lastSeen?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  chunkedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  invalidatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   repository?: Prisma.RepositoryOrderByWithRelationInput
-  dataChunks?: Prisma.DataChunkOrderByRelationAggregateInput
 }
 
 export type DataFileWhereUniqueInput = Prisma.AtLeast<{
-  id?: string
+  id?: number
   AND?: Prisma.DataFileWhereInput | Prisma.DataFileWhereInput[]
   OR?: Prisma.DataFileWhereInput[]
   NOT?: Prisma.DataFileWhereInput | Prisma.DataFileWhereInput[]
   repositoryUrl?: Prisma.StringFilter<"DataFile"> | string
   remoteUrl?: Prisma.StringNullableFilter<"DataFile"> | string | null
   meta?: Prisma.JsonNullableFilter<"DataFile">
-  lastSeen?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
   createdAt?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
+  chunkedAt?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
+  invalidatedAt?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
   repository?: Prisma.XOR<Prisma.RepositoryScalarRelationFilter, Prisma.RepositoryWhereInput>
-  dataChunks?: Prisma.DataChunkListRelationFilter
 }, "id">
 
 export type DataFileOrderByWithAggregationInput = {
@@ -220,89 +261,93 @@ export type DataFileOrderByWithAggregationInput = {
   repositoryUrl?: Prisma.SortOrder
   remoteUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   meta?: Prisma.SortOrderInput | Prisma.SortOrder
-  lastSeen?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  chunkedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  invalidatedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.DataFileCountOrderByAggregateInput
+  _avg?: Prisma.DataFileAvgOrderByAggregateInput
   _max?: Prisma.DataFileMaxOrderByAggregateInput
   _min?: Prisma.DataFileMinOrderByAggregateInput
+  _sum?: Prisma.DataFileSumOrderByAggregateInput
 }
 
 export type DataFileScalarWhereWithAggregatesInput = {
   AND?: Prisma.DataFileScalarWhereWithAggregatesInput | Prisma.DataFileScalarWhereWithAggregatesInput[]
   OR?: Prisma.DataFileScalarWhereWithAggregatesInput[]
   NOT?: Prisma.DataFileScalarWhereWithAggregatesInput | Prisma.DataFileScalarWhereWithAggregatesInput[]
-  id?: Prisma.StringWithAggregatesFilter<"DataFile"> | string
+  id?: Prisma.IntWithAggregatesFilter<"DataFile"> | number
   repositoryUrl?: Prisma.StringWithAggregatesFilter<"DataFile"> | string
   remoteUrl?: Prisma.StringNullableWithAggregatesFilter<"DataFile"> | string | null
   meta?: Prisma.JsonNullableWithAggregatesFilter<"DataFile">
-  lastSeen?: Prisma.DateTimeNullableWithAggregatesFilter<"DataFile"> | Date | string | null
   createdAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DataFile"> | Date | string | null
+  chunkedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DataFile"> | Date | string | null
+  invalidatedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"DataFile"> | Date | string | null
 }
 
 export type DataFileCreateInput = {
-  id?: string
   remoteUrl?: string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Date | string | null
   createdAt?: Date | string | null
+  chunkedAt?: Date | string | null
+  invalidatedAt?: Date | string | null
   repository: Prisma.RepositoryCreateNestedOneWithoutDataFilesInput
-  dataChunks?: Prisma.DataChunkCreateNestedManyWithoutDataFileInput
 }
 
 export type DataFileUncheckedCreateInput = {
-  id?: string
+  id?: number
   repositoryUrl: string
   remoteUrl?: string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Date | string | null
   createdAt?: Date | string | null
-  dataChunks?: Prisma.DataChunkUncheckedCreateNestedManyWithoutDataFileInput
+  chunkedAt?: Date | string | null
+  invalidatedAt?: Date | string | null
 }
 
 export type DataFileUpdateInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
   remoteUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  chunkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invalidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   repository?: Prisma.RepositoryUpdateOneRequiredWithoutDataFilesNestedInput
-  dataChunks?: Prisma.DataChunkUpdateManyWithoutDataFileNestedInput
 }
 
 export type DataFileUncheckedUpdateInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
+  id?: Prisma.IntFieldUpdateOperationsInput | number
   repositoryUrl?: Prisma.StringFieldUpdateOperationsInput | string
   remoteUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  dataChunks?: Prisma.DataChunkUncheckedUpdateManyWithoutDataFileNestedInput
+  chunkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invalidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type DataFileCreateManyInput = {
-  id?: string
+  id?: number
   repositoryUrl: string
   remoteUrl?: string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Date | string | null
   createdAt?: Date | string | null
+  chunkedAt?: Date | string | null
+  invalidatedAt?: Date | string | null
 }
 
 export type DataFileUpdateManyMutationInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
   remoteUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  chunkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invalidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type DataFileUncheckedUpdateManyInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
+  id?: Prisma.IntFieldUpdateOperationsInput | number
   repositoryUrl?: Prisma.StringFieldUpdateOperationsInput | string
   remoteUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  chunkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invalidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type DataFileListRelationFilter = {
@@ -320,29 +365,35 @@ export type DataFileCountOrderByAggregateInput = {
   repositoryUrl?: Prisma.SortOrder
   remoteUrl?: Prisma.SortOrder
   meta?: Prisma.SortOrder
-  lastSeen?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  chunkedAt?: Prisma.SortOrder
+  invalidatedAt?: Prisma.SortOrder
+}
+
+export type DataFileAvgOrderByAggregateInput = {
+  id?: Prisma.SortOrder
 }
 
 export type DataFileMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   repositoryUrl?: Prisma.SortOrder
   remoteUrl?: Prisma.SortOrder
-  lastSeen?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  chunkedAt?: Prisma.SortOrder
+  invalidatedAt?: Prisma.SortOrder
 }
 
 export type DataFileMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   repositoryUrl?: Prisma.SortOrder
   remoteUrl?: Prisma.SortOrder
-  lastSeen?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  chunkedAt?: Prisma.SortOrder
+  invalidatedAt?: Prisma.SortOrder
 }
 
-export type DataFileScalarRelationFilter = {
-  is?: Prisma.DataFileWhereInput
-  isNot?: Prisma.DataFileWhereInput
+export type DataFileSumOrderByAggregateInput = {
+  id?: Prisma.SortOrder
 }
 
 export type DataFileCreateNestedManyWithoutRepositoryInput = {
@@ -395,36 +446,29 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }
 
-export type DataFileCreateNestedOneWithoutDataChunksInput = {
-  create?: Prisma.XOR<Prisma.DataFileCreateWithoutDataChunksInput, Prisma.DataFileUncheckedCreateWithoutDataChunksInput>
-  connectOrCreate?: Prisma.DataFileCreateOrConnectWithoutDataChunksInput
-  connect?: Prisma.DataFileWhereUniqueInput
-}
-
-export type DataFileUpdateOneRequiredWithoutDataChunksNestedInput = {
-  create?: Prisma.XOR<Prisma.DataFileCreateWithoutDataChunksInput, Prisma.DataFileUncheckedCreateWithoutDataChunksInput>
-  connectOrCreate?: Prisma.DataFileCreateOrConnectWithoutDataChunksInput
-  upsert?: Prisma.DataFileUpsertWithoutDataChunksInput
-  connect?: Prisma.DataFileWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.DataFileUpdateToOneWithWhereWithoutDataChunksInput, Prisma.DataFileUpdateWithoutDataChunksInput>, Prisma.DataFileUncheckedUpdateWithoutDataChunksInput>
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type DataFileCreateWithoutRepositoryInput = {
-  id?: string
   remoteUrl?: string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Date | string | null
   createdAt?: Date | string | null
-  dataChunks?: Prisma.DataChunkCreateNestedManyWithoutDataFileInput
+  chunkedAt?: Date | string | null
+  invalidatedAt?: Date | string | null
 }
 
 export type DataFileUncheckedCreateWithoutRepositoryInput = {
-  id?: string
+  id?: number
   remoteUrl?: string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Date | string | null
   createdAt?: Date | string | null
-  dataChunks?: Prisma.DataChunkUncheckedCreateNestedManyWithoutDataFileInput
+  chunkedAt?: Date | string | null
+  invalidatedAt?: Date | string | null
 }
 
 export type DataFileCreateOrConnectWithoutRepositoryInput = {
@@ -457,129 +501,50 @@ export type DataFileScalarWhereInput = {
   AND?: Prisma.DataFileScalarWhereInput | Prisma.DataFileScalarWhereInput[]
   OR?: Prisma.DataFileScalarWhereInput[]
   NOT?: Prisma.DataFileScalarWhereInput | Prisma.DataFileScalarWhereInput[]
-  id?: Prisma.StringFilter<"DataFile"> | string
+  id?: Prisma.IntFilter<"DataFile"> | number
   repositoryUrl?: Prisma.StringFilter<"DataFile"> | string
   remoteUrl?: Prisma.StringNullableFilter<"DataFile"> | string | null
   meta?: Prisma.JsonNullableFilter<"DataFile">
-  lastSeen?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
   createdAt?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
-}
-
-export type DataFileCreateWithoutDataChunksInput = {
-  id?: string
-  remoteUrl?: string | null
-  meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Date | string | null
-  createdAt?: Date | string | null
-  repository: Prisma.RepositoryCreateNestedOneWithoutDataFilesInput
-}
-
-export type DataFileUncheckedCreateWithoutDataChunksInput = {
-  id?: string
-  repositoryUrl: string
-  remoteUrl?: string | null
-  meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Date | string | null
-  createdAt?: Date | string | null
-}
-
-export type DataFileCreateOrConnectWithoutDataChunksInput = {
-  where: Prisma.DataFileWhereUniqueInput
-  create: Prisma.XOR<Prisma.DataFileCreateWithoutDataChunksInput, Prisma.DataFileUncheckedCreateWithoutDataChunksInput>
-}
-
-export type DataFileUpsertWithoutDataChunksInput = {
-  update: Prisma.XOR<Prisma.DataFileUpdateWithoutDataChunksInput, Prisma.DataFileUncheckedUpdateWithoutDataChunksInput>
-  create: Prisma.XOR<Prisma.DataFileCreateWithoutDataChunksInput, Prisma.DataFileUncheckedCreateWithoutDataChunksInput>
-  where?: Prisma.DataFileWhereInput
-}
-
-export type DataFileUpdateToOneWithWhereWithoutDataChunksInput = {
-  where?: Prisma.DataFileWhereInput
-  data: Prisma.XOR<Prisma.DataFileUpdateWithoutDataChunksInput, Prisma.DataFileUncheckedUpdateWithoutDataChunksInput>
-}
-
-export type DataFileUpdateWithoutDataChunksInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  remoteUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  repository?: Prisma.RepositoryUpdateOneRequiredWithoutDataFilesNestedInput
-}
-
-export type DataFileUncheckedUpdateWithoutDataChunksInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  repositoryUrl?: Prisma.StringFieldUpdateOperationsInput | string
-  remoteUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  chunkedAt?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
+  invalidatedAt?: Prisma.DateTimeNullableFilter<"DataFile"> | Date | string | null
 }
 
 export type DataFileCreateManyRepositoryInput = {
-  id?: string
+  id?: number
   remoteUrl?: string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Date | string | null
   createdAt?: Date | string | null
+  chunkedAt?: Date | string | null
+  invalidatedAt?: Date | string | null
 }
 
 export type DataFileUpdateWithoutRepositoryInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
   remoteUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  dataChunks?: Prisma.DataChunkUpdateManyWithoutDataFileNestedInput
+  chunkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invalidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type DataFileUncheckedUpdateWithoutRepositoryInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
+  id?: Prisma.IntFieldUpdateOperationsInput | number
   remoteUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  dataChunks?: Prisma.DataChunkUncheckedUpdateManyWithoutDataFileNestedInput
+  chunkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invalidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type DataFileUncheckedUpdateManyWithoutRepositoryInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
+  id?: Prisma.IntFieldUpdateOperationsInput | number
   remoteUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   meta?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastSeen?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  chunkedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  invalidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
-
-/**
- * Count Type DataFileCountOutputType
- */
-
-export type DataFileCountOutputType = {
-  dataChunks: number
-}
-
-export type DataFileCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  dataChunks?: boolean | DataFileCountOutputTypeCountDataChunksArgs
-}
-
-/**
- * DataFileCountOutputType without action
- */
-export type DataFileCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the DataFileCountOutputType
-   */
-  select?: Prisma.DataFileCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * DataFileCountOutputType without action
- */
-export type DataFileCountOutputTypeCountDataChunksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.DataChunkWhereInput
-}
 
 
 export type DataFileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -587,11 +552,10 @@ export type DataFileSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   repositoryUrl?: boolean
   remoteUrl?: boolean
   meta?: boolean
-  lastSeen?: boolean
   createdAt?: boolean
+  chunkedAt?: boolean
+  invalidatedAt?: boolean
   repository?: boolean | Prisma.RepositoryDefaultArgs<ExtArgs>
-  dataChunks?: boolean | Prisma.DataFile$dataChunksArgs<ExtArgs>
-  _count?: boolean | Prisma.DataFileCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["dataFile"]>
 
 export type DataFileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -599,8 +563,9 @@ export type DataFileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   repositoryUrl?: boolean
   remoteUrl?: boolean
   meta?: boolean
-  lastSeen?: boolean
   createdAt?: boolean
+  chunkedAt?: boolean
+  invalidatedAt?: boolean
   repository?: boolean | Prisma.RepositoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["dataFile"]>
 
@@ -609,8 +574,9 @@ export type DataFileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   repositoryUrl?: boolean
   remoteUrl?: boolean
   meta?: boolean
-  lastSeen?: boolean
   createdAt?: boolean
+  chunkedAt?: boolean
+  invalidatedAt?: boolean
   repository?: boolean | Prisma.RepositoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["dataFile"]>
 
@@ -619,15 +585,14 @@ export type DataFileSelectScalar = {
   repositoryUrl?: boolean
   remoteUrl?: boolean
   meta?: boolean
-  lastSeen?: boolean
   createdAt?: boolean
+  chunkedAt?: boolean
+  invalidatedAt?: boolean
 }
 
-export type DataFileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repositoryUrl" | "remoteUrl" | "meta" | "lastSeen" | "createdAt", ExtArgs["result"]["dataFile"]>
+export type DataFileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repositoryUrl" | "remoteUrl" | "meta" | "createdAt" | "chunkedAt" | "invalidatedAt", ExtArgs["result"]["dataFile"]>
 export type DataFileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   repository?: boolean | Prisma.RepositoryDefaultArgs<ExtArgs>
-  dataChunks?: boolean | Prisma.DataFile$dataChunksArgs<ExtArgs>
-  _count?: boolean | Prisma.DataFileCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type DataFileIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   repository?: boolean | Prisma.RepositoryDefaultArgs<ExtArgs>
@@ -640,15 +605,15 @@ export type $DataFilePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   name: "DataFile"
   objects: {
     repository: Prisma.$RepositoryPayload<ExtArgs>
-    dataChunks: Prisma.$DataChunkPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
-    id: string
+    id: number
     repositoryUrl: string
     remoteUrl: string | null
     meta: runtime.JsonValue | null
-    lastSeen: Date | null
     createdAt: Date | null
+    chunkedAt: Date | null
+    invalidatedAt: Date | null
   }, ExtArgs["result"]["dataFile"]>
   composites: {}
 }
@@ -1044,7 +1009,6 @@ readonly fields: DataFileFieldRefs;
 export interface Prisma__DataFileClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   repository<T extends Prisma.RepositoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.RepositoryDefaultArgs<ExtArgs>>): Prisma.Prisma__RepositoryClient<runtime.Types.Result.GetResult<Prisma.$RepositoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  dataChunks<T extends Prisma.DataFile$dataChunksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DataFile$dataChunksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DataChunkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1074,12 +1038,13 @@ export interface Prisma__DataFileClient<T, Null = never, ExtArgs extends runtime
  * Fields of the DataFile model
  */
 export interface DataFileFieldRefs {
-  readonly id: Prisma.FieldRef<"DataFile", 'String'>
+  readonly id: Prisma.FieldRef<"DataFile", 'Int'>
   readonly repositoryUrl: Prisma.FieldRef<"DataFile", 'String'>
   readonly remoteUrl: Prisma.FieldRef<"DataFile", 'String'>
   readonly meta: Prisma.FieldRef<"DataFile", 'Json'>
-  readonly lastSeen: Prisma.FieldRef<"DataFile", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"DataFile", 'DateTime'>
+  readonly chunkedAt: Prisma.FieldRef<"DataFile", 'DateTime'>
+  readonly invalidatedAt: Prisma.FieldRef<"DataFile", 'DateTime'>
 }
     
 
@@ -1473,30 +1438,6 @@ export type DataFileDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Limit how many DataFiles to delete.
    */
   limit?: number
-}
-
-/**
- * DataFile.dataChunks
- */
-export type DataFile$dataChunksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the DataChunk
-   */
-  select?: Prisma.DataChunkSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the DataChunk
-   */
-  omit?: Prisma.DataChunkOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DataChunkInclude<ExtArgs> | null
-  where?: Prisma.DataChunkWhereInput
-  orderBy?: Prisma.DataChunkOrderByWithRelationInput | Prisma.DataChunkOrderByWithRelationInput[]
-  cursor?: Prisma.DataChunkWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.DataChunkScalarFieldEnum | Prisma.DataChunkScalarFieldEnum[]
 }
 
 /**

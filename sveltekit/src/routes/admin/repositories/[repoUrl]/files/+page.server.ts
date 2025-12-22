@@ -22,9 +22,9 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	const files = await prisma.dataFile.findMany({
 		where: { repositoryUrl: repoUrl },
-		include: {
-			_count: { select: { dataChunks: true } }
-		},
+		// include: {
+			// _count: { select: { dataChunks: true } }
+		// },
 		orderBy: { createdAt: 'desc' }
 	});
 
@@ -139,7 +139,7 @@ export const actions: Actions = {
 						throw new Error('No chunks found after splitting.');
 					}
 
-					const existingFiles = await prisma.dataFile.findMany({
+					let dataFile = await prisma.dataFile.findFirst({
 						where: {
 							repositoryUrl: repoUrl,
 							remoteUrl: resolvedUrl
@@ -147,12 +147,28 @@ export const actions: Actions = {
 						select: { id: true }
 					});
 
-					if (existingFiles.length > 0) {
-						const ids = existingFiles.map((f) => f.id);
-						await prisma.$transaction([
-							prisma.dataChunk.deleteMany({ where: { dataFileId: { in: ids } } }),
-							prisma.dataFile.deleteMany({ where: { id: { in: ids } } })
-						]);
+					if (dataFile) {
+						// const ids = existingFile.map((f) => f.id);
+						// await prisma.$transaction([
+							// prisma.dataChunk.deleteMany({ where: { dataFileId: { in: ids } } }),
+							// prisma.dataFile.deleteMany({ where: { id: { in: ids } } })
+						// ]);
+						
+						try {
+							await prisma.$executeRaw`UPDATE "vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFile.id}`;
+						} catch (err) {
+  						console.error("executeRaw failed:", err);
+						}
+
+					} else {
+
+						dataFile = await prisma.dataFile.create({
+							data: {
+								repositoryUrl: repoUrl,
+								remoteUrl: resolvedUrl,
+								// meta: Object.keys(meta).length > 0 ? meta : undefined
+							}
+						});
 					}
 
 					const meta: Record<string, unknown> = {
@@ -160,14 +176,15 @@ export const actions: Actions = {
 						...mdMeta
 					};
 
-					const dataFile = await prisma.dataFile.create({
-						data: {
-							repositoryUrl: repoUrl,
-							remoteUrl: resolvedUrl,
-							meta: Object.keys(meta).length > 0 ? meta : undefined
-						}
+					dataFile = await prisma.dataFile.update({
+						where: { id: dataFile.id },
+						data: { meta, chunkedAt: new Date() }
 					});
 
+
+					console.log('datafile ', dataFile);
+					console.log('meta upate ');
+					console.log(meta);
 					console.log('chunks count', chunks.length);
 
 					let createdChunks = 0;
@@ -178,16 +195,15 @@ export const actions: Actions = {
 						console.log('processing chunk', idx);
 
 						try {
-							const chunk = await prisma.dataChunk.create({
-								data: {
-									dataFileId: dataFile.id,
-									content,
-									chunkNr: idx + 1,
-									// embeddingModel: EMBEDDING_MODEL
-								}
-							});
+							console.log("inserting");
+							console.log(content);
+							
+							await prisma.$executeRaw`
+								INSERT INTO "vector1536" ("repositoryUrl", "dataFileId","chunkNr","content","createdAt")
+								VALUES (${repoUrl}, ${dataFile.id}, ${createdChunks}, ${content}, NOW())
+							`;
 
-							if (1) {
+							if (0) {
 								const EMBEDDING_MODEL = (await loadRepoConfig(repoUrl)).embeddingModel;
 // TODO EMBEDDING INACITVE
 							const vector = await embedText(content, repoUrl);

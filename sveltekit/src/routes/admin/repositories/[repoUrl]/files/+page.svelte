@@ -121,8 +121,8 @@
 					<th>File ID</th>
 					<th>Remote URL</th>
 					<th>Path</th>
-					<th>Chunks</th>
-					<th>Last seen</th>
+					<!-- <th>Chunks</th> -->
+					<th>Last chunked</th>
 					<th>Created</th>
 					<th class="number">Actions</th>
 				</tr>
@@ -137,8 +137,8 @@
 						</td>
 						<td class="muted">{file.remoteUrl ?? '—'}</td>
 						<td class="muted">{file.meta?.path ?? '—'}</td>
-						<td class="number">{file._count?.dataChunks ?? 0}</td>
-						<td>{formatDate(file.lastSeen)}</td>
+						<!-- <td class="number">{file._count?.dataChunks ?? 0}</td> -->
+						<td>{formatDate(file.chunkedAt)}</td>
 						<td>{formatDate(file.createdAt)}</td>
 						<td class="number">
 							<form

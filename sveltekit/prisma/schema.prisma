@@ -46,6 +46,26 @@ model ChatLog {
   createdAt     DateTime @default(now())
 }
 
+
+
+model User {
+  id       String  @id @default(uuid())
+  email    String  @unique
+
+  repositoryJson  Json?
+
+  password String
+  cryptVersion Int @default(0)
+
+  isDeleted Int @default(0)
+  createdAt       DateTime? @default(now())
+
+
+
+}
+
+
+
 model vector1536 {
   @@ignore
 }

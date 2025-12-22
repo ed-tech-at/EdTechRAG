@@ -20,69 +20,87 @@ export type ChatLogModel = runtime.Types.Result.DefaultSelection<Prisma.$ChatLog
 
 export type AggregateChatLog = {
   _count: ChatLogCountAggregateOutputType | null
+  _avg: ChatLogAvgAggregateOutputType | null
+  _sum: ChatLogSumAggregateOutputType | null
   _min: ChatLogMinAggregateOutputType | null
   _max: ChatLogMaxAggregateOutputType | null
 }
 
+export type ChatLogAvgAggregateOutputType = {
+  id: number | null
+}
+
+export type ChatLogSumAggregateOutputType = {
+  id: number | null
+}
+
 export type ChatLogMinAggregateOutputType = {
-  id: string | null
+  id: number | null
+  repositoryUrl: string | null
+  endpoint: string | null
   question: string | null
   context: string | null
   answer: string | null
-  repositoryUrl: string | null
-  endpoint: string | null
   createdAt: Date | null
 }
 
 export type ChatLogMaxAggregateOutputType = {
-  id: string | null
+  id: number | null
+  repositoryUrl: string | null
+  endpoint: string | null
   question: string | null
   context: string | null
   answer: string | null
-  repositoryUrl: string | null
-  endpoint: string | null
   createdAt: Date | null
 }
 
 export type ChatLogCountAggregateOutputType = {
   id: number
+  repositoryUrl: number
+  endpoint: number
   question: number
   context: number
   answer: number
-  repositoryUrl: number
-  endpoint: number
   createdAt: number
   _all: number
 }
 
 
+export type ChatLogAvgAggregateInputType = {
+  id?: true
+}
+
+export type ChatLogSumAggregateInputType = {
+  id?: true
+}
+
 export type ChatLogMinAggregateInputType = {
   id?: true
+  repositoryUrl?: true
+  endpoint?: true
   question?: true
   context?: true
   answer?: true
-  repositoryUrl?: true
-  endpoint?: true
   createdAt?: true
 }
 
 export type ChatLogMaxAggregateInputType = {
   id?: true
+  repositoryUrl?: true
+  endpoint?: true
   question?: true
   context?: true
   answer?: true
-  repositoryUrl?: true
-  endpoint?: true
   createdAt?: true
 }
 
 export type ChatLogCountAggregateInputType = {
   id?: true
+  repositoryUrl?: true
+  endpoint?: true
   question?: true
   context?: true
   answer?: true
-  repositoryUrl?: true
-  endpoint?: true
   createdAt?: true
   _all?: true
 }
@@ -125,6 +143,18 @@ export type ChatLogAggregateArgs<ExtArgs extends runtime.Types.Extensions.Intern
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: ChatLogAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: ChatLogSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: ChatLogMinAggregateInputType
@@ -155,19 +185,23 @@ export type ChatLogGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   _count?: ChatLogCountAggregateInputType | true
+  _avg?: ChatLogAvgAggregateInputType
+  _sum?: ChatLogSumAggregateInputType
   _min?: ChatLogMinAggregateInputType
   _max?: ChatLogMaxAggregateInputType
 }
 
 export type ChatLogGroupByOutputType = {
-  id: string
+  id: number
+  repositoryUrl: string | null
+  endpoint: string | null
   question: string | null
   context: string | null
   answer: string | null
-  repositoryUrl: string | null
-  endpoint: string | null
   createdAt: Date
   _count: ChatLogCountAggregateOutputType | null
+  _avg: ChatLogAvgAggregateOutputType | null
+  _sum: ChatLogSumAggregateOutputType | null
   _min: ChatLogMinAggregateOutputType | null
   _max: ChatLogMaxAggregateOutputType | null
 }
@@ -191,162 +225,169 @@ export type ChatLogWhereInput = {
   AND?: Prisma.ChatLogWhereInput | Prisma.ChatLogWhereInput[]
   OR?: Prisma.ChatLogWhereInput[]
   NOT?: Prisma.ChatLogWhereInput | Prisma.ChatLogWhereInput[]
-  id?: Prisma.StringFilter<"ChatLog"> | string
+  id?: Prisma.IntFilter<"ChatLog"> | number
+  repositoryUrl?: Prisma.StringNullableFilter<"ChatLog"> | string | null
+  endpoint?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   question?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   context?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   answer?: Prisma.StringNullableFilter<"ChatLog"> | string | null
-  repositoryUrl?: Prisma.StringNullableFilter<"ChatLog"> | string | null
-  endpoint?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ChatLog"> | Date | string
 }
 
 export type ChatLogOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  repositoryUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  endpoint?: Prisma.SortOrderInput | Prisma.SortOrder
   question?: Prisma.SortOrderInput | Prisma.SortOrder
   context?: Prisma.SortOrderInput | Prisma.SortOrder
   answer?: Prisma.SortOrderInput | Prisma.SortOrder
-  repositoryUrl?: Prisma.SortOrderInput | Prisma.SortOrder
-  endpoint?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type ChatLogWhereUniqueInput = Prisma.AtLeast<{
-  id?: string
+  id?: number
   AND?: Prisma.ChatLogWhereInput | Prisma.ChatLogWhereInput[]
   OR?: Prisma.ChatLogWhereInput[]
   NOT?: Prisma.ChatLogWhereInput | Prisma.ChatLogWhereInput[]
+  repositoryUrl?: Prisma.StringNullableFilter<"ChatLog"> | string | null
+  endpoint?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   question?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   context?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   answer?: Prisma.StringNullableFilter<"ChatLog"> | string | null
-  repositoryUrl?: Prisma.StringNullableFilter<"ChatLog"> | string | null
-  endpoint?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ChatLog"> | Date | string
 }, "id">
 
 export type ChatLogOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  repositoryUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  endpoint?: Prisma.SortOrderInput | Prisma.SortOrder
   question?: Prisma.SortOrderInput | Prisma.SortOrder
   context?: Prisma.SortOrderInput | Prisma.SortOrder
   answer?: Prisma.SortOrderInput | Prisma.SortOrder
-  repositoryUrl?: Prisma.SortOrderInput | Prisma.SortOrder
-  endpoint?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.ChatLogCountOrderByAggregateInput
+  _avg?: Prisma.ChatLogAvgOrderByAggregateInput
   _max?: Prisma.ChatLogMaxOrderByAggregateInput
   _min?: Prisma.ChatLogMinOrderByAggregateInput
+  _sum?: Prisma.ChatLogSumOrderByAggregateInput
 }
 
 export type ChatLogScalarWhereWithAggregatesInput = {
   AND?: Prisma.ChatLogScalarWhereWithAggregatesInput | Prisma.ChatLogScalarWhereWithAggregatesInput[]
   OR?: Prisma.ChatLogScalarWhereWithAggregatesInput[]
   NOT?: Prisma.ChatLogScalarWhereWithAggregatesInput | Prisma.ChatLogScalarWhereWithAggregatesInput[]
-  id?: Prisma.StringWithAggregatesFilter<"ChatLog"> | string
+  id?: Prisma.IntWithAggregatesFilter<"ChatLog"> | number
+  repositoryUrl?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
+  endpoint?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
   question?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
   context?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
   answer?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
-  repositoryUrl?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
-  endpoint?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ChatLog"> | Date | string
 }
 
 export type ChatLogCreateInput = {
-  id?: string
+  repositoryUrl?: string | null
+  endpoint?: string | null
   question?: string | null
   context?: string | null
   answer?: string | null
-  repositoryUrl?: string | null
-  endpoint?: string | null
   createdAt?: Date | string
 }
 
 export type ChatLogUncheckedCreateInput = {
-  id?: string
+  id?: number
+  repositoryUrl?: string | null
+  endpoint?: string | null
   question?: string | null
   context?: string | null
   answer?: string | null
-  repositoryUrl?: string | null
-  endpoint?: string | null
   createdAt?: Date | string
 }
 
 export type ChatLogUpdateInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
+  repositoryUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  endpoint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   question?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   answer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  repositoryUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  endpoint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ChatLogUncheckedUpdateInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  repositoryUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  endpoint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   question?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   answer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  repositoryUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  endpoint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ChatLogCreateManyInput = {
-  id?: string
+  id?: number
+  repositoryUrl?: string | null
+  endpoint?: string | null
   question?: string | null
   context?: string | null
   answer?: string | null
-  repositoryUrl?: string | null
-  endpoint?: string | null
   createdAt?: Date | string
 }
 
 export type ChatLogUpdateManyMutationInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
+  repositoryUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  endpoint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   question?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   answer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  repositoryUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  endpoint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ChatLogUncheckedUpdateManyInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  repositoryUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  endpoint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   question?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   context?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   answer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  repositoryUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  endpoint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ChatLogCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  repositoryUrl?: Prisma.SortOrder
+  endpoint?: Prisma.SortOrder
   question?: Prisma.SortOrder
   context?: Prisma.SortOrder
   answer?: Prisma.SortOrder
-  repositoryUrl?: Prisma.SortOrder
-  endpoint?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+}
+
+export type ChatLogAvgOrderByAggregateInput = {
+  id?: Prisma.SortOrder
 }
 
 export type ChatLogMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  repositoryUrl?: Prisma.SortOrder
+  endpoint?: Prisma.SortOrder
   question?: Prisma.SortOrder
   context?: Prisma.SortOrder
   answer?: Prisma.SortOrder
-  repositoryUrl?: Prisma.SortOrder
-  endpoint?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type ChatLogMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  repositoryUrl?: Prisma.SortOrder
+  endpoint?: Prisma.SortOrder
   question?: Prisma.SortOrder
   context?: Prisma.SortOrder
   answer?: Prisma.SortOrder
-  repositoryUrl?: Prisma.SortOrder
-  endpoint?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+}
+
+export type ChatLogSumOrderByAggregateInput = {
+  id?: Prisma.SortOrder
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -357,56 +398,56 @@ export type DateTimeFieldUpdateOperationsInput = {
 
 export type ChatLogSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  repositoryUrl?: boolean
+  endpoint?: boolean
   question?: boolean
   context?: boolean
   answer?: boolean
-  repositoryUrl?: boolean
-  endpoint?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["chatLog"]>
 
 export type ChatLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  repositoryUrl?: boolean
+  endpoint?: boolean
   question?: boolean
   context?: boolean
   answer?: boolean
-  repositoryUrl?: boolean
-  endpoint?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["chatLog"]>
 
 export type ChatLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  repositoryUrl?: boolean
+  endpoint?: boolean
   question?: boolean
   context?: boolean
   answer?: boolean
-  repositoryUrl?: boolean
-  endpoint?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["chatLog"]>
 
 export type ChatLogSelectScalar = {
   id?: boolean
+  repositoryUrl?: boolean
+  endpoint?: boolean
   question?: boolean
   context?: boolean
   answer?: boolean
-  repositoryUrl?: boolean
-  endpoint?: boolean
   createdAt?: boolean
 }
 
-export type ChatLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "question" | "context" | "answer" | "repositoryUrl" | "endpoint" | "createdAt", ExtArgs["result"]["chatLog"]>
+export type ChatLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repositoryUrl" | "endpoint" | "question" | "context" | "answer" | "createdAt", ExtArgs["result"]["chatLog"]>
 
 export type $ChatLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ChatLog"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
-    id: string
+    id: number
+    repositoryUrl: string | null
+    endpoint: string | null
     question: string | null
     context: string | null
     answer: string | null
-    repositoryUrl: string | null
-    endpoint: string | null
     createdAt: Date
   }, ExtArgs["result"]["chatLog"]>
   composites: {}
@@ -831,12 +872,12 @@ export interface Prisma__ChatLogClient<T, Null = never, ExtArgs extends runtime.
  * Fields of the ChatLog model
  */
 export interface ChatLogFieldRefs {
-  readonly id: Prisma.FieldRef<"ChatLog", 'String'>
+  readonly id: Prisma.FieldRef<"ChatLog", 'Int'>
+  readonly repositoryUrl: Prisma.FieldRef<"ChatLog", 'String'>
+  readonly endpoint: Prisma.FieldRef<"ChatLog", 'String'>
   readonly question: Prisma.FieldRef<"ChatLog", 'String'>
   readonly context: Prisma.FieldRef<"ChatLog", 'String'>
   readonly answer: Prisma.FieldRef<"ChatLog", 'String'>
-  readonly repositoryUrl: Prisma.FieldRef<"ChatLog", 'String'>
-  readonly endpoint: Prisma.FieldRef<"ChatLog", 'String'>
   readonly createdAt: Prisma.FieldRef<"ChatLog", 'DateTime'>
 }
     

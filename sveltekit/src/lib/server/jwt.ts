@@ -7,12 +7,10 @@ const enc = new TextEncoder();
 const jwtSecret = enc.encode(SESSION_JWT_SECRET);
 
 export interface SessionPayload {
-	sub: string;
-	email?: string;
-	name?: string;
+	userId: string;
 	iat?: number;
 	exp?: number;
-}
+};
 
 function loginPath(url: URL) {
 	const loginResolved = resolve('/login');
@@ -44,16 +42,14 @@ export async function checkJwt(cookies: Cookies): Promise<SessionPayload | null>
 	}
 }
 
-export async function createSessionJWT(user: Partial<SessionPayload>, maxAgeSec = 3600): Promise<string> {
+export async function createSessionJWT(userId: string, maxAgeSec = 3600): Promise<string> {
 	const claims: SessionPayload = {
-		sub: String(user.sub ?? user.email ?? 'user'),
-		email: user.email,
-		name: user.name
+		userId: userId
 	};
 
 	return await new SignJWT(claims)
 		.setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
-		.setSubject(claims.sub)
+		.setSubject(claims.userId)
 		.setIssuedAt()
 		.setExpirationTime(`${maxAgeSec}s`)
 		.sign(jwtSecret);

@@ -73,6 +73,16 @@ CREATE TABLE "vector1536" (
 );
 
 
+
+----  access allow
+
+GRANT ALL ON SCHEMA public TO edtechrag_dev;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO edtechrag_dev;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO edtechrag_dev;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO edtechrag_dev;
+
+
+
 ```
 
 

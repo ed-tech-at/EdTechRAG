@@ -5,13 +5,16 @@ import { embedChunkById, embedText } from '$lib/server/embed';
 import { splitTextIntoChunks } from '$lib/server/textSplitter';
 
 export const load: PageServerLoad = async ({ params }) => {
-	const { id } = params;
+	let { id } = params;
 
+	id = parseInt(id);
+
+	//todo i have changed dataFile to a new table and now have to queryRaw, like this one. plase update this +page.server.ts accordingly. await prisma.$executeRaw`UPDATE "vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFile.id}`;
 	const dataFile = await prisma.dataFile.findUnique({
 		where: { id },
 		include: {
 			repository: true,
-			_count: { select: { dataChunks: true } }
+			// _count: { select: { dataChunks: true } }
 		}
 	});
 

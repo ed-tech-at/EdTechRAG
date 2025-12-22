@@ -17,10 +17,10 @@ import type * as Prisma from "./prismaNamespace.ts"
 
 const config: runtime.GetPrismaClientConfig = {
   "previewFeatures": [],
-  "clientVersion": "7.0.1",
-  "engineVersion": "f09f2815f091dbba658cdcd2264306d88bb5bda6",
+  "clientVersion": "7.2.0",
+  "engineVersion": "0c8ef2ce45c83248ab3df073180d5eda9e8be7a3",
   "activeProvider": "postgresql",
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\n// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?\n// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init\n\ngenerator client {\n  provider = \"prisma-client\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel Repository {\n  url String @unique\n\n  name String\n\n  updateConfig Json?\n  LLM_API      Json?\n\n  dataFiles DataFile[]\n}\n\nmodel DataFile {\n  id String @id @default(uuid())\n\n  repository    Repository @relation(fields: [repositoryUrl], references: [url], onDelete: Cascade)\n  repositoryUrl String\n\n  remoteUrl String?\n  meta      Json?\n\n  lastSeen  DateTime?\n  createdAt DateTime? @default(now())\n\n  dataChunks DataChunk[]\n}\n\nmodel DataChunk {\n  id String @id @default(uuid())\n\n  dataFile   DataFile @relation(fields: [dataFileId], references: [id], onDelete: Cascade)\n  dataFileId String\n\n  chunkNr Int?\n\n  content String?\n\n  embeddingModel String?\n\n  lastSeen  DateTime?\n  createdAt DateTime? @default(now())\n}\n\nmodel ChatLog {\n  id            String   @id @default(uuid())\n  question      String?\n  context       String?\n  answer        String?\n  repositoryUrl String?\n  endpoint      String?\n  createdAt     DateTime @default(now())\n}\n",
+  "inlineSchema": "generator client {\n  provider = \"prisma-client\"\n  output   = \"../src/generated/prisma\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n}\n\nmodel Repository {\n  url  String @unique\n  name String\n\n  updateConfig Json?\n  LLM_API      Json?\n  ragConfig    Json?\n\n  dataFiles DataFile[]\n}\n\nmodel DataFile {\n  id Int @id @default(autoincrement())\n\n  repositoryUrl String\n  repository    Repository @relation(fields: [repositoryUrl], references: [url], onDelete: Cascade)\n\n  remoteUrl String?\n  meta      Json?\n\n  createdAt     DateTime? @default(now())\n  chunkedAt     DateTime?\n  invalidatedAt DateTime?\n}\n\nmodel ChatLog {\n  id            Int     @id @default(autoincrement())\n  repositoryUrl String?\n  endpoint      String?\n\n  question String?\n  context  String?\n  answer   String?\n\n  createdAt DateTime @default(now())\n}\n\nmodel User {\n  id    String @id @default(uuid())\n  email String @unique\n\n  repositoryJson Json?\n\n  password     String\n  cryptVersion Int    @default(0)\n\n  isDeleted Int       @default(0)\n  createdAt DateTime? @default(now())\n}\n\nmodel vector1536 {\n\n  @@ignore\n}\n",
   "runtimeDataModel": {
     "models": {},
     "enums": {},
@@ -28,7 +28,7 @@ const config: runtime.GetPrismaClientConfig = {
   }
 }
 
-config.runtimeDataModel = JSON.parse("{\"models\":{\"Repository\":{\"fields\":[{\"name\":\"url\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updateConfig\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"LLM_API\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"dataFiles\",\"kind\":\"object\",\"type\":\"DataFile\",\"relationName\":\"DataFileToRepository\"}],\"dbName\":null},\"DataFile\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"repository\",\"kind\":\"object\",\"type\":\"Repository\",\"relationName\":\"DataFileToRepository\"},{\"name\":\"repositoryUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"remoteUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"meta\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"lastSeen\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"dataChunks\",\"kind\":\"object\",\"type\":\"DataChunk\",\"relationName\":\"DataChunkToDataFile\"}],\"dbName\":null},\"DataChunk\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"dataFile\",\"kind\":\"object\",\"type\":\"DataFile\",\"relationName\":\"DataChunkToDataFile\"},{\"name\":\"dataFileId\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"chunkNr\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"content\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"embeddingModel\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"lastSeen\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"ChatLog\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"question\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"context\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"answer\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"repositoryUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"endpoint\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
+config.runtimeDataModel = JSON.parse("{\"models\":{\"Repository\":{\"fields\":[{\"name\":\"url\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"name\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"updateConfig\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"LLM_API\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"ragConfig\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"dataFiles\",\"kind\":\"object\",\"type\":\"DataFile\",\"relationName\":\"DataFileToRepository\"}],\"dbName\":null},\"DataFile\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"repositoryUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"repository\",\"kind\":\"object\",\"type\":\"Repository\",\"relationName\":\"DataFileToRepository\"},{\"name\":\"remoteUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"meta\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"chunkedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"},{\"name\":\"invalidatedAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"ChatLog\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"repositoryUrl\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"endpoint\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"question\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"context\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"answer\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null},\"User\":{\"fields\":[{\"name\":\"id\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"email\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"repositoryJson\",\"kind\":\"scalar\",\"type\":\"Json\"},{\"name\":\"password\",\"kind\":\"scalar\",\"type\":\"String\"},{\"name\":\"cryptVersion\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"isDeleted\",\"kind\":\"scalar\",\"type\":\"Int\"},{\"name\":\"createdAt\",\"kind\":\"scalar\",\"type\":\"DateTime\"}],\"dbName\":null}},\"enums\":{},\"types\":{}}")
 
 async function decodeBase64AsWasm(wasmBase64: string): Promise<WebAssembly.Module> {
   const { Buffer } = await import('node:buffer')
@@ -62,7 +62,7 @@ export interface PrismaClientConstructor {
    * const repositories = await prisma.repository.findMany()
    * ```
    * 
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
+   * Read more in our [docs](https://pris.ly/d/client).
    */
 
   new <
@@ -84,7 +84,7 @@ export interface PrismaClientConstructor {
  * const repositories = await prisma.repository.findMany()
  * ```
  * 
- * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
+ * Read more in our [docs](https://pris.ly/d/client).
  */
 
 export interface PrismaClient<
@@ -113,7 +113,7 @@ export interface PrismaClient<
    * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
    * ```
    *
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   * Read more in our [docs](https://pris.ly/d/raw-queries).
    */
   $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
 
@@ -125,7 +125,7 @@ export interface PrismaClient<
    * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
    * ```
    *
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   * Read more in our [docs](https://pris.ly/d/raw-queries).
    */
   $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
 
@@ -136,7 +136,7 @@ export interface PrismaClient<
    * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
    * ```
    *
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   * Read more in our [docs](https://pris.ly/d/raw-queries).
    */
   $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
 
@@ -148,7 +148,7 @@ export interface PrismaClient<
    * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
    * ```
    *
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   * Read more in our [docs](https://pris.ly/d/raw-queries).
    */
   $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
 
@@ -195,16 +195,6 @@ export interface PrismaClient<
   get dataFile(): Prisma.DataFileDelegate<ExtArgs, { omit: OmitOpts }>;
 
   /**
-   * `prisma.dataChunk`: Exposes CRUD operations for the **DataChunk** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more DataChunks
-    * const dataChunks = await prisma.dataChunk.findMany()
-    * ```
-    */
-  get dataChunk(): Prisma.DataChunkDelegate<ExtArgs, { omit: OmitOpts }>;
-
-  /**
    * `prisma.chatLog`: Exposes CRUD operations for the **ChatLog** model.
     * Example usage:
     * ```ts
@@ -213,6 +203,16 @@ export interface PrismaClient<
     * ```
     */
   get chatLog(): Prisma.ChatLogDelegate<ExtArgs, { omit: OmitOpts }>;
+
+  /**
+   * `prisma.user`: Exposes CRUD operations for the **User** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more Users
+    * const users = await prisma.user.findMany()
+    * ```
+    */
+  get user(): Prisma.UserDelegate<ExtArgs, { omit: OmitOpts }>;
 }
 
 export function getPrismaClientClass(): PrismaClientConstructor {

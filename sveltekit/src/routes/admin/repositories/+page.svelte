@@ -16,7 +16,6 @@
 					<th>Name</th>
 					<th>URL</th>
 					<th>Files</th>
-					<th>Chunks</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -29,7 +28,7 @@
 						</td>
 						<td class="muted">{repo.url}</td>
 						<td class="number">{repo.fileCount}</td>
-						<td class="number">{repo.chunkCount}</td>
+						<!-- <td class="number">{repo.chunkCount}</td> -->
 					</tr>
 				{/each}
 			</tbody>

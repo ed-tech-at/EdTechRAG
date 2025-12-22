@@ -33,7 +33,7 @@ export * from "./enums.ts"
  * const repositories = await prisma.repository.findMany()
  * ```
  * 
- * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
+ * Read more in our [docs](https://pris.ly/d/client).
  */
 export const PrismaClient = $Class.getPrismaClientClass()
 export type PrismaClient<LogOpts extends Prisma.LogLevel = never, OmitOpts extends Prisma.PrismaClientOptions["omit"] = Prisma.PrismaClientOptions["omit"], ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = $Class.PrismaClient<LogOpts, OmitOpts, ExtArgs>
@@ -50,12 +50,12 @@ export type Repository = Prisma.RepositoryModel
  */
 export type DataFile = Prisma.DataFileModel
 /**
- * Model DataChunk
- * 
- */
-export type DataChunk = Prisma.DataChunkModel
-/**
  * Model ChatLog
  * 
  */
 export type ChatLog = Prisma.ChatLogModel
+/**
+ * Model User
+ * 
+ */
+export type User = Prisma.UserModel
