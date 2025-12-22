@@ -5,7 +5,7 @@ export const load: PageServerLoad = async () => {
 	const dataFiles = await prisma.dataFile.findMany({
 		include: {
 			// repository: true,
-			_count: { select: { dataChunks: true } }
+			// _count: { select: { dataChunks: true } }
 		},
 		orderBy: { createdAt: 'desc' }
 	});

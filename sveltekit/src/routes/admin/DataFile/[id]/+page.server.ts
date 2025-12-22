@@ -1,19 +1,21 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
-import { embedChunkById, embedText } from '$lib/server/embed';
+import { embedText } from '$lib/server/embed';
 import { splitTextIntoChunks } from '$lib/server/textSplitter';
+import { getEmbeddingConfig } from '$lib/server/openaiClient';
 
 export const load: PageServerLoad = async ({ params }) => {
-	let { id } = params;
+	const dataFileId = Number(params.id);
 
-	id = parseInt(id);
+	if (!Number.isInteger(dataFileId)) {
+		throw error(400, 'Invalid data file id');
+	}
 
-	//todo i have changed dataFile to a new table and now have to queryRaw, like this one. plase update this +page.server.ts accordingly. await prisma.$executeRaw`UPDATE "vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFile.id}`;
 	const dataFile = await prisma.dataFile.findUnique({
-		where: { id },
+		where: { id: dataFileId },
 		include: {
-			repository: true,
+			repository: true
 			// _count: { select: { dataChunks: true } }
 		}
 	});
@@ -22,10 +24,27 @@ export const load: PageServerLoad = async ({ params }) => {
 		throw error(404, 'Data file not found');
 	}
 
-	const dataChunks = await prisma.dataChunk.findMany({
-		where: { dataFileId: id },
-		orderBy: [{ chunkNr: 'asc' }, { createdAt: 'asc' }]
-	});
+	const vectorRows = await prisma.$queryRaw<
+		{
+			id: number;
+			dataFileId: number | null;
+			repositoryUrl: string | null;
+			chunkNr: number | null;
+			content: string | null;
+			embeddingModel: string | null;
+			createdAt: Date | null;
+			embeddedAt: Date | null;
+			invalidatedAt: Date | null;
+		}[]
+	>`SELECT "id","dataFileId","repositoryUrl","chunkNr","content","embeddingModel","createdAt","embeddedAt","invalidatedAt"
+	  FROM "vector1536"
+	  WHERE "dataFileId" = ${dataFileId} AND "invalidatedAt" is NULL
+	  ORDER BY "chunkNr" ASC NULLS LAST, "createdAt" ASC`;
+
+	const dataChunks = vectorRows.map((row) => ({
+		...row,
+		lastSeen: row.embeddedAt
+	}));
 
 	return {
 		dataFile,
@@ -35,12 +54,12 @@ export const load: PageServerLoad = async ({ params }) => {
 
 export const actions: Actions = {
 	ingest: async ({ request, params }) => {
-		const { id: dataFileId } = params;
+		const dataFileId = Number(params.id);
 		const formData = await request.formData();
 		const content = formData.get('content');
 
-		if (!dataFileId) {
-			return fail(400, { success: false, message: 'Missing data file id.' });
+		if (!Number.isInteger(dataFileId)) {
+			return fail(400, { success: false, message: 'Invalid data file id.' });
 		}
 
 		if (!content || typeof content !== 'string' || !content.trim()) {
@@ -55,27 +74,30 @@ export const actions: Actions = {
 
 		const existingDataFile = await prisma.dataFile.findUnique({
 			where: { id: dataFileId },
-			select: { id: true }
+			select: { id: true, repositoryUrl: true }
 		});
 
 		if (!existingDataFile) {
 			return fail(404, { success: false, message: 'Data file not found.' });
 		}
 
-		const data = chunks.map((chunk, idx) => ({
-			dataFileId,
-			content: chunk,
-			chunkNr: idx + 1
-		}));
+		const statements = [
+			prisma.$executeRaw`UPDATE "vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFileId}`,
+			...chunks.map((chunk, idx) =>
+				prisma.$executeRaw`INSERT INTO "vector1536" ("repositoryUrl","dataFileId","chunkNr","content","createdAt")
+				VALUES (${existingDataFile.repositoryUrl}, ${dataFileId}, ${idx + 1}, ${chunk}, NOW())`
+			)
+		];
 
-		await prisma.$transaction([
-			prisma.dataChunk.deleteMany({ where: { dataFileId } }),
-			prisma.dataChunk.createMany({ data })
-		]);
+		await prisma.$transaction(statements);
+		await prisma.dataFile.update({
+			where: { id: dataFileId },
+			data: { chunkedAt: new Date() }
+		});
 
 		return {
 			success: true,
-			message: `Replaced with ${data.length} chunk${data.length === 1 ? '' : 's'}.`
+			message: `Replaced with ${chunks.length} chunk${chunks.length === 1 ? '' : 's'}.`
 		};
 	},
 	embed: async ({ request }) => {
@@ -86,12 +108,37 @@ export const actions: Actions = {
 			return fail(400, { success: false, message: 'Missing chunk id.' });
 		}
 
+		const chunkIdNumber = Number(chunkId);
+		if (!Number.isInteger(chunkIdNumber)) {
+			return fail(400, { success: false, message: 'Invalid chunk id.' });
+		}
+
 		try {
-			const result = await embedChunkById(chunkId);
+			const [chunk] = await prisma.$queryRaw<
+				{ id: number; content: string | null; repositoryUrl: string | null }[]
+			>`SELECT "id","content","repositoryUrl" FROM "vector1536" WHERE "id" = ${chunkIdNumber} LIMIT 1`;
+
+			if (!chunk || !chunk.content || !chunk.repositoryUrl) {
+				return fail(404, { success: false, message: 'Chunk not found.' });
+			}
+
+			const vector = await embedText(chunk.content, chunk.repositoryUrl);
+			const vectorLiteral = `[${vector.join(',')}]`;
+			const { embeddingModel } = await getEmbeddingConfig(chunk.repositoryUrl);
+
+			await prisma.$executeRaw`
+				UPDATE "vector1536"
+				SET "embeddingVector" = ${vectorLiteral}::vector,
+					"embeddingModel" = ${embeddingModel},
+					"embeddedAt" = NOW(),
+					"invalidatedAt" = NULL
+				WHERE "id" = ${chunkIdNumber}
+			`;
+
 			return {
 				success: true,
-				chunkId: result.chunkId,
-				message: `Stored embedding (${result.dimensions} dims).`
+				chunkId: chunkIdNumber,
+				message: `Stored embedding (${vector.length} dims).`
 			};
 		} catch (err) {
 			console.error('Embedding error', err);
@@ -101,10 +148,14 @@ export const actions: Actions = {
 	search: async ({ request, params }) => {
 		const formData = await request.formData();
 		const query = formData.get('query');
-		const dataFileId = params.id;
+		const dataFileId = Number(params.id);
 
 		if (!query || typeof query !== 'string' || !query.trim()) {
 			return fail(400, { success: false, message: 'Please enter a search query.' });
+		}
+
+		if (!Number.isInteger(dataFileId)) {
+			return fail(400, { success: false, message: 'Invalid data file id.' });
 		}
 
 		try {
@@ -122,18 +173,19 @@ export const actions: Actions = {
 
 			const rows = await prisma.$queryRaw<
 				{
-					id: string;
-					dataFileId: string;
+					id: number;
+					dataFileId: number | null;
 					chunkNr: number | null;
 					content: string | null;
 					embeddingModel: string | null;
 					distance: number;
 				}[]
-			>`SELECT "id", "dataFileId", "chunkNr", "content", "embeddingModel", ("embeddingVector" <=> ${vectorLiteral}::vector) AS distance
-        FROM "DataChunk"
-        WHERE "embeddingVector" IS NOT NULL
-        ORDER BY ("embeddingVector" <=> ${vectorLiteral}::vector) ASC
-        LIMIT 10`;
+			>`SELECT "id", "dataFileId", "chunkNr", "content", "embeddingModel",
+					("embeddingVector" <=> ${vectorLiteral}::vector) AS distance
+				FROM "vector1536"
+				WHERE "embeddingVector" IS NOT NULL AND "dataFileId" = ${dataFileId}
+				ORDER BY ("embeddingVector" <=> ${vectorLiteral}::vector) ASC
+				LIMIT 10`;
 
 			const results = rows.map((row) => ({
 				...row,

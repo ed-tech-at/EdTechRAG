@@ -4,6 +4,7 @@ import { resolve } from '$app/paths';
 	const links = [
 		{ href: resolve('/admin/DataFile'), label: 'Data files' },
 		{ href: resolve('/admin/repositories'), label: 'Repositories' },
+		{ href: resolve('/admin/embeddings'), label: 'Embeddings' },
 		{ href: resolve('/admin/ragView'), label: 'RAG VIEW' }
 	];
 </script>

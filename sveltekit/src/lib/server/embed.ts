@@ -11,6 +11,33 @@ export async function embedText(text: string, repoUrl: string) {
 	const { apiKey, embeddingBase, embeddingModel } = await getEmbeddingConfig(repoUrl);
 	const buildEmbeddingUrl = () => new URL(embeddingBase).toString();
 
+	const existingVectorRows = await prisma.$queryRaw<{ vectorText: string | null }[]>`
+		SELECT "embeddingVector"::text AS "vectorText"
+		FROM "vector1536"
+		WHERE "content" = ${text}
+		  AND "embeddingModel" = ${embeddingModel}
+		  AND "embeddingVector" IS NOT NULL
+		ORDER BY "embeddedAt" DESC NULLS LAST
+		LIMIT 1
+	`;
+
+	const cachedVectorText = existingVectorRows[0]?.vectorText?.trim();
+	if (cachedVectorText) {
+		const normalized =
+			cachedVectorText.startsWith('[') && cachedVectorText.endsWith(']')
+				? cachedVectorText.slice(1, -1)
+				: cachedVectorText;
+
+		if (normalized) {
+			const cachedVector = normalized.split(',').map((value) => Number(value.trim()));
+			if (cachedVector.length && cachedVector.every((value) => Number.isFinite(value))) {
+				
+				console.log("resusing cached vecotr")
+				return cachedVector;
+			}
+		}
+	}
+
 	const response = await fetch(buildEmbeddingUrl(), {
 		method: 'POST',
 		headers: {
