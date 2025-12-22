@@ -1,0 +1,42 @@
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
+import prisma from '$lib/server/db';
+import { embedText } from '$lib/server/embed';
+import { getEmbeddingConfig } from '$lib/server/openaiClient';
+
+export const POST: RequestHandler = async () => {
+	const pendingChunks = await prisma.$queryRaw<
+		{
+			id: number;
+			content: string | null;
+			repositoryUrl: string | null;
+		}[]
+	>`SELECT "id","content","repositoryUrl"
+		FROM "rag_vectors"."vector1536"
+		WHERE "embeddingVector" IS NULL
+		  AND "invalidatedAt" IS NULL
+		  AND "content" IS NOT NULL
+		  AND "repositoryUrl" IS NOT NULL
+		ORDER BY "createdAt" ASC
+		LIMIT 1`;
+
+	const chunk = pendingChunks[0];
+	if (!chunk) {
+		return json({ status: 'empty' });
+	}
+
+	const vector = await embedText(chunk.content as string, chunk.repositoryUrl as string);
+	const vectorLiteral = `[${vector.join(',')}]`;
+	const { embeddingModel } = await getEmbeddingConfig(chunk.repositoryUrl as string);
+
+	await prisma.$executeRaw`
+		UPDATE "rag_vectors"."vector1536"
+		SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector,
+		    "embeddingModel" = ${embeddingModel},
+		    "embeddedAt" = NOW(),
+		    "invalidatedAt" = NULL
+		WHERE "id" = ${chunk.id}
+	`;
+
+	return json({ status: 'embedded', chunkId: chunk.id, dimensions: vector.length });
+};

@@ -37,7 +37,7 @@ export const load: PageServerLoad = async ({ params }) => {
 			invalidatedAt: Date | null;
 		}[]
 	>`SELECT "id","dataFileId","repositoryUrl","chunkNr","content","embeddingModel","createdAt","embeddedAt","invalidatedAt"
-	  FROM "vector1536"
+	  FROM "rag_vectors"."vector1536"
 	  WHERE "dataFileId" = ${dataFileId} AND "invalidatedAt" is NULL
 	  ORDER BY "chunkNr" ASC NULLS LAST, "createdAt" ASC`;
 
@@ -82,9 +82,9 @@ export const actions: Actions = {
 		}
 
 		const statements = [
-			prisma.$executeRaw`UPDATE "vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFileId}`,
+			prisma.$executeRaw`UPDATE "rag_vectors"."vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFileId}`,
 			...chunks.map((chunk, idx) =>
-				prisma.$executeRaw`INSERT INTO "vector1536" ("repositoryUrl","dataFileId","chunkNr","content","createdAt")
+				prisma.$executeRaw`INSERT INTO "rag_vectors"."vector1536" ("repositoryUrl","dataFileId","chunkNr","content","createdAt")
 				VALUES (${existingDataFile.repositoryUrl}, ${dataFileId}, ${idx + 1}, ${chunk}, NOW())`
 			)
 		];
@@ -116,7 +116,7 @@ export const actions: Actions = {
 		try {
 			const [chunk] = await prisma.$queryRaw<
 				{ id: number; content: string | null; repositoryUrl: string | null }[]
-			>`SELECT "id","content","repositoryUrl" FROM "vector1536" WHERE "id" = ${chunkIdNumber} LIMIT 1`;
+			>`SELECT "id","content","repositoryUrl" FROM "rag_vectors"."vector1536" WHERE "id" = ${chunkIdNumber} LIMIT 1`;
 
 			if (!chunk || !chunk.content || !chunk.repositoryUrl) {
 				return fail(404, { success: false, message: 'Chunk not found.' });
@@ -127,8 +127,8 @@ export const actions: Actions = {
 			const { embeddingModel } = await getEmbeddingConfig(chunk.repositoryUrl);
 
 			await prisma.$executeRaw`
-				UPDATE "vector1536"
-				SET "embeddingVector" = ${vectorLiteral}::vector,
+				UPDATE "rag_vectors"."vector1536"
+				SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector,
 					"embeddingModel" = ${embeddingModel},
 					"embeddedAt" = NOW(),
 					"invalidatedAt" = NULL
@@ -149,6 +149,9 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const query = formData.get('query');
 		const dataFileId = Number(params.id);
+
+		console.log ("dataFileId");
+		console.log (dataFileId);
 
 		if (!query || typeof query !== 'string' || !query.trim()) {
 			return fail(400, { success: false, message: 'Please enter a search query.' });
@@ -181,10 +184,10 @@ export const actions: Actions = {
 					distance: number;
 				}[]
 			>`SELECT "id", "dataFileId", "chunkNr", "content", "embeddingModel",
-					("embeddingVector" <=> ${vectorLiteral}::vector) AS distance
-				FROM "vector1536"
+					("embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) AS distance
+				FROM "rag_vectors"."vector1536"
 				WHERE "embeddingVector" IS NOT NULL AND "dataFileId" = ${dataFileId}
-				ORDER BY ("embeddingVector" <=> ${vectorLiteral}::vector) ASC
+				ORDER BY ("embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) ASC
 				LIMIT 10`;
 
 			const results = rows.map((row) => ({

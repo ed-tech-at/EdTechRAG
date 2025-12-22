@@ -387,7 +387,8 @@ export const ModelName = {
   Repository: 'Repository',
   DataFile: 'DataFile',
   ChatLog: 'ChatLog',
-  User: 'User'
+  User: 'User',
+  GitlabApiLog: 'GitlabApiLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "repository" | "dataFile" | "chatLog" | "user"
+    modelProps: "repository" | "dataFile" | "chatLog" | "user" | "gitlabApiLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -703,6 +704,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    GitlabApiLog: {
+      payload: Prisma.$GitlabApiLogPayload<ExtArgs>
+      fields: Prisma.GitlabApiLogFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.GitlabApiLogFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.GitlabApiLogFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload>
+        }
+        findFirst: {
+          args: Prisma.GitlabApiLogFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.GitlabApiLogFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload>
+        }
+        findMany: {
+          args: Prisma.GitlabApiLogFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload>[]
+        }
+        create: {
+          args: Prisma.GitlabApiLogCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload>
+        }
+        createMany: {
+          args: Prisma.GitlabApiLogCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.GitlabApiLogCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload>[]
+        }
+        delete: {
+          args: Prisma.GitlabApiLogDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload>
+        }
+        update: {
+          args: Prisma.GitlabApiLogUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload>
+        }
+        deleteMany: {
+          args: Prisma.GitlabApiLogDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.GitlabApiLogUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.GitlabApiLogUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload>[]
+        }
+        upsert: {
+          args: Prisma.GitlabApiLogUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GitlabApiLogPayload>
+        }
+        aggregate: {
+          args: Prisma.GitlabApiLogAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGitlabApiLog>
+        }
+        groupBy: {
+          args: Prisma.GitlabApiLogGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GitlabApiLogGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.GitlabApiLogCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GitlabApiLogCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -790,6 +865,20 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const GitlabApiLogScalarFieldEnum = {
+  id: 'id',
+  endpoint: 'endpoint',
+  method: 'method',
+  status: 'status',
+  ip: 'ip',
+  userAgent: 'userAgent',
+  payload: 'payload',
+  createdAt: 'createdAt'
+} as const
+
+export type GitlabApiLogScalarFieldEnum = (typeof GitlabApiLogScalarFieldEnum)[keyof typeof GitlabApiLogScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1007,6 +1096,7 @@ export type GlobalOmitConfig = {
   dataFile?: Prisma.DataFileOmit
   chatLog?: Prisma.ChatLogOmit
   user?: Prisma.UserOmit
+  gitlabApiLog?: Prisma.GitlabApiLogOmit
 }
 
 /* Types for Logging */

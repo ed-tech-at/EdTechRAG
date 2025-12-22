@@ -33,11 +33,6 @@ CREATE TABLE "ChatLog" (
     CONSTRAINT "ChatLog_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "vector1536" (
-
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "Repository_url_key" ON "Repository"("url");
 

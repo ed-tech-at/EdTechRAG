@@ -37,3 +37,8 @@ export type ChatLog = Prisma.ChatLogModel
  * 
  */
 export type User = Prisma.UserModel
+/**
+ * Model GitlabApiLog
+ * 
+ */
+export type GitlabApiLog = Prisma.GitlabApiLogModel

@@ -46,6 +46,54 @@ CREATE DATABASE edtechrag_migrations OWNER edtechrag_dev;
 GRANT ALL PRIVILEGES ON DATABASE edtechrag_migrations TO edtechrag_dev;
 ```
 
+## vector v4
+
+Create manual after prisma migreate dev: 
+
+```
+
+-- Choose a schema name (change if you want)
+CREATE SCHEMA IF NOT EXISTS rag_vectors;
+
+-- Allow your role to use (and optionally create objects in) this schema
+GRANT USAGE ON SCHEMA rag_vectors TO edtechrag_dev;
+GRANT CREATE ON SCHEMA rag_vectors TO edtechrag_dev;
+
+-- (Optional but recommended) Install pgvector into that schema
+-- ⚠️ This may require superuser/DB owner privileges.
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA rag_vectors;
+
+-- Drop and recreate the table in the NEW schema
+--- DROP TABLE IF EXISTS rag_vectors.vector1536;
+
+CREATE TABLE rag_vectors.vector1536 (
+    "id"              SERIAL PRIMARY KEY,
+    "repositoryUrl"   TEXT,
+    "dataFileId"      INTEGER,
+    "chunkNr"         INTEGER,
+    "content"         TEXT,
+    "embeddingModel"  TEXT,
+    "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "embeddedAt"      TIMESTAMP(3),
+    "invalidatedAt"   TIMESTAMP(3),
+    "embeddingVector" "rag_vectors".vector(1536)   -- if extension is in rag_vectors
+    -- If extension is in public instead, use: public.vector(1536)
+);
+
+-- Grants on existing objects
+GRANT ALL PRIVILEGES ON TABLE rag_vectors.vector1536 TO edtechrag_dev;
+
+-- Also grant on sequences in this schema (needed for SERIAL inserts)
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA rag_vectors TO edtechrag_dev;
+
+-- Make future tables/sequences in this schema accessible too
+ALTER DEFAULT PRIVILEGES IN SCHEMA rag_vectors
+  GRANT ALL PRIVILEGES ON TABLES TO edtechrag_dev;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA rag_vectors
+  GRANT ALL PRIVILEGES ON SEQUENCES TO edtechrag_dev;
+
+```
 ## vector v3
 Create manual after prisma migreate dev: 
 

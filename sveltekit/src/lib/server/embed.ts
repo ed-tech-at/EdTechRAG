@@ -13,7 +13,7 @@ export async function embedText(text: string, repoUrl: string) {
 
 	const existingVectorRows = await prisma.$queryRaw<{ vectorText: string | null }[]>`
 		SELECT "embeddingVector"::text AS "vectorText"
-		FROM "vector1536"
+		FROM "rag_vectors"."vector1536"
 		WHERE "content" = ${text}
 		  AND "embeddingModel" = ${embeddingModel}
 		  AND "embeddingVector" IS NOT NULL
@@ -80,7 +80,7 @@ export async function embedChunkById(chunkId: string) {
 
 	const vectorLiteral = `[${vector.join(',')}]`;
 
-	await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::vector, "embeddingModel" = ${
+	await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector, "embeddingModel" = ${
 		(await getEmbeddingConfig(chunk.dataFile.repositoryUrl)).embeddingModel
 	} WHERE "id" = ${chunkId}`;
 

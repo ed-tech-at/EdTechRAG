@@ -155,7 +155,7 @@ export const actions: Actions = {
 						// ]);
 						
 						try {
-							await prisma.$executeRaw`UPDATE "vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFile.id}`;
+							await prisma.$executeRaw`UPDATE "rag_vectors"."vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFile.id}`;
 						} catch (err) {
   						console.error("executeRaw failed:", err);
 						}
@@ -199,7 +199,7 @@ export const actions: Actions = {
 							console.log(content);
 							
 							await prisma.$executeRaw`
-								INSERT INTO "vector1536" ("repositoryUrl", "dataFileId","chunkNr","content","createdAt")
+								INSERT INTO "rag_vectors"."vector1536" ("repositoryUrl", "dataFileId","chunkNr","content","createdAt")
 								VALUES (${repoUrl}, ${dataFile.id}, ${createdChunks}, ${content}, NOW())
 							`;
 
@@ -208,7 +208,7 @@ export const actions: Actions = {
 // TODO EMBEDDING INACITVE
 							const vector = await embedText(content, repoUrl);
 							const vectorLiteral = `[${vector.join(',')}]`;
-							await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::vector WHERE "id" = ${chunk.id}`;
+							await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector WHERE "id" = ${chunk.id}`;
 							await prisma.$executeRaw`UPDATE "DataChunk" SET "embeddingModel" = ${EMBEDDING_MODEL} WHERE "id" = ${chunk.id}`;
 							}
 

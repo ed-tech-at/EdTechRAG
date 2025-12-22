@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
 
 	const countRows = await prisma.$queryRaw<{ count: bigint }[]>`
-		SELECT COUNT(*)::bigint AS count FROM "vector1536"
+		SELECT COUNT(*)::bigint AS count FROM "rag_vectors"."vector1536"
 	`;
 	const totalCount = Number(countRows[0]?.count ?? 0n);
 	const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -45,7 +45,7 @@ export const load: PageServerLoad = async ({ url }) => {
 				WHEN "embeddingVector" IS NOT NULL THEN LEFT(("embeddingVector"::text), 200)
 				ELSE NULL
 			END AS "vectorPreview"
-		FROM "vector1536"
+		FROM "rag_vectors"."vector1536"
 		ORDER BY ("invalidatedAt" IS NULL) DESC, ("embeddingVector" IS NULL) DESC, "embeddedAt" DESC NULLS LAST, "createdAt" ASC NULLS LAST, "id" DESC
 		OFFSET ${offset}
 		LIMIT ${PAGE_SIZE}

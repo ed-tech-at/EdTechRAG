@@ -54,7 +54,8 @@ export const ModelName = {
   Repository: 'Repository',
   DataFile: 'DataFile',
   ChatLog: 'ChatLog',
-  User: 'User'
+  User: 'User',
+  GitlabApiLog: 'GitlabApiLog'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -121,6 +122,20 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const GitlabApiLogScalarFieldEnum = {
+  id: 'id',
+  endpoint: 'endpoint',
+  method: 'method',
+  status: 'status',
+  ip: 'ip',
+  userAgent: 'userAgent',
+  payload: 'payload',
+  createdAt: 'createdAt'
+} as const
+
+export type GitlabApiLogScalarFieldEnum = (typeof GitlabApiLogScalarFieldEnum)[keyof typeof GitlabApiLogScalarFieldEnum]
 
 
 export const SortOrder = {

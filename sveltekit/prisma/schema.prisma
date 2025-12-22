@@ -66,6 +66,13 @@ model User {
 
 
 
-model vector1536 {
-  @@ignore
+model GitlabApiLog {
+  id         Int      @id @default(autoincrement())
+  endpoint   String
+  method     String
+  status     Int
+  ip         String?
+  userAgent  String?
+  payload    Json?
+  createdAt  DateTime @default(now())
 }

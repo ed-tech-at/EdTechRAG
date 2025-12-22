@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
-	import {resolve} from '$app/paths';
+	import { resolve } from '$app/paths';
 
 	type Stats = {
 		total: number;
@@ -29,6 +29,9 @@
 	let stats: Stats | null = null;
 	let statsLoading = false;
 	let statsError: string | null = null;
+	let isEmbedding = false;
+	let embeddingError: string | null = null;
+	let embeddingMessage: string | null = null;
 
 	const fetchStats = async () => {
 		statsLoading = true;
@@ -48,8 +51,73 @@
 		}
 	};
 
-	onMount(fetchStats);
+	const runEmbeddingOnce = async () => {
+		const res = await fetch(resolve('/admin/embeddings/run'), { method: 'POST' });
+		if (!res.ok) {
+			throw new Error(`Embedding request failed (${res.status})`);
+		}
+		return (await res.json()) as { status: string; chunkId?: number };
+	};
+
+	const startEmbedding = async () => {
+		if (isEmbedding) return;
+		isEmbedding = true;
+		embeddingError = null;
+		embeddingMessage = null;
+
+		while (isEmbedding) {
+			try {
+				const result = await runEmbeddingOnce();
+				await fetchStats();
+
+				if (result.status === 'empty') {
+					embeddingMessage = 'No pending embeddings.';
+					isEmbedding = false;
+					break;
+				}
+
+				if (result.chunkId) {
+					embeddingMessage = `Embedded chunk #${result.chunkId}`;
+				}
+			} catch (err) {
+				console.error('Embedding loop failed', err);
+				embeddingError = 'Embedding failed. Please check logs.';
+				isEmbedding = false;
+				break;
+			}
+
+			if (!isEmbedding) {
+				break;
+			}
+		}
+	};
+
+	const stopEmbedding = () => {
+		isEmbedding = false;
+	};
+
+	const toggleEmbedding = () => {
+		if (isEmbedding) {
+			stopEmbedding();
+		} else {
+			void startEmbedding();
+		}
+	};
+
+	onMount(() => {
+		void fetchStats();
+	});
 </script>
+
+<svelte:head>
+	<link
+		rel="stylesheet"
+		href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+		integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+		crossorigin="anonymous"
+		referrerpolicy="no-referrer"
+	/>
+</svelte:head>
 
 <section class="embeddings">
 	<header class="header">
@@ -65,9 +133,19 @@
 	<section class="stats-section">
 		<div class="stats-header">
 			<h2>Stats</h2>
-			<button class="reload" on:click={fetchStats} disabled={statsLoading}>
-				{statsLoading ? 'Loading…' : 'Reload'}
-			</button>
+			<div class="stats-actions">
+				<button class="reload" on:click={() => location.reload()} disabled={statsLoading}>
+					{statsLoading ? 'Loading…' : 'Reload'}
+				</button>
+				<button class="embed-toggle" on:click={toggleEmbedding}>
+					{#if isEmbedding}
+						<i class="fa-solid fa-spinner fa-spin spinner-icon" aria-hidden="true"></i>
+						Stop Embedding
+					{:else}
+						Run Embedding
+					{/if}
+				</button>
+			</div>
 		</div>
 
 		{#if statsLoading && !stats}
@@ -88,10 +166,16 @@
 					<div class="value">{formatNumber(stats.invalidated)}</div>
 				</div>
 				<div class="stat-card">
-					<div class="label">Missing vector</div>
+					<div class="label">Active Missing vector</div>
 					<div class="value">{formatNumber(stats.missingVector)}</div>
 				</div>
 			</div>
+		{/if}
+
+		{#if embeddingError}
+			<p class="error">{embeddingError}</p>
+		{:else if embeddingMessage}
+			<p class="success">{embeddingMessage}</p>
 		{/if}
 	</section>
 
@@ -194,6 +278,12 @@
 		justify-content: space-between;
 	}
 
+	.stats-actions {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+
 	.reload {
 		border: 1px solid #d0d7de;
 		background: #fff;
@@ -211,6 +301,28 @@
 	.reload:disabled {
 		cursor: progress;
 		opacity: 0.6;
+	}
+
+	.embed-toggle {
+		border: 1px solid #1f7ae0;
+		background: #1f7ae0;
+		color: #fff;
+		border-radius: 6px;
+		padding: 0.35rem 0.9rem;
+		font-size: 0.9rem;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+	}
+
+	.embed-toggle:disabled {
+		opacity: 0.65;
+		cursor: not-allowed;
+	}
+
+	.spinner-icon {
+		font-size: 0.9rem;
 	}
 
 	.stats-error {
@@ -246,6 +358,18 @@
 		font-size: 1.5rem;
 		font-weight: 600;
 		color: #1f1f1f;
+	}
+
+	.error {
+		color: #b42318;
+		font-size: 0.9rem;
+		margin: 0;
+	}
+
+	.success {
+		color: #0d7a2a;
+		font-size: 0.9rem;
+		margin: 0;
 	}
 
 	table {
