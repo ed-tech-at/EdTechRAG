@@ -26,6 +26,8 @@ DEFAULT_SEPARATORS = [
   '\n- ',      // bullet lists
   '\n* ',      // alternative bullets
   '\n> ',      // blockquotes
+  '\n***',      // rules break
+  '\n---',      // rules break
   '\n\n',      // paragraph breaks
   '\n',        // line breaks
   ' ',         // words
@@ -36,6 +38,7 @@ DEFAULT_SEPARATORS = [
  * Splits raw text into smaller chunks using LangChain's RecursiveCharacterTextSplitter.
  */
 export async function splitTextIntoChunks(text: string, options: SplitTextOptions = {}) {
+	
 	const splitter = new RecursiveCharacterTextSplitter({
 		chunkSize: options.chunkSize ?? DEFAULT_CHUNK_SIZE,
 		chunkOverlap: options.chunkOverlap ?? DEFAULT_CHUNK_OVERLAP,

@@ -41,6 +41,16 @@
 			Last seen: {formatDate(data.dataFile.lastSeen)} · Created: {formatDate(data.dataFile.createdAt)}
 		</p>
 		<p class="muted">Total chunks: {data.dataFile._count?.dataChunks ?? 0}</p>
+		<form
+			method="POST"
+			action="?/delete"
+			class="delete-form"
+			on:submit={(event) => {
+				if (!confirm('Delete this data file and its chunks?')) event.preventDefault();
+			}}
+		>
+			<button type="submit" class="danger">Delete data file</button>
+		</form>
 	</div>
 
 	<section class="ingest">
@@ -251,6 +261,10 @@
 		flex-wrap: wrap;
 	}
 
+	.delete-form {
+		margin-top: 0.5rem;
+	}
+
 	button {
 		padding: 0.5rem 0.75rem;
 		border-radius: 4px;
@@ -259,6 +273,16 @@
 		color: white;
 		font-weight: 600;
 		cursor: pointer;
+	}
+
+	button.danger {
+		border-color: #c12f2f;
+		background: #c12f2f;
+	}
+
+	button.danger:hover {
+		border-color: #a52727;
+		background: #a52727;
 	}
 
 	.results {

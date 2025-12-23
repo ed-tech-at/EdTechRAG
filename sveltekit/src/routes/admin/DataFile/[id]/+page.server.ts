@@ -2,7 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
-import { splitTextIntoChunks } from '$lib/server/textSplitter';
+import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitter';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -53,10 +53,48 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
+	delete: async ({ params }) => {
+		const dataFileId = Number(params.id);
+
+		if (!Number.isInteger(dataFileId)) {
+			return fail(400, { success: false, message: 'Invalid data file id.' });
+		}
+
+		try {
+			const dataFile = await prisma.dataFile.findUnique({
+				where: { id: dataFileId },
+				select: { id: true }
+			});
+
+			if (!dataFile) {
+				return fail(404, { success: false, message: 'Data file not found.' });
+			}
+
+			await prisma.dataFile.update({
+				where: { id: dataFileId },
+				data: { invalidatedAt: new Date() }
+			});
+
+			await prisma.$executeRaw`
+				UPDATE "rag_vectors"."vector1536"
+				SET "invalidatedAt" = NOW()
+				WHERE "dataFileId" = ${dataFileId}
+			`;
+
+			return { success: true, message: 'Data file deleted.' };
+		} catch (err) {
+			console.error('Delete data file error', err);
+			return fail(500, { success: false, message: 'Delete failed. See server logs.' });
+		}
+	},
 	ingest: async ({ request, params }) => {
 		const dataFileId = Number(params.id);
 		const formData = await request.formData();
-		const content = formData.get('content');
+		let contentForm = formData.get('content');
+
+		let { content: content, meta: mdMeta } = getMetaDataOutOfMd(contentForm);
+		
+
 
 		if (!Number.isInteger(dataFileId)) {
 			return fail(400, { success: false, message: 'Invalid data file id.' });
@@ -66,16 +104,28 @@ export const actions: Actions = {
 			return fail(400, { success: false, message: 'Please paste some text to split.' });
 		}
 
-		const chunks = await splitTextIntoChunks(content);
+		
+		const existingDataFile = await prisma.dataFile.findUnique({
+			where: { id: dataFileId },
+			select: { id: true, repositoryUrl: true, repository: true }
+		});
+
+
+		let spliterOptions = {};
+		if ( existingDataFile.repository?.ragConfig?.chunkSize !== undefined	) {
+			spliterOptions.chunkSize = existingDataFile.repository?.ragConfig?.chunkSize;
+		}
+
+		if ( existingDataFile.repository?.ragConfig?.chunkOverlap !== undefined	) {
+			spliterOptions.chunkOverlap = existingDataFile.repository?.ragConfig?.chunkOverlap;
+		}
+		
+
+		const chunks = await splitTextIntoChunks(content, spliterOptions);
 
 		if (chunks.length === 0) {
 			return fail(400, { success: false, message: 'No chunks found after splitting.' });
 		}
-
-		const existingDataFile = await prisma.dataFile.findUnique({
-			where: { id: dataFileId },
-			select: { id: true, repositoryUrl: true }
-		});
 
 		if (!existingDataFile) {
 			return fail(404, { success: false, message: 'Data file not found.' });
@@ -92,7 +142,7 @@ export const actions: Actions = {
 		await prisma.$transaction(statements);
 		await prisma.dataFile.update({
 			where: { id: dataFileId },
-			data: { chunkedAt: new Date() }
+			data: { chunkedAt: new Date(), meta: mdMeta }
 		});
 
 		return {
@@ -149,9 +199,6 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const query = formData.get('query');
 		const dataFileId = Number(params.id);
-
-		console.log ("dataFileId");
-		console.log (dataFileId);
 
 		if (!query || typeof query !== 'string' || !query.trim()) {
 			return fail(400, { success: false, message: 'Please enter a search query.' });

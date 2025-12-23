@@ -321,6 +321,9 @@ const logRequest = async (
 	repositoryUrl: string | null,
 	data: { status: number; success: boolean; [key: string]: unknown }
 ) => {
+
+	const sig = request.headers.get('x-signature') ?? null;
+
 	try {
 		const ip =
 			request.headers.get('cf-connecting-ip') ??
@@ -329,13 +332,14 @@ const logRequest = async (
 		const userAgent = request.headers.get('user-agent');
 		await prisma.gitlabApiLog.create({
 			data: {
-				endpoint: '/api/gitlab',
+				endpoint: '/api/gitlab/pull/',
 				method: request.method,
 				status: data.status,
 				ip,
 				userAgent,
 				payload: {
 					repositoryUrl,
+					sig,
 					...data
 				}
 			}
