@@ -65,6 +65,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ success: false, message: 'Invalid JSON payload.' }, { status: 400 });
 	}
 
+	console.log(payload);
+
 	if (!payload || typeof payload !== 'object') {
 		await logRequest(request, repositoryUrl, {
 			status: 400,
