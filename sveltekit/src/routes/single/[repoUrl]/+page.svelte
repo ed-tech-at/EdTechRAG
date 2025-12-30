@@ -72,7 +72,7 @@
 </script>
 
 <section class="page">
-	<h1>Simple Chat · {data.repositoryName}</h1>
+	<h1>Single Chat · {data.repositoryName}</h1>
 	<p class="muted">
 		Repository:
 		<!-- <a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repository.url)}`)}> -->

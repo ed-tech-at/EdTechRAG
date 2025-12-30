@@ -2,6 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
+import { findRepositoryContext } from '$lib/server/rag';
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: unknown;
@@ -35,39 +36,46 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!repository) {
 		throw error(404, 'Repository not found');
 	}
-
-	const vector = await embedText(prompt, repoUrl);
-	const vectorLiteral = `[${vector.join(',')}]`;
-
-	const rows = await prisma.$queryRaw<
-		{
-			id: string;
-			dataFileId: string;
-			chunkNr: number | null;
-			content: string | null;
-			embeddingModel: string | null;
-			remoteUrl: string | null;
-			meta: unknown;
-			distance: number;
-		}[]
-	>`SELECT dc."id", dc."dataFileId", dc."chunkNr", dc."content", dc."embeddingModel", df."remoteUrl", df."meta", (dc."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) AS distance
-    FROM "DataChunk" dc
-    INNER JOIN "DataFile" df ON dc."dataFileId" = df."id"
-    WHERE dc."embeddingVector" IS NOT NULL AND df."repositoryUrl" = ${repoUrl}
-    ORDER BY (dc."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) ASC
-    LIMIT 10`;
-
-	const results = rows.map((row) => ({
-		...row,
-		similarity: 1 / (1 + row.distance),
-		meta: row.meta ?? undefined,
-		remoteUrl: row.remoteUrl ?? undefined
-	}));
+	const result = await findRepositoryContext(repoUrl, prompt);
 
 	return json({
 		success: true,
-		results,
+		results: result.results,
 		query: prompt,
-		message: `Found ${results.length} similar chunk${results.length === 1 ? '' : 's'}.`
+		message: `Found ${result.results.length} similar chunk${result.results.length === 1 ? '' : 's'}.`
 	});
+	// const vector = await embedText(prompt, repoUrl);
+	// const vectorLiteral = `[${vector.join(',')}]`;
+
+	// const rows = await prisma.$queryRaw<
+	// 	{
+	// 		id: string;
+	// 		dataFileId: string;
+	// 		chunkNr: number | null;
+	// 		content: string | null;
+	// 		embeddingModel: string | null;
+	// 		remoteUrl: string | null;
+	// 		meta: unknown;
+	// 		distance: number;
+	// 	}[]
+	// >`SELECT dc."id", dc."dataFileId", dc."chunkNr", dc."content", dc."embeddingModel", df."remoteUrl", df."meta", (dc."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) AS distance
+  //   FROM "DataChunk" dc
+  //   INNER JOIN "DataFile" df ON dc."dataFileId" = df."id"
+  //   WHERE dc."embeddingVector" IS NOT NULL AND df."repositoryUrl" = ${repoUrl}
+  //   ORDER BY (dc."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) ASC
+  //   LIMIT 10`;
+
+	// const results = rows.map((row) => ({
+	// 	...row,
+	// 	similarity: 1 / (1 + row.distance),
+	// 	meta: row.meta ?? undefined,
+	// 	remoteUrl: row.remoteUrl ?? undefined
+	// }));
+
+	// return json({
+	// 	success: true,
+	// 	results,
+	// 	query: prompt,
+	// 	message: `Found ${results.length} similar chunk${results.length === 1 ? '' : 's'}.`
+	// });
 };

@@ -13,10 +13,14 @@ export type RagResult = {
 	similarity: number;
 };
 
-//todo upate to logig with "rag_vectors"."vector1536" (see embed.ts)
 export async function findRepositoryContext(repoUrl: string, prompt: string) {
 	const vector = await embedText(prompt, repoUrl);
 	const vectorLiteral = `[${vector.join(',')}]`;
+
+	console.log("searching for " + prompt);
+
+			console.log("vectorLiteral");
+		console.log(vectorLiteral);
 
 	const rows = await prisma.$queryRaw<
 		{
@@ -29,12 +33,15 @@ export async function findRepositoryContext(repoUrl: string, prompt: string) {
 			meta: unknown;
 			distance: number;
 		}[]
-	>`SELECT dc."id", dc."dataFileId", dc."chunkNr", dc."content", dc."embeddingModel", df."remoteUrl", df."meta", (dc."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) AS distance
-    FROM "DataChunk" dc
-    INNER JOIN "DataFile" df ON dc."dataFileId" = df."id"
-    WHERE dc."embeddingVector" IS NOT NULL AND df."repositoryUrl" = ${repoUrl}
-    ORDER BY (dc."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) ASC
-    LIMIT 10`;
+	>`SELECT rv."id", rv."dataFileId", rv."chunkNr", rv."content", rv."embeddingModel", df."remoteUrl", df."meta",
+			(rv."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) AS distance
+		FROM "rag_vectors"."vector1536" rv
+		LEFT JOIN "DataFile" df ON rv."dataFileId" = df."id"
+		WHERE rv."embeddingVector" IS NOT NULL
+		  AND rv."repositoryUrl" = ${repoUrl}
+		  AND rv."invalidatedAt" IS NULL
+		ORDER BY (rv."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) ASC
+		LIMIT 10`;
 
 	const results: RagResult[] = rows.map((row) => ({
 		...row,

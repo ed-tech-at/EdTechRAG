@@ -1,6 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
+import prisma from '$lib/server/db';
 
 const encoder = new TextEncoder();
 
@@ -40,7 +41,14 @@ export const POST: RequestHandler = async ({ request }) => {
 		return new Response('Missing repositoryUrl', { status: 400 });
 	}
 
+	const repository = await prisma.repository.findUnique({
+		where: { url: repositoryUrl }
+	});
+
+	const systemprompt = repository?.ragConfig?.systemprompt
+
 	const messages = buildChatMessages({
+		systemprompt,
 		prompt,
 		context,
 		history
