@@ -13,6 +13,7 @@ export type RagResult = {
 	similarity: number;
 };
 
+//todo upate to logig with "rag_vectors"."vector1536" (see embed.ts)
 export async function findRepositoryContext(repoUrl: string, prompt: string) {
 	const vector = await embedText(prompt, repoUrl);
 	const vectorLiteral = `[${vector.join(',')}]`;

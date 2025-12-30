@@ -87,6 +87,45 @@ export const actions: Actions = {
 			return fail(500, { success: false, message: 'Delete failed. See server logs.' });
 		}
 	},
+
+	setChunkingToNull: async ({ params }) => {
+		const dataFileId = Number(params.id);
+
+		if (!Number.isInteger(dataFileId)) {
+			return fail(400, { success: false, message: 'Invalid data file id.' });
+		}
+
+		try {
+			await prisma.$transaction([
+				prisma.dataFile.update({
+					where: { id: dataFileId },
+					data: { chunkedAt: null }
+				}),
+				prisma.$executeRaw`
+					UPDATE "rag_vectors"."vector1536"
+					SET "invalidatedAt" = NOW()
+					WHERE "dataFileId" = ${dataFileId}
+				`
+			]);
+
+			return {
+				success: true,
+				message: 'Chunking reset. File will be refetched and re-chunked later.'
+			};
+		} catch (err) {
+			if (
+				err &&
+				typeof err === 'object' &&
+				'code' in err &&
+				(err as { code?: string }).code === 'P2025'
+			) {
+				return fail(404, { success: false, message: 'Data file not found.' });
+			}
+
+			console.error('Set chunking to null error', err);
+			return fail(500, { success: false, message: 'Update failed. See server logs.' });
+		}
+	},
 	ingest: async ({ request, params }) => {
 		const dataFileId = Number(params.id);
 		const formData = await request.formData();

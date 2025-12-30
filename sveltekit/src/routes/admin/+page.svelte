@@ -10,7 +10,7 @@ import { resolve } from '$app/paths';
 </script>
 
 <section class="admin-home">
-	<h1>Admin</h1>
+	<h1>Admin EdTechRAG</h1>
 	<ul>
 		{#each links as link}
 			<li>

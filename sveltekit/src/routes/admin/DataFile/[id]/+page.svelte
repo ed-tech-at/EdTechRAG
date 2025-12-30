@@ -38,7 +38,7 @@
 			<p class="muted">Meta: <code>{JSON.stringify(data.dataFile.meta)}</code></p>
 		{/if}
 		<p class="muted">
-			Last seen: {formatDate(data.dataFile.lastSeen)} · Created: {formatDate(data.dataFile.createdAt)}
+			Last seen: {formatDate(data.dataFile.lastSeen)} · Created: {formatDate(data.dataFile.createdAt)}  · Chunked: {formatDate(data.dataFile.chunkedAt)}
 		</p>
 		<p class="muted">Total chunks: {data.dataFile._count?.dataChunks ?? 0}</p>
 		<form
@@ -50,6 +50,16 @@
 			}}
 		>
 			<button type="submit" class="danger">Delete data file</button>
+		</form>
+		<form
+			method="POST"
+			action="?/setChunkingToNull"
+			class="delete-form"
+			on:submit={(event) => {
+				// if (!confirm('Delete this data file and its chunks?')) event.preventDefault();
+			}}
+		>
+			<button type="submit" class="danger">Set chunking to NULL to refetch later</button>
 		</form>
 	</div>
 

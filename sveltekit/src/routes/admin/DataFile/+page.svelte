@@ -151,7 +151,7 @@
 					</tr>
 					{#if file.meta}
 						<tr class="meta-row">
-							<td colspan="6">
+							<td colspan="7">
 								<div class="meta-label">Meta</div>
 								<pre>{JSON.stringify(file.meta, null, 2)}</pre>
 							</td>
@@ -196,8 +196,9 @@
 	}
 
 	.stats-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+		display: flex;
+		/* grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); */
+		flex-wrap: wrap;
 		gap: 0.75rem;
 	}
 
@@ -293,6 +294,7 @@
 		padding: 0.5rem 1rem;
 		font-weight: 600;
 		cursor: pointer;
+		align-self: center;
 	}
 
 	.chunk-toggle:hover {
@@ -343,4 +345,18 @@
 		color: #999;
 		pointer-events: none;
 	}
+
+	td {
+word-wrap: break-word;
+}
+table {
+max-width: 100vw;
+display: block;
+}
+pre {
+word-wrap: break-word;
+max-width: 100vw;
+white-space: pre-wrap;
+}
+
 </style>

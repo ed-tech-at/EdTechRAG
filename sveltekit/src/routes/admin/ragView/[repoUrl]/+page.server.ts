@@ -17,22 +17,22 @@ export const load: PageServerLoad = async ({ params }) => {
 	const repoListRaw = await prisma.repository.findMany({
 		include: {
 			_count: { select: { dataFiles: true } },
-			dataFiles: {
-				select: {
-					_count: { select: { dataChunks: true } }
-				}
-			}
+			// dataFiles: {
+				// select: {
+					// _count: { select: { dataChunks: true } }
+				// }
+			// }
 		},
 		orderBy: { name: 'asc' }
 	});
 
 	const repositories = repoListRaw.map((repo) => {
-		const chunkCount = repo.dataFiles.reduce((sum, file) => sum + (file._count?.dataChunks ?? 0), 0);
+		// const chunkCount = repo.dataFiles.reduce((sum, file) => sum + (file._count?.dataChunks ?? 0), 0);
 		return {
 			url: repo.url,
 			name: repo.name,
 			fileCount: repo._count?.dataFiles ?? 0,
-			chunkCount
+			// chunkCount
 		};
 	});
 

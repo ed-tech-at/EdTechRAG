@@ -18,7 +18,7 @@
 					<th>Name</th>
 					<th>URL</th>
 					<th>Files</th>
-					<th>Chunks</th>
+					<!-- <th>Chunks</th> -->
 					<th class="number">Action</th>
 				</tr>
 			</thead>
@@ -28,7 +28,7 @@
 						<td>{repo.name}</td>
 						<td class="muted">{repo.url}</td>
 						<td class="number">{repo.fileCount}</td>
-						<td class="number">{repo.chunkCount}</td>
+						<!-- <td class="number">{repo.chunkCount}</td> -->
 						<td class="number">
 							<a class="link" href={resolve(`/admin/ragView/${encodeURIComponent(repo.url)}`)}>Open →</a>
 						</td>

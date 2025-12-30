@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 type IncomingFile = {
 	path?: string;
@@ -36,6 +37,91 @@ const toMovedArray = (value: unknown) =>
 
 const unique = (values: string[]) => Array.from(new Set(values));
 
+const uniqueMoved = (entries: MovedEntry[]) => {
+	const seen = new Set<string>();
+	return entries.filter((entry) => {
+		const key = `${entry.from}→${entry.to}`;
+		if (seen.has(key)) return false;
+		seen.add(key);
+		return true;
+	});
+};
+
+const parseRawChanges = (value: unknown) => {
+	const result = {
+		added: [] as string[],
+		modified: [] as string[],
+		deleted: [] as string[],
+		moved: [] as MovedEntry[]
+	};
+
+	if (typeof value !== 'string' || !value.trim()) {
+		return result;
+	}
+
+	const lines = value.split('\n');
+	for (const line of lines) {
+		const trimmed = line.trim();
+		if (!trimmed) continue;
+		const parts = trimmed.split('\t');
+		if (parts.length < 2) continue;
+
+		const statusRaw = parts[0];
+		const status = statusRaw?.[0];
+		if (!status) continue;
+
+		if (status === 'R') {
+			const from = normalizeString(parts[1]);
+			const to = normalizeString(parts[2]);
+			if (from && to) {
+				result.moved.push({ from, to });
+			}
+			continue;
+		}
+
+		if (status === 'C') {
+			const to = normalizeString(parts[2] ?? parts[1]);
+			if (to) result.added.push(to);
+			continue;
+		}
+
+		const path = normalizeString(parts[1]);
+		if (!path) continue;
+
+		switch (status) {
+			case 'A':
+				result.added.push(path);
+				break;
+			case 'M':
+			case 'T':
+				result.modified.push(path);
+				break;
+			case 'D':
+				result.deleted.push(path);
+				break;
+			default:
+				break;
+		}
+	}
+
+	return result;
+};
+
+const getSignatureSecret = (value: unknown) => {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+	const config = value as Record<string, unknown>;
+	return normalizeString(config.GitLab2EdTechRAG_SHARED_SECRET);
+};
+
+const isSignatureValid = (provided: string | null, secret: string, rawBody: string) => {
+	if (!provided) return false;
+	const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
+	const providedBuffer = Buffer.from(provided, 'utf8');
+	const expectedBuffer = Buffer.from(expected, 'utf8');
+	if (providedBuffer.length !== expectedBuffer.length) return false;
+	return timingSafeEqual(providedBuffer, expectedBuffer);
+};
+
 const mergeMeta = (
 	existing: unknown,
 	updates: Record<string, unknown>,
@@ -53,9 +139,11 @@ const mergeMeta = (
 export const POST: RequestHandler = async ({ request }) => {
 	let payload: unknown;
 	let repositoryUrl: string | null = null;
+	let rawBody = '';
 
 	try {
-		payload = await request.json();
+		rawBody = await request.text();
+		payload = rawBody ? JSON.parse(rawBody) : null;
 	} catch {
 		await logRequest(request, repositoryUrl, {
 			status: 400,
@@ -65,7 +153,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ success: false, message: 'Invalid JSON payload.' }, { status: 400 });
 	}
 
-	console.log(payload);
+	// console.log(payload);
 
 	if (!payload || typeof payload !== 'object') {
 		await logRequest(request, repositoryUrl, {
@@ -77,10 +165,10 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const body = payload as Record<string, unknown>;
-	repositoryUrl = normalizeString(body.repositoryUrl) ?? normalizeString(body.repository_path);
+	const repositoryPath = normalizeString(body.repository_path);
 
-	if (!repositoryUrl) {
-		await logRequest(request, repositoryUrl, {
+	if (!repositoryPath) {
+		await logRequest(request, repositoryPath, {
 			status: 400,
 			success: false,
 			error: 'Missing repository URL/path'
@@ -88,8 +176,18 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ success: false, message: 'Missing repository URL/path.' }, { status: 400 });
 	}
 
-	const repository = await prisma.repository.findUnique({ where: { url: repositoryUrl } });
+	// const repository = await prisma.repository.findUnique({ where: { url: repositoryUrl } });
+	const repository = await prisma.repository.findFirst({ 
+		where: { 
+			updateConfig: {
+				path: ['repository_path'], 
+				equals: repositoryPath
+			}
+		}
+	});
 
+	repositoryUrl = repository?.url;
+	
 	if (!repository) {
 		await logRequest(request, repositoryUrl, {
 			status: 404,
@@ -97,6 +195,17 @@ export const POST: RequestHandler = async ({ request }) => {
 			error: 'Repository not found'
 		});
 		return json({ success: false, message: 'Repository not found.' }, { status: 404 });
+	}
+
+	const signatureSecret = getSignatureSecret(repository.updateConfig);
+	const providedSignature = request.headers.get('x-signature') ?? null;
+	if (signatureSecret && !isSignatureValid(providedSignature, signatureSecret, rawBody)) {
+		await logRequest(request, repositoryUrl, {
+			status: 401,
+			success: false,
+			error: 'Invalid signature'
+		});
+		return json({ success: false, message: 'Invalid signature.' }, { status: 401 });
 	}
 
 	const files = Array.isArray(body.files) ? (body.files as IncomingFile[]) : [];
@@ -113,10 +222,11 @@ export const POST: RequestHandler = async ({ request }) => {
 		body.changes && typeof body.changes === 'object'
 			? (body.changes as Record<string, unknown>)
 			: {};
-	const addedPaths = unique(toStringArray(changeSet.added));
-	const modifiedPaths = unique(toStringArray(changeSet.modified));
-	const deletedPaths = unique(toStringArray(changeSet.deleted));
-	const movedEntries = toMovedArray(changeSet.moved);
+	const rawChanges = parseRawChanges(changeSet.raw);
+	const addedPaths = unique([...toStringArray(changeSet.added), ...rawChanges.added]);
+	const modifiedPaths = unique([...toStringArray(changeSet.modified), ...rawChanges.modified]);
+	const deletedPaths = unique([...toStringArray(changeSet.deleted), ...rawChanges.deleted]);
+	const movedEntries = uniqueMoved([...toMovedArray(changeSet.moved), ...rawChanges.moved]);
 
 	if (
 		addedPaths.length === 0 &&
@@ -132,7 +242,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ success: false, message: 'No changes provided.' }, { status: 400 });
 	}
 
-	const commitSha = normalizeString(body.commit_sha);
+	const headSha = normalizeString(body.head_sha);
 	const baseSha = normalizeString(body.base_sha);
 
 	const errors: string[] = [];
@@ -157,7 +267,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			status
 		};
 
-		if (commitSha) base.commitSha = commitSha;
+		if (headSha) base.headSha = headSha;
 		if (baseSha) base.baseSha = baseSha;
 
 		return {
@@ -306,7 +416,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	await logRequest(request, repositoryUrl, {
 		status: 200,
 		success: responseBody.success,
-		commitSha,
+		headSha,
 		baseSha,
 		added,
 		modified,
