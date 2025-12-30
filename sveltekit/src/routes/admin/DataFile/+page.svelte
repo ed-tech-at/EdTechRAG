@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -29,11 +30,20 @@
 			| { status: 'error'; message: string };
 	};
 
+	const refreshStats = async () => {
+		try {
+			await invalidateAll();
+		} catch (err) {
+			console.warn('Failed to refresh stats', err);
+		}
+	};
+
 	const startChunking = async () => {
 		if (isChunking) return;
 		isChunking = true;
 		chunkError = null;
 		chunkMessage = null;
+		await refreshStats();
 
 		while (isChunking) {
 			try {
@@ -55,6 +65,7 @@
 					chunkMessage = `Chunked file #${result.fileId} (${result.chunks} chunk${
 						result.chunks === 1 ? '' : 's'
 					}).`;
+					await refreshStats();
 				}
 			} catch (err) {
 				console.error('Chunking loop failed', err);

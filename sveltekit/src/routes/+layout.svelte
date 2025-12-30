@@ -10,8 +10,13 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
-
+<main>
 {@render children()}
+</main>
+<footer>
+	<a href='https://www.tugraz.at/go/impressum' target="_blank">Impressum</a>
+	<a href="https://www.tugraz.at/go/flaait" target="_blank">FLAAIT Group at LLT at TU Graz</a>
+</footer>
 
 <style>
 	:global(html, body) {
@@ -21,5 +26,32 @@
 	}
 	:global(*) {
 		box-sizing: border-box;
+	}
+
+	footer {
+		background-color: #263B48;
+		height: 70px;
+	}
+	nav a, footer a {
+		color: white;
+	}
+	main {
+		padding: 20px;
+		min-height: calc(100dvh - 70px);
+	}
+	nav, footer {
+		display: flex;
+		position: sticky;
+		width: 100%;
+		justify-content: space-between;
+		background-color: #F70146;
+		color: white;
+		padding: 20px;
+		height: 70px;
+
+	}
+	footer {
+		background-color: #263B48;
+		height: 70px;
 	}
 </style>

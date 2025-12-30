@@ -56,7 +56,10 @@
 		if (!res.ok) {
 			throw new Error(`Embedding request failed (${res.status})`);
 		}
-		return (await res.json()) as { status: string; chunkId?: number };
+		return (await res.json()) as
+			| { status: 'empty' }
+			| { status: 'embedded'; chunkId: number }
+			| { status: 'error'; message: string };
 	};
 
 	const startEmbedding = async () => {
@@ -76,7 +79,13 @@
 					break;
 				}
 
-				if (result.chunkId) {
+				if (result.status === 'error') {
+					embeddingError = result.message || 'Embedding failed. Please check server logs.';
+					isEmbedding = false;
+					break;
+				}
+
+				if (result.status === 'embedded') {
 					embeddingMessage = `Embedded chunk #${result.chunkId}`;
 				}
 			} catch (err) {

@@ -25,18 +25,27 @@ export const POST: RequestHandler = async () => {
 		return json({ status: 'empty' });
 	}
 
-	const vector = await embedText(chunk.content as string, chunk.repositoryUrl as string);
-	const vectorLiteral = `[${vector.join(',')}]`;
-	const { embeddingModel } = await getEmbeddingConfig(chunk.repositoryUrl as string);
+	try {
+		const vector = await embedText(chunk.content as string, chunk.repositoryUrl as string);
+		if (!Array.isArray(vector) || vector.length === 0) {
+			return json({ status: 'error', message: 'Embedding API returned no vector.' });
+		}
+		const vectorLiteral = `[${vector.join(',')}]`;
+		const { embeddingModel } = await getEmbeddingConfig(chunk.repositoryUrl as string);
 
-	await prisma.$executeRaw`
-		UPDATE "rag_vectors"."vector1536"
-		SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector,
-		    "embeddingModel" = ${embeddingModel},
-		    "embeddedAt" = NOW(),
-		    "invalidatedAt" = NULL
-		WHERE "id" = ${chunk.id}
-	`;
+		await prisma.$executeRaw`
+			UPDATE "rag_vectors"."vector1536"
+			SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector,
+			    "embeddingModel" = ${embeddingModel},
+			    "embeddedAt" = NOW(),
+			    "invalidatedAt" = NULL
+			WHERE "id" = ${chunk.id}
+		`;
 
-	return json({ status: 'embedded', chunkId: chunk.id, dimensions: vector.length });
+		return json({ status: 'embedded', chunkId: chunk.id, dimensions: vector.length });
+	} catch (err) {
+		console.error('Embedding failed', err);
+		const message = err instanceof Error ? err.message : 'Embedding failed.';
+		return json({ status: 'error', message });
+	}
 };

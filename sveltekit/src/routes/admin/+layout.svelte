@@ -5,7 +5,7 @@
 
 </script>
 <nav>
-  <a href={resolve('/admin/')}>Admin</a> 
+  <b>EdTechRAG</b> <a href={resolve('/admin/')}>Admin</a> 
   <a href={resolve('/logout/')}>Logout</a> 
 </nav>
 <div class="page-content">{@render children()}</div>

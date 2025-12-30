@@ -2,6 +2,7 @@ import { SERVER_PW_PEPPER } from '$env/static/private';
 import bcrypt from 'bcrypt';
 import { createSessionJWT, checkJwt } from '$lib/server/jwt';
 import prisma from '$lib/server/db';
+import { resolve } from '$app/paths';
 
 
 export async function hashPasswordV2(password: string, userId: string) {
@@ -56,7 +57,7 @@ export async function login(email: string, password: string, cookies: any): Prom
 
   const token = await createSessionJWT({ userId: user.id });
   cookies.set('jwt', token, {
-    path: '/',
+    path: resolve('/'),
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
