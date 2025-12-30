@@ -21,10 +21,15 @@ export function buildChatMessages({
 			role: item.role as 'user' | 'assistant' | 'system',
 			content: item.content as string
 		}));
+	const limitedHistory =
+		sanitizedHistory.length > 10 ? sanitizedHistory.slice(-10) : sanitizedHistory;
+
+	// console.log("chatPrmopt")
+	// console.log({ systemprompt, history: limitedHistory, context, prompt });
 
 	return [
 		{ role: 'system', content: systemprompt },
-		...sanitizedHistory,
-		{ role: 'user', content: `Context:\n${context || 'n/a'}\n\nPrompt:\n${prompt}` }
+		...limitedHistory,
+		{ role: 'user', content: `User-Prompt:\n${prompt} \n\n CONTEXT:\n${context || 'n/a'}\n\nAGAIN: User-Prompt:\n${prompt}` }
 	] as const;
 }

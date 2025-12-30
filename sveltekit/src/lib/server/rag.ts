@@ -19,8 +19,8 @@ export async function findRepositoryContext(repoUrl: string, prompt: string) {
 
 	console.log("searching for " + prompt);
 
-			console.log("vectorLiteral");
-		console.log(vectorLiteral);
+			// console.log("vectorLiteral");
+		// console.log(vectorLiteral);
 
 	const rows = await prisma.$queryRaw<
 		{
@@ -41,7 +41,7 @@ export async function findRepositoryContext(repoUrl: string, prompt: string) {
 		  AND rv."repositoryUrl" = ${repoUrl}
 		  AND rv."invalidatedAt" IS NULL
 		ORDER BY (rv."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) ASC
-		LIMIT 10`;
+		LIMIT 4`;
 
 	const results: RagResult[] = rows.map((row) => ({
 		...row,

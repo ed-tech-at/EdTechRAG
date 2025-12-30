@@ -8,9 +8,9 @@
 	export let data: PageData;
 
 	let prompt = '';
-	let answer = '';
 	let loading = false;
 	let errorMessage = '';
+	let messages: Array<{ role: 'user' | 'assistant'; content: string; html?: string }> = [];
 
 	// const logInteraction = async (payload: {
 	// 	question: string;
@@ -37,14 +37,22 @@
 		}
 
 		errorMessage = '';
-		answer = '';
+		const nextPrompt = prompt.trim();
+		prompt = '';
 		loading = true;
+
+		const history = messages.map((message) => ({
+			role: message.role,
+			content: message.content
+		}));
+
+		messages = [...messages, { role: 'user', content: nextPrompt }];
 
 		try {
 			const res = await fetch(resolve(`/api/chat/${encodeURIComponent(data.repositoryUrl)}`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ prompt })
+				body: JSON.stringify({ prompt: nextPrompt, history })
 			});
 
 			const body = await res.json();
@@ -53,7 +61,11 @@
 				throw new Error(body?.message ?? 'Request failed');
 			}
 
-			answer = marked.parse(body?.answer) ?? '';
+			const rawAnswer = body?.answer ?? '';
+			messages = [
+				...messages,
+				{ role: 'assistant', content: rawAnswer, html: marked.parse(rawAnswer) ?? '' }
+			];
 			// await logInteraction({
 			// 	question: prompt,
 			// 	context: body?.results
@@ -80,35 +92,44 @@
 		<!-- </a> -->
 	</p>
 
-	<div class="card">
-		<label>
-			Prompt
-			<textarea
-				bind:value={prompt}
-				placeholder="Ask your question..."
-				rows="4"
-				on:keydown={(e) => {
-					if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-						e.preventDefault();
-						send();
-					}
-				}}
-			></textarea>
-		</label>
-		<div class="actions">
-			<button on:click={send} disabled={loading}>{loading ? 'Sending…' : 'Send'}</button>
-			{#if errorMessage}
-				<span class="error">{errorMessage}</span>
+	<div class="card chat-card">
+		<div class="messages">
+			{#if messages.length === 0}
+				<p class="muted empty">Ask a question to start the chat.</p>
 			{/if}
+			{#each messages as message}
+				<div class="bubble {message.role}">
+					{#if message.role === 'assistant'}
+						<div class="bubble-content">{@html message.html}</div>
+					{:else}
+						<div class="bubble-content">{message.content}</div>
+					{/if}
+				</div>
+			{/each}
+		</div>
+		<div class="composer">
+			<label>
+				Prompt
+				<textarea
+					bind:value={prompt}
+					placeholder="Ask your question..."
+					rows="3"
+					on:keydown={(e) => {
+						if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+							e.preventDefault();
+							send();
+						}
+					}}
+				></textarea>
+			</label>
+			<div class="actions">
+				<button on:click={send} disabled={loading}>{loading ? 'Sending…' : 'Send'}</button>
+				{#if errorMessage}
+					<span class="error">{errorMessage}</span>
+				{/if}
+			</div>
 		</div>
 	</div>
-
-	{#if answer}
-		<div class="card answer">
-			<h2>Answer</h2>
-			<pre>{@html answer}</pre>
-		</div>
-	{/if}
 </section>
 
 <style>
@@ -146,7 +167,7 @@
 		padding: 0.5rem;
 		font-family: inherit;
 		font-size: 1rem;
-		min-height: 120px;
+		min-height: 90px;
 		resize: vertical;
 	}
 
@@ -172,13 +193,66 @@
 		font-size: 0.95rem;
 	}
 
-	.answer pre {
-		margin: 0;
-		background: white;
+	.chat-card {
+		padding: 0;
+		overflow: hidden;
+	}
+
+	.messages {
+		display: grid;
+		gap: 0.75rem;
+		padding: 1rem;
+		max-height: 60vh;
+		overflow: auto;
+		background: #ffffff;
+	}
+
+	.empty {
+		text-align: center;
+		margin: 2rem 0;
+	}
+
+	.bubble {
+		display: flex;
+	}
+
+	.bubble.user {
+		justify-content: flex-end;
+	}
+
+	.bubble.assistant {
+		justify-content: flex-start;
+	}
+
+	.bubble-content {
+		max-width: min(72%, 520px);
+		padding: 0.6rem 0.8rem;
+		border-radius: 14px;
 		border: 1px solid #e3e3e3;
-		border-radius: 6px;
-		padding: 0.65rem;
+		background: #f6f6f6;
 		white-space: pre-wrap;
 		font-family: 'Jost';
+	}
+
+	.bubble.user .bubble-content {
+		background: #1f7ae0;
+		color: white;
+		border-color: #1f7ae0;
+	}
+
+	.bubble.assistant .bubble-content :global(p) {
+		margin: 0 0 0.5rem 0;
+	}
+
+	.bubble.assistant .bubble-content :global(p:last-child) {
+		margin-bottom: 0;
+	}
+
+	.composer {
+		border-top: 1px solid #e3e3e3;
+		padding: 0.75rem;
+		background: #fafafa;
+		display: grid;
+		gap: 0.5rem;
 	}
 </style>
