@@ -198,7 +198,18 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const signatureSecret = getSignatureSecret(repository.updateConfig);
-	const providedSignature = request.headers.get('x-signature') ?? null;
+	let providedSignature = request.headers.get('x-signature');
+	
+	if (providedSignature == null) {
+		await logRequest(request, repositoryUrl, {
+			status: 401,
+			success: false,
+			error: 'Signature missing'
+		});
+		return json({ success: false, message: 'Signature missing.' }, { status: 401 });
+	}
+	providedSignature = providedSignature.toLowerCase().startsWith('sha256=') ? providedSignature.slice('sha256='.length) : providedSignature;
+
 	if (signatureSecret && !isSignatureValid(providedSignature, signatureSecret, rawBody)) {
 		await logRequest(request, repositoryUrl, {
 			status: 401,
@@ -206,6 +217,32 @@ export const POST: RequestHandler = async ({ request }) => {
 			error: 'Invalid signature'
 		});
 		return json({ success: false, message: 'Invalid signature.' }, { status: 401 });
+	}
+
+	const bodyTimestamp = Number(body.timestamp);
+
+	if (!Number.isInteger(bodyTimestamp) || bodyTimestamp <= 0) {
+		await logRequest(request, repositoryUrl, {
+			status: 400,
+			success: false,
+			error: 'Missing or invalid timestamp'
+		});
+		return json({ success: false, message: 'Missing or invalid timestamp.' }, { status: 400 });
+	}
+
+	const nowSec = Math.floor(Date.now() / 1000);
+	const maxAgeSec = 5 * 60;
+
+	if (nowSec - bodyTimestamp > maxAgeSec) {
+		await logRequest(request, repositoryUrl, {
+			status: 400,
+			success: false,
+			error: 'Timestamp too old'
+		});
+		return json(
+			{ success: false, message: 'Payload timestamp is older than 5 minutes.' },
+			{ status: 400 }
+		);
 	}
 
 	const files = Array.isArray(body.files) ? (body.files as IncomingFile[]) : [];
