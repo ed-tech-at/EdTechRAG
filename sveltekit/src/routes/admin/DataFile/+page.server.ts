@@ -8,27 +8,18 @@ export const load: PageServerLoad = async ({ url }) => {
 	const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
 
 	const totalCount = await prisma.dataFile.count();
-	const totalActiveFiles = await prisma.dataFile.count({where: {invalidatedAt: null}});
 	const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 	const page = Math.min(currentPage, totalPages);
 	const offset = (page - 1) * PAGE_SIZE;
 
-	const [dataFiles, notChunkedCount] = await Promise.all([
-		prisma.dataFile.findMany({
-			// where: {
-				// invalidatedAt: null 
-			// },
-			orderBy: [  {invalidatedAt: 'desc' }, {createdAt: 'desc'}],
-			skip: offset,
-			take: PAGE_SIZE
-		}),
-		prisma.dataFile.count({
-			where: { chunkedAt: null, 
-				invalidatedAt: null 
-
-			 }
-		})
-	]);
+	const dataFiles = await prisma.dataFile.findMany({
+		// where: {
+			// invalidatedAt: null
+		// },
+		orderBy: [{ invalidatedAt: 'desc' }, { createdAt: 'desc' }],
+		skip: offset,
+		take: PAGE_SIZE
+	});
 
 	const dataFileIds = dataFiles.map((file) => file.id);
 	const chunkCounts =
@@ -59,11 +50,6 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	return {
 		dataFiles: dataFilesWithCounts,
-		stats: {
-			totalFiles: totalCount,
-			totalActiveFiles: totalActiveFiles,
-			notChunked: notChunkedCount
-		},
 		pagination: {
 			page,
 			pageSize: PAGE_SIZE,

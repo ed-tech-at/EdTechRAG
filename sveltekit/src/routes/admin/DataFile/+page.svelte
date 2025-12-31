@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { invalidateAll } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -15,9 +15,16 @@
 		return `?page=${next}`;
 	};
 
+	type Stats = {
+		totalFiles: number;
+		totalActiveFiles: number;
+		notChunked: number;
+	};
+
 	let isChunking = false;
 	let chunkError: string | null = null;
 	let chunkMessage: string | null = null;
+	let stats: Stats = { totalFiles: 0, totalActiveFiles: 0, notChunked: 0 };
 
 	const runChunkOnce = async () => {
 		const res = await fetch(resolve('/admin/DataFile/run'), { method: 'POST' });
@@ -32,7 +39,22 @@
 
 	const refreshStats = async () => {
 		try {
-			await invalidateAll();
+			const res = await fetch(resolve('/admin/DataFile/stats'), {
+				headers: { accept: 'application/json' }
+			});
+			if (!res.ok) {
+				throw new Error(`Refresh stats failed (${res.status})`);
+			}
+			const body = await res.json();
+			const nextStats = body;
+			if (
+				nextStats &&
+				typeof nextStats.totalFiles === 'number' &&
+				typeof nextStats.totalActiveFiles === 'number' &&
+				typeof nextStats.notChunked === 'number'
+			) {
+				stats = nextStats;
+			}
 		} catch (err) {
 			console.warn('Failed to refresh stats', err);
 		}
@@ -74,6 +96,9 @@
 				break;
 			}
 		}
+
+		await refreshStats();
+
 	};
 
 	const stopChunking = () => {
@@ -87,6 +112,10 @@
 			void startChunking();
 		}
 	};
+
+	onMount(() => {
+		void refreshStats();
+	});
 </script>
 
 <section class="data-files">
@@ -101,15 +130,15 @@
 		<div class="stats-grid">
 			<div class="stat-card">
 				<div class="label">Total files</div>
-				<div class="value">{formatNumber(data.stats.totalFiles)}</div>
+				<div class="value">{formatNumber(stats.totalFiles)}</div>
 			</div>
 			<div class="stat-card">
 				<div class="label">Active files</div>
-				<div class="value">{formatNumber(data.stats.totalActiveFiles)}</div>
+				<div class="value">{formatNumber(stats.totalActiveFiles)}</div>
 			</div>
 			<div class="stat-card">
 				<div class="label">Not active chunked</div>
-				<div class="value">{formatNumber(data.stats.notChunked)}</div>
+				<div class="value">{formatNumber(stats.notChunked)}</div>
 			</div>
 			<button class="chunk-toggle" on:click={toggleChunking}>
 				{#if isChunking}

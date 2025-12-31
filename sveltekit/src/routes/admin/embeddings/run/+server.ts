@@ -4,7 +4,11 @@ import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
 
-export const POST: RequestHandler = async () => {
+import { requireValidJwt } from '$lib/server/jwt';
+
+export const POST: RequestHandler = async ({ cookies, url }) => {
+	await requireValidJwt(cookies, url);
+
 	const pendingChunks = await prisma.$queryRaw<
 		{
 			id: number;

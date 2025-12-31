@@ -2,8 +2,11 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
 import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitter';
+import { requireValidJwt } from '$lib/server/jwt';
 
-export const POST: RequestHandler = async () => {
+export const POST: RequestHandler = async ({ cookies, url }) => {
+	await requireValidJwt(cookies, url);
+
 	const dataFile = await prisma.dataFile.findFirst({
 		where: { chunkedAt: null, remoteUrl: { not: null }, invalidatedAt: null },
 		orderBy: { createdAt: 'asc' },

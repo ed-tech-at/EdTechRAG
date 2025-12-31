@@ -55,13 +55,15 @@ export async function login(email: string, password: string, cookies: any): Prom
     return { success: false, error: "Ungültige Anmeldedaten. Bitte versuchen Sie es erneut." };
   }
 
-  const token = await createSessionJWT({ userId: user.id });
+  const maxAgeSec = 60 * 60 * 24;
+
+  const token = await createSessionJWT({ userId: user.id }, maxAgeSec);
   cookies.set('jwt', token, {
     path: resolve('/'),
     httpOnly: true,
     secure: true,
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24
+    maxAge: maxAgeSec
   });
 
   return { success: true };
