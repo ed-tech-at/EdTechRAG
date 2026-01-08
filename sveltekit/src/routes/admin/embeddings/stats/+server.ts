@@ -2,7 +2,12 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
 
-export const GET: RequestHandler = async () => {
+import { requireValidJwt } from '$lib/server/jwt';
+
+export const GET: RequestHandler = async ({ cookies, url }) => {
+	await requireValidJwt(cookies, url);
+
+
 	const rows = await prisma.$queryRaw<
 		{ total: bigint; invalidated: bigint; missing_vector: bigint }[]
 	>`SELECT
