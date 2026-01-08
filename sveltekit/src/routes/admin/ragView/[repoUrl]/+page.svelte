@@ -224,6 +224,7 @@
 			<h1>RAG view · {data.repository.name}</h1>
 			<p class="muted">URL for Simple: <a href={resolve(`/simple/${data.repository.url}`)}>{data.repository.url}</a></p>
 			<p class="muted">URL for Single: <a href={resolve(`/single/${data.repository.url}`)}>{data.repository.url}</a></p>
+			<p class="muted">URL for Parameter: <a href={resolve(`/parameter/${data.repository.url}`)}>{data.repository.url}</a></p>
 		</div>
 	</header>
 

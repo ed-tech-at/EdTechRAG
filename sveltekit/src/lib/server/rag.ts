@@ -13,7 +13,7 @@ export type RagResult = {
 	similarity: number;
 };
 
-export async function findRepositoryContext(repoUrl: string, prompt: string) {
+export async function findRepositoryContext(repoUrl: string, prompt: string, limit: number = 4) {
 	const vector = await embedText(prompt, repoUrl);
 	const vectorLiteral = `[${vector.join(',')}]`;
 
@@ -41,7 +41,7 @@ export async function findRepositoryContext(repoUrl: string, prompt: string) {
 		  AND rv."repositoryUrl" = ${repoUrl}
 		  AND rv."invalidatedAt" IS NULL
 		ORDER BY (rv."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) ASC
-		LIMIT 4`;
+		LIMIT ${limit}`;
 
 	const results: RagResult[] = rows.map((row) => ({
 		...row,

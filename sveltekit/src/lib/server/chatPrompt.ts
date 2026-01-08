@@ -15,12 +15,16 @@ export function buildChatMessages({
 	context: string;
 	history?: ChatHistoryItem[];
 }) {
+	const VALID_ROLES = ['user', 'assistant', 'system'] as const;
+
 	const sanitizedHistory = (history ?? [])
-		.filter((item) => typeof item?.role === 'string' && typeof item?.content === 'string')
-		.map((item) => ({
-			role: item.role as 'user' | 'assistant' | 'system',
-			content: item.content as string
-		}));
+		.filter(
+			(item): item is { role: 'user' | 'assistant' | 'system'; content: string } =>
+				typeof item?.role === 'string' &&
+				VALID_ROLES.includes(item.role as any) &&
+				typeof item?.content === 'string'
+		)
+		.map((item) => ({ role: item.role, content: item.content }));
 	const limitedHistory =
 		sanitizedHistory.length > 10 ? sanitizedHistory.slice(-10) : sanitizedHistory;
 
