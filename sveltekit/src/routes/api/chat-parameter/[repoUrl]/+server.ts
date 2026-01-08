@@ -87,10 +87,10 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			await prisma.chatLog.create({
 				data: {
 					question: prompt,
-					context,
+					context: systemprompt + '\n-----\n\n-----\n' + context,
 					answer,
 					repositoryUrl: repoUrl,
-					endpoint: '/api/chat/[repoUrl]'
+					endpoint: '/api/chat-parameter/[repoUrl]'
 				}
 			});
 		} catch (err) {
