@@ -16,5 +16,5 @@ export const load: PageServerLoad = async ({ params }) => {
 		};
 	}
 
-	return { repositoryUrl: repository.url, repositoryName: repository.name };
+	return { repositoryUrl: repository.url, repositoryName: repository.name, systemprompt: repository.ragConfig.systemprompt };
 };

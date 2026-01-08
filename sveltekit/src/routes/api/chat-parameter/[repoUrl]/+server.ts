@@ -63,7 +63,9 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			})
 			.join('\n\n');
 
-		const systemprompt = repository.ragConfig?.systemprompt
+		// const systemprompt = repository.ragConfig?.systemprompt
+		const systemprompt = body?.systemprompt;
+
 
 		const messages = buildChatMessages({
 			systemprompt,

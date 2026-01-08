@@ -14,6 +14,7 @@
 
 
 	let prompt = '';
+	let systemprompt = data.systemprompt;
 	let loading = false;
 	let errorMessage = '';
 	let messages: Array<{ role: 'user' | 'assistant'| 'context'; content: string; html?: string }> = [];
@@ -58,7 +59,7 @@
 			const res = await fetch(resolve(`/api/chat-parameter/${encodeURIComponent(data.repositoryUrl)}`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ prompt: nextPrompt, history, numItems })
+				body: JSON.stringify({ prompt: nextPrompt, history, numItems, systemprompt })
 			});
 
 			const body = await res.json();
@@ -107,6 +108,15 @@
 			{data.repositoryUrl}
 		<!-- </a> -->
 	</p>
+
+
+	<div class="card">
+		<label>
+			Systemprompt
+			<textarea bind:value={systemprompt}>{systemprompt}</textarea>
+		</label>
+
+	</div>
 
 
 	<div class="card">
