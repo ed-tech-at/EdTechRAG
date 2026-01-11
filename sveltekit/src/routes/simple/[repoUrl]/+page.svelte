@@ -2,8 +2,8 @@
 	import type { PageData } from './$types';
 	import { resolve } from '$app/paths';
 
-	import { marked } from 'marked';
-
+	// import { marked } from 'marked';
+	import { renderMarkdownWithBlankTargets } from '$lib/markdown';
 
 	export let data: PageData;
 
@@ -64,8 +64,16 @@
 			const rawAnswer = body?.answer ?? '';
 			messages = [
 				...messages,
-				{ role: 'assistant', content: rawAnswer, html: marked.parse(rawAnswer) ?? '' }
+				{ role: 'assistant', content: rawAnswer, html: renderMarkdownWithBlankTargets(rawAnswer) ?? '' }
 			];
+
+			setTimeout(() => {
+				const el = document.querySelector('.messages') as HTMLElement | null;
+				if (el) {
+					el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+				}
+			}, 0);
+			
 			// await logInteraction({
 			// 	question: prompt,
 			// 	context: body?.results

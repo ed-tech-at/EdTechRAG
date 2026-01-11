@@ -2,7 +2,7 @@
 	import type { PageData } from './$types';
 	import { resolve } from '$app/paths';
 
-	import { marked } from 'marked';
+	import { renderMarkdownWithBlankTargets } from '$lib/markdown';
 
 
 	export let data: PageData;
@@ -71,8 +71,8 @@
 			const rawAnswer = body?.answer ?? '';
 			messages = [
 				...messages,
-				{ role: 'context', content: body?.context, html: marked.parse(body?.context) ?? '' },
-				{ role: 'assistant', content: rawAnswer, html: marked.parse(rawAnswer) ?? '' }
+				{ role: 'context', content: body?.context, html: renderMarkdownWithBlankTargets(body?.context) },
+				{ role: 'assistant', content: rawAnswer, html: renderMarkdownWithBlankTargets(rawAnswer) }
 			];
 
 			// scroll messages to bottom
