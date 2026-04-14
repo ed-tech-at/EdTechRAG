@@ -11,6 +11,7 @@
 	let loading = false;
 	let errorMessage = '';
 	let messages: Array<{ role: 'user' | 'assistant'; content: string; html?: string }> = [];
+	const decoder = new TextDecoder();
 
 	// const logInteraction = async (payload: {
 	// 	question: string;
@@ -49,23 +50,40 @@
 		messages = [...messages, { role: 'user', content: nextPrompt }];
 
 		try {
-			const res = await fetch(resolve(`/api/chat/${encodeURIComponent(data.repositoryUrl)}`), {
+			const assistantIndex = messages.length;
+			messages = [...messages, { role: 'assistant', content: '', html: '' }];
+
+			const res = await fetch(resolve(`/api/chat/${encodeURIComponent(data.repositoryUrl ?? '')}`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ prompt: nextPrompt, history })
 			});
 
-			const body = await res.json();
-
-			if (!res.ok || body?.success === false) {
-				throw new Error(body?.message ?? 'Request failed');
+			if (!res.ok || !res.body) {
+				throw new Error('Request failed');
 			}
 
-			const rawAnswer = body?.answer ?? '';
-			messages = [
-				...messages,
-				{ role: 'assistant', content: rawAnswer, html: renderMarkdownWithBlankTargets(rawAnswer) ?? '' }
-			];
+			const reader = res.body.getReader();
+			let rawAnswer = '';
+			let done = false;
+
+			while (!done) {
+				const chunk = await reader.read();
+				done = chunk.done;
+				const text = decoder.decode(chunk.value || new Uint8Array(), { stream: !done });
+				if (!text) continue;
+
+				rawAnswer += text;
+				messages = messages.map((message, index) =>
+					index === assistantIndex
+						? {
+								role: 'assistant',
+								content: rawAnswer,
+								html: renderMarkdownWithBlankTargets(rawAnswer)
+						  }
+						: message
+				);
+			}
 
 			setTimeout(() => {
 				const el = document.querySelector('.messages') as HTMLElement | null;
@@ -84,6 +102,9 @@
 			// 	endpoint: '/simple/[repoUrl]'
 			// });
 		} catch (err) {
+			if (messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content) {
+				messages = messages.slice(0, -1);
+			}
 			errorMessage = err instanceof Error ? err.message : 'Request failed';
 		} finally {
 			loading = false;
@@ -93,12 +114,12 @@
 
 <section class="page">
 	<h1>Simple Chat · {data.repositoryName}</h1>
-	<p class="muted">
-		Repository:
+	<!-- <p class="muted"> -->
+		<!-- Repository: -->
 		<!-- <a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repository.url)}`)}> -->
-			{data.repositoryUrl}
+			<!-- {data.repositoryUrl} -->
 		<!-- </a> -->
-	</p>
+	<!-- </p> -->
 
 	<div class="card chat-card">
 		<div class="messages">
@@ -108,7 +129,13 @@
 			{#each messages as message}
 				<div class="bubble {message.role}">
 					{#if message.role === 'assistant'}
-						<div class="bubble-content">{@html message.html}</div>
+						<div class="bubble-content">
+							{#if loading && !message.content}
+								<span class="muted">Loading...</span>
+							{:else}
+								{@html message.html}
+							{/if}
+						</div>
 					{:else}
 						<div class="bubble-content">{message.content}</div>
 					{/if}
@@ -151,6 +178,7 @@
 
 	.muted {
 		color: #666;
+		font-style: italic;
 	}
 
 	.card {

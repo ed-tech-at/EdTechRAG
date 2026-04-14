@@ -312,7 +312,7 @@
 								{#if item.status === 'searching'}
 									<span class="muted">Waiting for context…</span>
 								{:else if item.status === 'answering' && !item.answer}
-									<span class="muted">Generating answer…</span>
+									<span class="muted">Loading...</span>
 								{:else}
 									{@html renderMarkdown(item.answer || '—')}
 								{/if}

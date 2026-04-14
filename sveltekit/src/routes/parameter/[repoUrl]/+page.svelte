@@ -14,10 +14,13 @@
 
 
 	let prompt = '';
-	let systemprompt = data.systemprompt;
+	let systemprompt = data.systemprompt ?? '';
 	let loading = false;
 	let errorMessage = '';
-	let messages: Array<{ role: 'user' | 'assistant'| 'context'; content: string; html?: string }> = [];
+	let messages: Array<{ role: 'user' | 'assistant' | 'context'; content: string; html?: string }> = [];
+	const decoder = new TextDecoder();
+	const contextStart = '__EDTECH_CONTEXT_START__\n';
+	const contextEnd = '\n__EDTECH_CONTEXT_END__\n';
 
 	// const logInteraction = async (payload: {
 	// 	question: string;
@@ -56,24 +59,68 @@
 		messages = [...messages, { role: 'user', content: nextPrompt }];
 
 		try {
-			const res = await fetch(resolve(`/api/chat-parameter/${encodeURIComponent(data.repositoryUrl)}`), {
+			const res = await fetch(resolve(`/api/chat-parameter/${encodeURIComponent(data.repositoryUrl ?? '')}`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ prompt: nextPrompt, history, numItems, systemprompt })
 			});
 
-			const body = await res.json();
-
-			if (!res.ok || body?.success === false) {
-				throw new Error(body?.message ?? 'Request failed');
+			if (!res.ok || !res.body) {
+				throw new Error('Request failed');
 			}
 
-			const rawAnswer = body?.answer ?? '';
-			messages = [
-				...messages,
-				{ role: 'context', content: body?.context, html: renderMarkdownWithBlankTargets(body?.context) },
-				{ role: 'assistant', content: rawAnswer, html: renderMarkdownWithBlankTargets(rawAnswer) }
-			];
+			const reader = res.body.getReader();
+			let buffer = '';
+			let rawAnswer = '';
+			let done = false;
+			let contextLoaded = false;
+			let assistantIndex = -1;
+
+			while (!done) {
+				const chunk = await reader.read();
+				done = chunk.done;
+				const text = decoder.decode(chunk.value || new Uint8Array(), { stream: !done });
+				if (!text) continue;
+
+				if (!contextLoaded) {
+					buffer += text;
+					const endIndex = buffer.indexOf(contextEnd);
+					if (endIndex === -1) continue;
+
+					const contextPayload = buffer.startsWith(contextStart)
+						? buffer.slice(contextStart.length, endIndex)
+						: '';
+					const remainder = buffer.slice(endIndex + contextEnd.length);
+
+					assistantIndex = messages.length + 1;
+					messages = [
+						...messages,
+						{
+							role: 'context',
+							content: contextPayload,
+							html: renderMarkdownWithBlankTargets(contextPayload)
+						},
+						{ role: 'assistant', content: '', html: '' }
+					];
+					contextLoaded = true;
+					buffer = '';
+
+					if (!remainder) continue;
+					rawAnswer += remainder;
+				} else {
+					rawAnswer += text;
+				}
+
+				messages = messages.map((message, index) =>
+					index === assistantIndex
+						? {
+								role: 'assistant',
+								content: rawAnswer,
+								html: renderMarkdownWithBlankTargets(rawAnswer)
+						  }
+						: message
+				);
+			}
 
 			// scroll messages to bottom
 			setTimeout(() => {
@@ -93,6 +140,9 @@
 			// 	endpoint: '/simple/[repoUrl]'
 			// });
 		} catch (err) {
+			if (messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content) {
+				messages = messages.slice(0, -1);
+			}
 			errorMessage = err instanceof Error ? err.message : 'Request failed';
 		} finally {
 			loading = false;
@@ -139,17 +189,23 @@
 			{#each messages as message}
 				<div class="bubble {message.role}">
 					{#if message.role === 'assistant'}
-						<div class="bubble-content">{@html message.html}</div>
+						<div class="bubble-content">
+							{#if loading && !message.content}
+								<span class="muted">Loading...</span>
+							{:else}
+								{@html message.html}
+							{/if}
+						</div>
 					{:else if message.role === 'context'}
-					<div class="bubble-content context-bubble">
-						<details>
-							<summary style="cursor: pointer;">
-								{message.content.length > 200 ? message.content.slice(0, 20) + '...' : message.content}
-								<span class="muted"> ({message.content.length} chars)</span>
-							</summary>
-							<div style="background:#f0f0f0; padding:0.6rem; border-radius:8px; margin-top:0.5rem;">{@html message.html}</div>
-						</details>
-					</div>
+						<div class="bubble-content context-bubble">
+							<details>
+								<summary style="cursor: pointer;">
+									{message.content.length > 200 ? message.content.slice(0, 20) + '...' : message.content}
+									<span class="muted"> ({message.content.length} chars)</span>
+								</summary>
+								<div style="background:#f0f0f0; padding:0.6rem; border-radius:8px; margin-top:0.5rem;">{@html message.html}</div>
+							</details>
+						</div>
 					{:else}
 						<div class="bubble-content">{message.content}</div>
 					{/if}
@@ -192,6 +248,7 @@
 
 	.muted {
 		color: #666;
+		font-style: italic;
 	}
 
 	.card {

@@ -8,7 +8,7 @@ type EmbeddingResponse = {
 };
 
 export async function embedText(text: string, repoUrl: string) {
-	const { apiKey, embeddingBase, embeddingModel } = await getEmbeddingConfig(repoUrl);
+	const { apiKeyEmbedding, embeddingBase, embeddingModel } = await getEmbeddingConfig(repoUrl);
 	const buildEmbeddingUrl = () => new URL(embeddingBase).toString();
 
 	const existingVectorRows = await prisma.$queryRaw<{ vectorText: string | null }[]>`
@@ -32,7 +32,7 @@ export async function embedText(text: string, repoUrl: string) {
 			const cachedVector = normalized.split(',').map((value) => Number(value.trim()));
 			if (cachedVector.length && cachedVector.every((value) => Number.isFinite(value))) {
 				
-				console.log("resusing cached vecotr")
+				// console.log("resusing cached vecotr")
 				return cachedVector;
 			}
 		}
@@ -42,7 +42,7 @@ export async function embedText(text: string, repoUrl: string) {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			Authorization: `Bearer ${apiKey}`
+			Authorization: `Bearer ${apiKeyEmbedding}`
 		},
 		body: JSON.stringify({
 			model: embeddingModel,

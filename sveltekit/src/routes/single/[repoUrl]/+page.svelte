@@ -2,7 +2,7 @@
 	import type { PageData } from './$types';
 	import { resolve } from '$app/paths';
 
-	import { marked } from 'marked';
+	import { renderMarkdownWithBlankTargets } from '$lib/markdown';
 
 
 	export let data: PageData;
@@ -11,6 +11,7 @@
 	let answer = '';
 	let loading = false;
 	let errorMessage = '';
+	const decoder = new TextDecoder();
 
 	// const logInteraction = async (payload: {
 	// 	question: string;
@@ -41,19 +42,29 @@
 		loading = true;
 
 		try {
-			const res = await fetch(resolve(`/api/chat/${encodeURIComponent(data.repositoryUrl)}`), {
+			const res = await fetch(resolve(`/api/chat/${encodeURIComponent(data.repositoryUrl ?? '')}`), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ prompt })
 			});
 
-			const body = await res.json();
-
-			if (!res.ok || body?.success === false) {
-				throw new Error(body?.message ?? 'Request failed');
+			if (!res.ok || !res.body) {
+				throw new Error('Request failed');
 			}
 
-			answer = marked.parse(body?.answer) ?? '';
+			const reader = res.body.getReader();
+			let rawAnswer = '';
+			let done = false;
+
+			while (!done) {
+				const chunk = await reader.read();
+				done = chunk.done;
+				const text = decoder.decode(chunk.value || new Uint8Array(), { stream: !done });
+				if (!text) continue;
+
+				rawAnswer += text;
+				answer = renderMarkdownWithBlankTargets(rawAnswer);
+			}
 			// await logInteraction({
 			// 	question: prompt,
 			// 	context: body?.results
@@ -73,12 +84,12 @@
 
 <section class="page">
 	<h1>Single Chat · {data.repositoryName}</h1>
-	<p class="muted">
-		Repository:
+	<!-- <p class="muted"> -->
+		<!-- Repository: -->
 		<!-- <a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repository.url)}`)}> -->
-			{data.repositoryUrl}
+			<!-- {data.repositoryUrl} -->
 		<!-- </a> -->
-	</p>
+	<!-- </p> -->
 
 	<div class="card">
 		<label>
@@ -103,10 +114,10 @@
 		</div>
 	</div>
 
-	{#if answer}
+	{#if loading || answer}
 		<div class="card answer">
 			<h2>Answer</h2>
-			<pre>{@html answer}</pre>
+			<pre>{#if loading && !answer}<span class="muted">Loading...</span>{:else}{@html answer}{/if}</pre>
 		</div>
 	{/if}
 </section>
@@ -122,6 +133,7 @@
 
 	.muted {
 		color: #666;
+		font-style: italic;
 	}
 
 	.card {
