@@ -3,38 +3,46 @@ import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
 import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitter';
 import { requireValidJwt } from '$lib/server/jwt';
+import { isRepositoryAllowed } from '$lib/server/repository';
 
 export const POST: RequestHandler = async ({ cookies, url }) => {
-	await requireValidJwt(cookies, url);
+	const session = await requireValidJwt(cookies, url);
 
 	const dataFile = await prisma.dataFile.findFirst({
-		where: { chunkedAt: null, remoteUrl: { not: null }, invalidatedAt: null },
+		where: {
+			chunkedAt: null,
+			remoteUrl: { not: null },
+			invalidatedAt: null
+		},
 		orderBy: { createdAt: 'asc' },
 		select: { id: true, repositoryUrl: true, remoteUrl: true, meta: true, repository: true }
 	});
 
-	if (!dataFile) {
+	const allowedDataFile =
+		dataFile && isRepositoryAllowed(session, dataFile.repositoryUrl) ? dataFile : null;
+
+	if (!allowedDataFile) {
 		return json({ status: 'empty' });
 	}
 
-	if (!dataFile.remoteUrl) {
-		return json({ status: 'error', message: `Data file #${dataFile.id} has no remote URL.` });
+	if (!allowedDataFile.remoteUrl) {
+		return json({ status: 'error', message: `Data file #${allowedDataFile.id} has no remote URL.` });
 	}
 
-	const isFullUrl = /^https?:\/\//i.test(dataFile.remoteUrl);
-	let resolvedUrl = dataFile.remoteUrl;
+	const isFullUrl = /^https?:\/\//i.test(allowedDataFile.remoteUrl);
+	let resolvedUrl = allowedDataFile.remoteUrl;
 	let gitlabToken: string | undefined;
 
 	if (!isFullUrl) {
 		const repository = await prisma.repository.findUnique({
-			where: { url: dataFile.repositoryUrl },
+			where: { url: allowedDataFile.repositoryUrl },
 			select: { updateConfig: true }
 		});
 
 		if (!repository) {
 			return json({
 				status: 'error',
-				message: `Repository not found for file #${dataFile.id}.`
+				message: `Repository not found for file #${allowedDataFile.id}.`
 			});
 		}
 
@@ -51,12 +59,12 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 		if (!gitlabApiUrl || !gitlabToken) {
 			return json({
 				status: 'error',
-				message: `GitLab config missing PRIVATE-TOKEN or gitlab_api_url for ${dataFile.repositoryUrl}.`
+				message: `GitLab config missing PRIVATE-TOKEN or gitlab_api_url for ${allowedDataFile.repositoryUrl}.`
 			});
 		}
 
 		resolvedUrl = `${gitlabApiUrl}${gitlabApiUrl.endsWith('/') ? '' : '/'}${encodeURIComponent(
-			dataFile.remoteUrl
+			allowedDataFile.remoteUrl
 		)}/raw?ref=${encodeURIComponent(gitlabRef)}`;
 	}
 
@@ -66,7 +74,7 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 	if (!response.ok) {
 		return json({
 			status: 'error',
-			message: `Failed to fetch file #${dataFile.id} (${response.status}).`
+			message: `Failed to fetch file #${allowedDataFile.id} (${response.status}).`
 		});
 	}
 
@@ -76,12 +84,12 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 	
 	let spliterOptions = {};
 
-	if ( dataFile.repository?.ragConfig?.chunkSize !== undefined	) {
-		spliterOptions.chunkSize = dataFile.repository?.ragConfig?.chunkSize;
+	if ( allowedDataFile.repository?.ragConfig?.chunkSize !== undefined	) {
+		spliterOptions.chunkSize = allowedDataFile.repository?.ragConfig?.chunkSize;
 	}
 
-	if ( dataFile.repository?.ragConfig?.chunkOverlap !== undefined	) {
-		spliterOptions.chunkOverlap = dataFile.repository?.ragConfig?.chunkOverlap;
+	if ( allowedDataFile.repository?.ragConfig?.chunkOverlap !== undefined	) {
+		spliterOptions.chunkOverlap = allowedDataFile.repository?.ragConfig?.chunkOverlap;
 	}
 	
 
@@ -90,23 +98,23 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 	if (chunks.length === 0) {
 		return json({
 			status: 'error',
-			message: `No chunks found for file #${dataFile.id}.`
+			message: `No chunks found for file #${allowedDataFile.id}.`
 		});
 	}
 
 	const statements = [
-		prisma.$executeRaw`UPDATE "rag_vectors"."vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFile.id}`,
+		prisma.$executeRaw`UPDATE "rag_vectors"."vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${allowedDataFile.id}`,
 		...chunks.map((chunk, idx) =>
 			prisma.$executeRaw`INSERT INTO "rag_vectors"."vector1536" ("repositoryUrl","dataFileId","chunkNr","content","createdAt")
-			VALUES (${dataFile.repositoryUrl}, ${dataFile.id}, ${idx}, ${chunk}, NOW())`
+			VALUES (${allowedDataFile.repositoryUrl}, ${allowedDataFile.id}, ${idx}, ${chunk}, NOW())`
 		)
 	];
 
 	await prisma.$transaction(statements);
 
 	const existingMeta =
-		dataFile.meta && typeof dataFile.meta === 'object'
-			? (dataFile.meta as Record<string, unknown>)
+		allowedDataFile.meta && typeof allowedDataFile.meta === 'object'
+			? (allowedDataFile.meta as Record<string, unknown>)
 			: {};
 	const hasMdMeta = mdMeta && Object.keys(mdMeta).length > 0;
 	const nextMeta = {
@@ -116,12 +124,12 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 	};
 
 	await prisma.dataFile.update({
-		where: { id: dataFile.id },
+		where: { id: allowedDataFile.id },
 		data: {
 			meta: nextMeta,
 			chunkedAt: new Date()
 		}
 	});
 
-	return json({ status: 'chunked', fileId: dataFile.id, chunks: chunks.length });
+	return json({ status: 'chunked', fileId: allowedDataFile.id, chunks: chunks.length });
 };

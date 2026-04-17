@@ -1,5 +1,7 @@
 import type { PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
+import { requireValidJwt } from '$lib/server/jwt';
+import { getRepositoryAccessRegex } from '$lib/server/repository';
 
 const PAGE_SIZE = 100;
 
@@ -17,12 +19,28 @@ type VectorRow = {
 	vectorPreview: string | null;
 };
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ cookies, url }) => {
+	const session = await requireValidJwt(cookies, url);
+	const allowRegex = getRepositoryAccessRegex(session);
+	if (!allowRegex || !session.allow_regex) {
+		return {
+			items: [],
+			pagination: {
+				page: 1,
+				pageSize: PAGE_SIZE,
+				totalPages: 1,
+				totalCount: 0
+			}
+		};
+	}
 	const requestedPage = Number(url.searchParams.get('page')) || 1;
 	const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
 
 	const countRows = await prisma.$queryRaw<{ count: bigint }[]>`
-		SELECT COUNT(*)::bigint AS count FROM "rag_vectors"."vector1536"
+		SELECT COUNT(*)::bigint AS count
+		FROM "rag_vectors"."vector1536"
+		WHERE "repositoryUrl" IS NOT NULL
+		  AND "repositoryUrl" ~ ${session.allow_regex}
 	`;
 	const totalCount = Number(countRows[0]?.count ?? 0n);
 	const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
@@ -46,6 +64,8 @@ export const load: PageServerLoad = async ({ url }) => {
 				ELSE NULL
 			END AS "vectorPreview"
 		FROM "rag_vectors"."vector1536"
+		WHERE "repositoryUrl" IS NOT NULL
+		  AND "repositoryUrl" ~ ${session.allow_regex}
 		ORDER BY ("invalidatedAt" IS NULL) DESC, ("embeddingVector" IS NULL) DESC, "embeddedAt" DESC NULLS LAST, "createdAt" ASC NULLS LAST, "id" DESC
 		OFFSET ${offset}
 		LIMIT ${PAGE_SIZE}

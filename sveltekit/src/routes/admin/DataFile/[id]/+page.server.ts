@@ -4,8 +4,11 @@ import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
 import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitter';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
+import { requireValidJwt } from '$lib/server/jwt';
+import { isRepositoryAllowed } from '$lib/server/repository';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ cookies, params, url }) => {
+	const session = await requireValidJwt(cookies, url);
 	const dataFileId = Number(params.id);
 
 	if (!Number.isInteger(dataFileId)) {
@@ -22,6 +25,10 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	if (!dataFile) {
 		throw error(404, 'Data file not found');
+	}
+
+	if (!isRepositoryAllowed(session, dataFile.repositoryUrl)) {
+		throw error(403, 'Repository access denied');
 	}
 
 	const vectorRows = await prisma.$queryRaw<
@@ -53,7 +60,8 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	delete: async ({ params }) => {
+	delete: async ({ cookies, params, url }) => {
+		const session = await requireValidJwt(cookies, url);
 		const dataFileId = Number(params.id);
 
 		if (!Number.isInteger(dataFileId)) {
@@ -63,11 +71,15 @@ export const actions: Actions = {
 		try {
 			const dataFile = await prisma.dataFile.findUnique({
 				where: { id: dataFileId },
-				select: { id: true }
+				select: { id: true, repositoryUrl: true }
 			});
 
 			if (!dataFile) {
 				return fail(404, { success: false, message: 'Data file not found.' });
+			}
+
+			if (!isRepositoryAllowed(session, dataFile.repositoryUrl)) {
+				return fail(403, { success: false, message: 'Repository access denied.' });
 			}
 
 			await prisma.dataFile.update({
@@ -88,7 +100,8 @@ export const actions: Actions = {
 		}
 	},
 
-	setChunkingToNull: async ({ params }) => {
+	setChunkingToNull: async ({ cookies, params, url }) => {
+		const session = await requireValidJwt(cookies, url);
 		const dataFileId = Number(params.id);
 
 		if (!Number.isInteger(dataFileId)) {
@@ -96,6 +109,19 @@ export const actions: Actions = {
 		}
 
 		try {
+			const dataFile = await prisma.dataFile.findUnique({
+				where: { id: dataFileId },
+				select: { repositoryUrl: true }
+			});
+
+			if (!dataFile) {
+				return fail(404, { success: false, message: 'Data file not found.' });
+			}
+
+			if (!isRepositoryAllowed(session, dataFile.repositoryUrl)) {
+				return fail(403, { success: false, message: 'Repository access denied.' });
+			}
+
 			await prisma.$transaction([
 				prisma.dataFile.update({
 					where: { id: dataFileId },
@@ -126,7 +152,8 @@ export const actions: Actions = {
 			return fail(500, { success: false, message: 'Update failed. See server logs.' });
 		}
 	},
-	ingest: async ({ request, params }) => {
+	ingest: async ({ cookies, request, params, url }) => {
+		const session = await requireValidJwt(cookies, url);
 		const dataFileId = Number(params.id);
 		const formData = await request.formData();
 		let contentForm = formData.get('content');
@@ -170,6 +197,10 @@ export const actions: Actions = {
 			return fail(404, { success: false, message: 'Data file not found.' });
 		}
 
+		if (!isRepositoryAllowed(session, existingDataFile.repositoryUrl)) {
+			return fail(403, { success: false, message: 'Repository access denied.' });
+		}
+
 		const statements = [
 			prisma.$executeRaw`UPDATE "rag_vectors"."vector1536" SET "invalidatedAt" = NOW() WHERE "dataFileId" = ${dataFileId}`,
 			...chunks.map((chunk, idx) =>
@@ -189,7 +220,8 @@ export const actions: Actions = {
 			message: `Replaced with ${chunks.length} chunk${chunks.length === 1 ? '' : 's'}.`
 		};
 	},
-	embed: async ({ request }) => {
+	embed: async ({ cookies, request, url }) => {
+		const session = await requireValidJwt(cookies, url);
 		const formData = await request.formData();
 		const chunkId = formData.get('chunkId');
 
@@ -209,6 +241,10 @@ export const actions: Actions = {
 
 			if (!chunk || !chunk.content || !chunk.repositoryUrl) {
 				return fail(404, { success: false, message: 'Chunk not found.' });
+			}
+
+			if (!isRepositoryAllowed(session, chunk.repositoryUrl)) {
+				return fail(403, { success: false, message: 'Repository access denied.' });
 			}
 
 			const vector = await embedText(chunk.content, chunk.repositoryUrl);
@@ -234,7 +270,8 @@ export const actions: Actions = {
 			return fail(500, { success: false, message: 'Embedding failed. See server logs.' });
 		}
 	},
-	search: async ({ request, params }) => {
+	search: async ({ cookies, request, params, url }) => {
+		const session = await requireValidJwt(cookies, url);
 		const formData = await request.formData();
 		const query = formData.get('query');
 		const dataFileId = Number(params.id);
@@ -255,6 +292,10 @@ export const actions: Actions = {
 
 			if (!dataFile?.repositoryUrl) {
 				return fail(404, { success: false, message: 'Data file not found.' });
+			}
+
+			if (!isRepositoryAllowed(session, dataFile.repositoryUrl)) {
+				return fail(403, { success: false, message: 'Repository access denied.' });
 			}
 
 			const vector = await embedText(query, dataFile.repositoryUrl);

@@ -5,9 +5,14 @@ import { embedText } from '$lib/server/embed';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
 
 import { requireValidJwt } from '$lib/server/jwt';
+import { getRepositoryAccessRegex } from '$lib/server/repository';
 
 export const POST: RequestHandler = async ({ cookies, url }) => {
-	await requireValidJwt(cookies, url);
+	const session = await requireValidJwt(cookies, url);
+	const allowRegex = getRepositoryAccessRegex(session);
+	if (!allowRegex || !session.allow_regex) {
+		return json({ status: 'empty' });
+	}
 
 	const pendingChunks = await prisma.$queryRaw<
 		{
@@ -21,6 +26,7 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 		  AND "invalidatedAt" IS NULL
 		  AND "content" IS NOT NULL
 		  AND "repositoryUrl" IS NOT NULL
+		  AND "repositoryUrl" ~ ${session.allow_regex}
 		ORDER BY "createdAt" ASC
 		LIMIT 1`;
 

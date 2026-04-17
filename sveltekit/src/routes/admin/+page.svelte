@@ -2,9 +2,9 @@
 import { resolve } from '$app/paths';
 
 	const links = [
-		{ href: resolve('/admin/DataFile'), label: 'Data files' },
-		{ href: resolve('/admin/repositories'), label: 'Repositories' },
-		{ href: resolve('/admin/embeddings'), label: 'Embeddings' },
+		{ href: resolve('/admin/repositories'), label: 'Your Repositories' },
+		{ href: resolve('/admin/DataFile'), label: 'All data files' },
+		{ href: resolve('/admin/embeddings'), label: 'All Embeddings' },
 		{ href: resolve('/admin/ragView'), label: 'RAG VIEW' }
 	];
 </script>

@@ -163,6 +163,7 @@
 	<div class="card">
 		<label>
 			Systemprompt
+			<p class="muted" style="font-weight: 400;">Changes in text will NOT be stored in the system.</p>
 			<textarea bind:value={systemprompt}>{systemprompt}</textarea>
 		</label>
 

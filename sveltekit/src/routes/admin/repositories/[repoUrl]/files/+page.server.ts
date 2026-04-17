@@ -6,12 +6,14 @@ import { embedText } from '$lib/server/embed';
 
 import {loadRepoConfig} from '$lib/server/openaiClient';
 import { isDbNull } from '@prisma/client/runtime/wasm-compiler-edge';
+import { requireAllowedRepository } from '$lib/server/repository';
 
 // import { EMBEDDING_MODEL } from '$env/static/private';
 
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ cookies, params, url }) => {
 	const { repoUrl } = params;
+	await requireAllowedRepository(cookies, url, repoUrl);
 
 	const repository = await prisma.repository.findUnique({
 		where: { url: repoUrl }
@@ -34,8 +36,9 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	delete: async ({ request, params }) => {
+	delete: async ({ cookies, request, params, url }) => {
 		const { repoUrl } = params;
+		await requireAllowedRepository(cookies, url, repoUrl);
 		const formData = await request.formData();
 		// console.log(formData);
 		const fileId = parseInt(formData.get('fileId'));
@@ -76,8 +79,9 @@ export const actions: Actions = {
 			return fail(500, { success: false, message: 'Delete failed. See server logs.' });
 		}
 	},
-	ingestUrl: async ({ request, params }) => {
+	ingestUrl: async ({ cookies, request, params, url }) => {
 		const { repoUrl } = params;
+		await requireAllowedRepository(cookies, url, repoUrl);
 		const formData = await request.formData();
 		// const urlsText = formData.get('urls');
 		const singleUrl = formData.get('url');
