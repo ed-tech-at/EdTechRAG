@@ -3,6 +3,7 @@ import prisma from '$lib/server/db';
 import { findRepositoryContext } from '$lib/server/rag';
 import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
+import { streamChatText } from '$lib/server/chatStream';
 
 const corsHeaders = (_origin: string | null): Record<string, string> => ({
 	'Access-Control-Allow-Origin': '*',
@@ -52,7 +53,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	}
 
 	try {
-		const { results, message } = await findRepositoryContext(repoUrl, prompt);
+		const { results } = await findRepositoryContext(repoUrl, prompt);
 
 		const context = results
 			.map((result) => {
@@ -62,7 +63,11 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			})
 			.join('\n\n');
 
-		const systemprompt = repository.ragConfig?.systemprompt
+		const ragConfig =
+			repository.ragConfig && typeof repository.ragConfig === 'object' && !Array.isArray(repository.ragConfig)
+				? (repository.ragConfig as Record<string, unknown>)
+				: undefined;
+		const systemprompt = typeof ragConfig?.systemprompt === 'string' ? ragConfig.systemprompt : '';
 
 		const messages = buildChatMessages({
 			systemprompt,
@@ -71,42 +76,39 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			history
 		});
 
-		const { client, model } = await getChatClient(repoUrl);
-		const completion = await client.chat.completions.create({
+		const { client, model, apiLanguage, reasoningEffort, textVerbosity } = await getChatClient(repoUrl);
+		const stream = streamChatText({
 			model,
+			client,
+			apiLanguage,
 			messages,
-			stream: false
+			reasoningEffort,
+			textVerbosity,
+			onComplete: async (answer) => {
+				try {
+					await prisma.chatLog.create({
+						data: {
+							question: prompt,
+							context,
+							answer,
+							repositoryUrl: repoUrl,
+							endpoint: '/api/chat/[repoUrl]'
+						}
+					});
+				} catch (err) {
+					console.error('Chat log insert failed', err);
+				}
+			}
 		});
 
-		const answer = completion.choices?.[0]?.message?.content ?? '';
-
-		try {
-			await prisma.chatLog.create({
-				data: {
-					question: prompt,
-					context,
-					answer,
-					repositoryUrl: repoUrl,
-					endpoint: '/api/chat/[repoUrl]'
-				}
-			});
-		} catch (err) {
-			console.error('Chat log insert failed', err);
-		}
-
-		return new Response(
-			JSON.stringify({
-				success: true,
-				answer,
-				context
-				// results, //HIDE in public chat api
-				// message
-			}),
-			{
-				status: 200,
-				headers: { 'content-type': 'application/json', ...corsHeaders(origin) }
+		return new Response(stream, {
+			status: 200,
+			headers: {
+				'Content-Type': 'text/plain; charset=utf-8',
+				'Transfer-Encoding': 'chunked',
+				...corsHeaders(origin)
 			}
-		);
+		});
 	} catch (err) {
 		console.error('Chat repo endpoint error', err);
 		return new Response('Chat failed. See server logs.', {

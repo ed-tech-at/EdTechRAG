@@ -1,7 +1,10 @@
 import type { PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
+import { requireValidJwt } from '$lib/server/jwt';
+import { filterAllowedRepositories } from '$lib/server/repository';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ cookies, url }) => {
+	const session = await requireValidJwt(cookies, url);
 	const repos = await prisma.repository.findMany({
 		include: {
 			_count: { select: { dataFiles: true } },
@@ -13,8 +16,9 @@ export const load: PageServerLoad = async () => {
 		},
 		orderBy: { name: 'asc' }
 	});
+	const allowedRepos = filterAllowedRepositories(session, repos, (repo) => repo.url);
 
-	const repositories = repos.map((repo) => {
+	const repositories = allowedRepos.map((repo) => {
 		// const chunkCount = repo.dataFiles.reduce((sum, file) => sum + (file._count?.dataChunks ?? 0), 0);
 		return {
 			url: repo.url,

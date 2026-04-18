@@ -17,6 +17,15 @@ export async function comparePasswordV2(password: string, hashedPassword: string
   return await bcrypt.compare(password + pepper + userId, hashedPassword);
 }
 
+function getAllowRegex(repositoryJson: unknown): string | undefined {
+  if (!repositoryJson || typeof repositoryJson !== 'object' || Array.isArray(repositoryJson)) {
+    return undefined;
+  }
+
+  const allowRegex = (repositoryJson as { allow_regex?: unknown }).allow_regex;
+  return typeof allowRegex === 'string' ? allowRegex : undefined;
+}
+
 
 export async function login(email: string, password: string, cookies: any): Promise<{ success: boolean; error?: string }> {
   const user = await prisma.user.findUnique({ where: { email } });
@@ -57,7 +66,13 @@ export async function login(email: string, password: string, cookies: any): Prom
 
   const maxAgeSec = 60 * 60 * 24;
 
-  const token = await createSessionJWT({ userId: user.id }, maxAgeSec);
+  const token = await createSessionJWT(
+    {
+      userId: user.id,
+      allow_regex: getAllowRegex(user.repositoryJson)
+    },
+    maxAgeSec
+  );
   cookies.set('jwt', token, {
     path: resolve('/'),
     httpOnly: true,

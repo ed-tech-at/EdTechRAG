@@ -1,25 +1,27 @@
 import type { PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
+import { requireValidJwt } from '$lib/server/jwt';
+import { filterAllowedRepositories } from '$lib/server/repository';
 
 const PAGE_SIZE = 100;
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ cookies, url }) => {
+	const session = await requireValidJwt(cookies, url);
 	const requestedPage = Number(url.searchParams.get('page')) || 1;
 	const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
 
-	const totalCount = await prisma.dataFile.count();
-	const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-	const page = Math.min(currentPage, totalPages);
-	const offset = (page - 1) * PAGE_SIZE;
-
-	const dataFiles = await prisma.dataFile.findMany({
+	const allDataFiles = await prisma.dataFile.findMany({
 		// where: {
 			// invalidatedAt: null
 		// },
-		orderBy: [{ invalidatedAt: 'desc' }, { createdAt: 'desc' }],
-		skip: offset,
-		take: PAGE_SIZE
+		orderBy: [{ invalidatedAt: 'desc' }, { createdAt: 'desc' }]
 	});
+	const filteredDataFiles = filterAllowedRepositories(session, allDataFiles, (file) => file.repositoryUrl);
+	const totalCount = filteredDataFiles.length;
+	const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+	const page = Math.min(currentPage, totalPages);
+	const offset = (page - 1) * PAGE_SIZE;
+	const dataFiles = filteredDataFiles.slice(offset, offset + PAGE_SIZE);
 
 	const dataFileIds = dataFiles.map((file) => file.id);
 	const chunkCounts =

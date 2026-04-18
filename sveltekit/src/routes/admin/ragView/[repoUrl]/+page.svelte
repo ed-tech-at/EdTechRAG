@@ -12,6 +12,18 @@
 	let generating = false;
 	let errorMessage = '';
 	let aiAnswer = '';
+	let systemPromptInput =
+		form && typeof form === 'object' && 'systemprompt' in form
+			? ((form as { systemprompt?: string }).systemprompt ?? '')
+			: (data.systemprompt ?? '');
+	const systemPromptMessage =
+		form && typeof form === 'object' && 'systemPromptSaved' in form
+			? (form as { message?: string }).message ?? ''
+			: '';
+	const systemPromptSaved =
+		form && typeof form === 'object' && 'systemPromptSaved' in form
+			? Boolean((form as { systemPromptSaved?: boolean }).systemPromptSaved)
+			: false;
 	type Interaction = {
 		id: string;
 		prompt: string;
@@ -228,6 +240,29 @@
 		</div>
 	</header>
 
+	<section class="system-prompt-panel">
+		<div class="panel-head">
+			<div>
+				<h2>System Prompt</h2>
+				<p class="muted">This text will be stored in the system.</p>
+			</div>
+			{#if systemPromptMessage}
+				<p class:success={systemPromptSaved} class:error={!systemPromptSaved}>{systemPromptMessage}</p>
+			{/if}
+		</div>
+		<form method="POST" action="?/saveSystemPrompt" class="system-prompt-form">
+			<textarea
+				name="systemprompt"
+				rows="8"
+				bind:value={systemPromptInput}
+				placeholder="Enter the repository system prompt..."
+			></textarea>
+			<div class="system-prompt-actions">
+				<button type="submit">Save system prompt</button>
+			</div>
+		</form>
+	</section>
+
 	<!-- <section class="repo-list">
 		<h2>Active repositories</h2>
 		{#if data.repositories.length === 0}
@@ -312,7 +347,7 @@
 								{#if item.status === 'searching'}
 									<span class="muted">Waiting for context…</span>
 								{:else if item.status === 'answering' && !item.answer}
-									<span class="muted">Generating answer…</span>
+									<span class="muted">Loading...</span>
 								{:else}
 									{@html renderMarkdown(item.answer || '—')}
 								{/if}
@@ -409,6 +444,48 @@
 		gap: 0.5rem;
 	}
 
+	.system-prompt-panel {
+		display: grid;
+		gap: 0.75rem;
+		padding: 1rem;
+		border: 1px solid #e3e3e3;
+		border-radius: 8px;
+		background: #fafafa;
+	}
+
+	.panel-head {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: flex-start;
+	}
+
+	.panel-head h2 {
+		margin: 0 0 0.25rem;
+	}
+
+	.system-prompt-form {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.system-prompt-form textarea {
+		width: 100%;
+		min-height: 10rem;
+		padding: 0.75rem;
+		border-radius: 6px;
+		border: 1px solid #cfd6e0;
+		font: inherit;
+		line-height: 1.45;
+		resize: vertical;
+		background: white;
+	}
+
+	.system-prompt-actions {
+		display: flex;
+		justify-content: flex-end;
+	}
+
 	.context-scroll {
 		max-height: 60vh;
 		border: 1px solid #e3e3e3;
@@ -471,6 +548,11 @@
 	.error {
 		color: #8a1c1c;
 		margin: 0 0 0.35rem;
+	}
+
+	.success {
+		color: #146c2e;
+		margin: 0;
 	}
 
 	.prompt-bar {

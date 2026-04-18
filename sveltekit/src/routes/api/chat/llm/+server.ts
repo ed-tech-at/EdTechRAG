@@ -1,9 +1,8 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
+import { streamChatText } from '$lib/server/chatStream';
 import prisma from '$lib/server/db';
-
-const encoder = new TextEncoder();
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: unknown;
@@ -13,25 +12,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		return new Response('Invalid JSON body', { status: 400 });
 	}
 
-	const prompt =
-		typeof (body as { prompt?: unknown }).prompt === 'string'
-			? (body as { prompt?: string }).prompt.trim()
-			: '';
-	const context =
-		typeof (body as { context?: unknown }).context === 'string'
-			? (body as { context?: string }).context
-			: '';
+	const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+	const promptValue = payload.prompt;
+	const prompt = typeof promptValue === 'string' ? promptValue.trim() : '';
+	const context = typeof payload.context === 'string' ? payload.context : '';
 	const history =
 		body && typeof body === 'object' && 'history' in body && Array.isArray((body as any).history)
 			? ((body as any).history as { role?: string; content?: string }[])
 			: [];
-	const repositoryUrl =
-		body &&
-		typeof body === 'object' &&
-		'repositoryUrl' in body &&
-		typeof (body as any).repositoryUrl === 'string'
-			? ((body as any).repositoryUrl as string)
-			: undefined;
+	const repositoryUrl = typeof payload.repositoryUrl === 'string' ? payload.repositoryUrl : undefined;
 
 	if (!prompt) {
 		return new Response('Missing prompt', { status: 400 });
@@ -45,7 +34,11 @@ export const POST: RequestHandler = async ({ request }) => {
 		where: { url: repositoryUrl }
 	});
 
-	const systemprompt = repository?.ragConfig?.systemprompt
+	const ragConfig =
+		repository?.ragConfig && typeof repository.ragConfig === 'object' && !Array.isArray(repository.ragConfig)
+			? (repository.ragConfig as Record<string, unknown>)
+			: undefined;
+	const systemprompt = typeof ragConfig?.systemprompt === 'string' ? ragConfig.systemprompt : '';
 
 	const messages = buildChatMessages({
 		systemprompt,
@@ -55,29 +48,15 @@ export const POST: RequestHandler = async ({ request }) => {
 	});
 
 	try {
-		const { client, model: defaultModel } = await getChatClient(repositoryUrl);
-		const completion = await client.chat.completions.create({
+		const { client, model: defaultModel, apiLanguage, reasoningEffort, textVerbosity } =
+			await getChatClient(repositoryUrl);
+		const stream = streamChatText({
+			client,
 			model: defaultModel,
-			messages,
-			stream: true
-		});
-
-		const stream = new ReadableStream({
-			async start(controller) {
-				try {
-					for await (const chunk of completion) {
-						const delta = chunk.choices?.[0]?.delta?.content;
-						if (delta) {
-							controller.enqueue(encoder.encode(delta));
-						}
-					}
-				} catch (err) {
-					const message = err instanceof Error ? err.message : 'Stream error';
-					controller.enqueue(encoder.encode(`\n[error] ${message}`));
-				} finally {
-					controller.close();
-				}
-			}
+			apiLanguage,
+			messages: [...messages],
+			reasoningEffort,
+			textVerbosity
 		});
 
 		return new Response(stream, {

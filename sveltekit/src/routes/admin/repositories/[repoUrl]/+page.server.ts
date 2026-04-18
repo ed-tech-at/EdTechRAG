@@ -3,9 +3,11 @@ import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
 import { findRepositoryContext } from '$lib/server/rag';
+import { requireAllowedRepository } from '$lib/server/repository';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ cookies, params, url }) => {
 	const { repoUrl } = params;
+	await requireAllowedRepository(cookies, url, repoUrl);
 
 	const repository = await prisma.repository.findUnique({
 		where: { url: repoUrl }
@@ -19,8 +21,9 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	search: async ({ request, params }) => {
+	search: async ({ cookies, request, params, url }) => {
 		const { repoUrl } = params;
+		await requireAllowedRepository(cookies, url, repoUrl);
 		const formData = await request.formData();
 		const query = formData.get('query');
 

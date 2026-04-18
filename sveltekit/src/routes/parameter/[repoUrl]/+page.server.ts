@@ -16,5 +16,11 @@ export const load: PageServerLoad = async ({ params }) => {
 		};
 	}
 
-	return { repositoryUrl: repository.url, repositoryName: repository.name, systemprompt: repository.ragConfig.systemprompt };
+	const ragConfig =
+		repository.ragConfig && typeof repository.ragConfig === 'object' && !Array.isArray(repository.ragConfig)
+			? (repository.ragConfig as Record<string, unknown>)
+			: undefined;
+	const systemprompt = typeof ragConfig?.systemprompt === 'string' ? ragConfig.systemprompt : '';
+
+	return { repositoryUrl: repository.url, repositoryName: repository.name, systemprompt };
 };

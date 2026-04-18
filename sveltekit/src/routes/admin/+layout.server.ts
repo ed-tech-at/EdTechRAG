@@ -1,10 +1,12 @@
-import { redirect, error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { requireValidJwt } from '$lib/server/jwt';
 
-import { resolve } from '$app/paths';
+export const load: LayoutServerLoad = async ({ cookies, url, setHeaders }) => {
+  setHeaders({
+    'cache-control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    pragma: 'no-cache',
+    expires: '0'
+  });
 
-export const load: LayoutServerLoad = async ({ cookies, url }) => {
-  let jwt = await requireValidJwt(cookies, url);
-  
+  await requireValidJwt(cookies, url);
 };
