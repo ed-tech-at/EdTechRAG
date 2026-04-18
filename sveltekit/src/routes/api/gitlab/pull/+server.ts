@@ -1,7 +1,12 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { Prisma } from '../../../../generated/prisma/client';
+import {
+	logGitLabApiRequest,
+	normalizeString,
+	parseGitLabApiRequest
+} from '$lib/server/gitlabApi';
 
 type IncomingFile = {
 	path?: string;
@@ -10,9 +15,6 @@ type IncomingFile = {
 };
 
 type MovedEntry = { from: string; to: string };
-
-const normalizeString = (value: unknown) =>
-	typeof value === 'string' && value.trim() ? value.trim() : null;
 
 const toStringArray = (value: unknown) =>
 	Array.isArray(value)
@@ -107,21 +109,6 @@ const parseRawChanges = (value: unknown) => {
 	return result;
 };
 
-const getSignatureSecret = (value: unknown) => {
-	if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-	const config = value as Record<string, unknown>;
-	return normalizeString(config.GitLab2EdTechRAG_SHARED_SECRET);
-};
-
-const isSignatureValid = (provided: string | null, secret: string, rawBody: string) => {
-	if (!provided) return false;
-	const expected = createHmac('sha256', secret).update(rawBody).digest('hex');
-	const providedBuffer = Buffer.from(provided, 'utf8');
-	const expectedBuffer = Buffer.from(expected, 'utf8');
-	if (providedBuffer.length !== expectedBuffer.length) return false;
-	return timingSafeEqual(providedBuffer, expectedBuffer);
-};
-
 const mergeMeta = (
 	existing: unknown,
 	updates: Record<string, unknown>,
@@ -137,113 +124,19 @@ const mergeMeta = (
 };
 
 export const POST: RequestHandler = async ({ request }) => {
-	let payload: unknown;
 	let repositoryUrl: string | null = null;
-	let rawBody = '';
-
-	try {
-		rawBody = await request.text();
-		payload = rawBody ? JSON.parse(rawBody) : null;
-	} catch {
-		await logRequest(request, repositoryUrl, {
-			status: 400,
+	const parsed = await parseGitLabApiRequest(request);
+	if (!parsed.ok) {
+		await logGitLabApiRequest(request, '/api/gitlab/pull/', parsed.repositoryUrl, {
+			status: parsed.status,
 			success: false,
-			error: 'Invalid JSON payload'
+			error: parsed.message
 		});
-		return json({ success: false, message: 'Invalid JSON payload.' }, { status: 400 });
+		return json({ success: false, message: parsed.message }, { status: parsed.status });
 	}
 
-	// console.log(payload);
-
-	if (!payload || typeof payload !== 'object') {
-		await logRequest(request, repositoryUrl, {
-			status: 400,
-			success: false,
-			error: 'Payload must be an object'
-		});
-		return json({ success: false, message: 'Payload must be an object.' }, { status: 400 });
-	}
-
-	const body = payload as Record<string, unknown>;
-	const repositoryPath = normalizeString(body.repository_path);
-
-	if (!repositoryPath) {
-		await logRequest(request, repositoryPath, {
-			status: 400,
-			success: false,
-			error: 'Missing repository URL/path'
-		});
-		return json({ success: false, message: 'Missing repository URL/path.' }, { status: 400 });
-	}
-
-	// const repository = await prisma.repository.findUnique({ where: { url: repositoryUrl } });
-	const repository = await prisma.repository.findFirst({ 
-		where: { 
-			updateConfig: {
-				path: ['repository_path'], 
-				equals: repositoryPath
-			}
-		}
-	});
-
-	repositoryUrl = repository?.url;
-	
-	if (!repository) {
-		await logRequest(request, repositoryUrl, {
-			status: 404,
-			success: false,
-			error: 'Repository not found'
-		});
-		return json({ success: false, message: 'Repository not found.' }, { status: 404 });
-	}
-
-	const signatureSecret = getSignatureSecret(repository.updateConfig);
-	let providedSignature = request.headers.get('x-signature');
-	
-	if (providedSignature == null) {
-		await logRequest(request, repositoryUrl, {
-			status: 401,
-			success: false,
-			error: 'Signature missing'
-		});
-		return json({ success: false, message: 'Signature missing.' }, { status: 401 });
-	}
-	providedSignature = providedSignature.toLowerCase().startsWith('sha256=') ? providedSignature.slice('sha256='.length) : providedSignature;
-
-	if (signatureSecret && !isSignatureValid(providedSignature, signatureSecret, rawBody)) {
-		await logRequest(request, repositoryUrl, {
-			status: 401,
-			success: false,
-			error: 'Invalid signature'
-		});
-		return json({ success: false, message: 'Invalid signature.' }, { status: 401 });
-	}
-
-	const bodyTimestamp = Number(body.timestamp);
-
-	if (!Number.isInteger(bodyTimestamp) || bodyTimestamp <= 0) {
-		await logRequest(request, repositoryUrl, {
-			status: 400,
-			success: false,
-			error: 'Missing or invalid timestamp'
-		});
-		return json({ success: false, message: 'Missing or invalid timestamp.' }, { status: 400 });
-	}
-
-	const nowSec = Math.floor(Date.now() / 1000);
-	const maxAgeSec = 5 * 60;
-
-	if (nowSec - bodyTimestamp > maxAgeSec) {
-		await logRequest(request, repositoryUrl, {
-			status: 400,
-			success: false,
-			error: 'Timestamp too old'
-		});
-		return json(
-			{ success: false, message: 'Payload timestamp is older than 5 minutes.' },
-			{ status: 400 }
-		);
-	}
+	const { body } = parsed;
+	repositoryUrl = parsed.repositoryUrl;
 
 	const files = Array.isArray(body.files) ? (body.files as IncomingFile[]) : [];
 	const fileMeta = new Map<string, Record<string, unknown>>();
@@ -271,7 +164,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		deletedPaths.length === 0 &&
 		movedEntries.length === 0
 	) {
-		await logRequest(request, repositoryUrl, {
+		await logGitLabApiRequest(request, '/api/gitlab/pull/', repositoryUrl, {
 			status: 400,
 			success: false,
 			error: 'No changes provided'
@@ -328,7 +221,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			await prisma.dataFile.update({
 				where: { id: existing.id },
 				data: {
-					meta: mergedMeta,
+					meta: mergedMeta as Prisma.InputJsonValue,
 					chunkedAt: null,
 					invalidatedAt: null
 				}
@@ -340,7 +233,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			data: {
 				repositoryUrl,
 				remoteUrl: path,
-				meta: mergedMeta,
+				meta: mergedMeta as Prisma.InputJsonValue,
 				chunkedAt: null,
 				invalidatedAt: null
 			},
@@ -365,7 +258,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		await prisma.dataFile.update({
 			where: { id: dataFile.id },
 			data: {
-				meta: mergedMeta,
+				meta: mergedMeta as Prisma.InputJsonValue,
 				chunkedAt: null
 			}
 		});
@@ -388,7 +281,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			where: { id: dataFile.id },
 			data: {
 				invalidatedAt: new Date(),
-				meta: mergedMeta
+				meta: mergedMeta as Prisma.InputJsonValue
 			}
 		});
 
@@ -450,7 +343,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		errors
 	};
 
-	await logRequest(request, repositoryUrl, {
+	await logGitLabApiRequest(request, '/api/gitlab/pull/', repositoryUrl, {
 		status: 200,
 		success: responseBody.success,
 		headSha,
@@ -463,37 +356,4 @@ export const POST: RequestHandler = async ({ request }) => {
 	});
 
 	return json(responseBody);
-};
-
-const logRequest = async (
-	request: Request,
-	repositoryUrl: string | null,
-	data: { status: number; success: boolean; [key: string]: unknown }
-) => {
-
-	const sig = request.headers.get('x-signature') ?? null;
-
-	try {
-		const ip =
-			request.headers.get('cf-connecting-ip') ??
-			request.headers.get('x-forwarded-for') ??
-			null;
-		const userAgent = request.headers.get('user-agent');
-		await prisma.gitlabApiLog.create({
-			data: {
-				endpoint: '/api/gitlab/pull/',
-				method: request.method,
-				status: data.status,
-				ip,
-				userAgent,
-				payload: {
-					repositoryUrl,
-					sig,
-					...data
-				}
-			}
-		});
-	} catch (logError) {
-		console.error('Failed to record API log', logError);
-	}
 };
