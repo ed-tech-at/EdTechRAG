@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
-import { findRepositoryContext } from '$lib/server/rag';
+import { getNumberDocuments, getSystemPrompt, parseRagConfig } from '$lib/ragContext';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const { repoUrl } = params;
@@ -16,11 +16,9 @@ export const load: PageServerLoad = async ({ params }) => {
 		};
 	}
 
-	const ragConfig =
-		repository.ragConfig && typeof repository.ragConfig === 'object' && !Array.isArray(repository.ragConfig)
-			? (repository.ragConfig as Record<string, unknown>)
-			: undefined;
-	const systemprompt = typeof ragConfig?.systemprompt === 'string' ? ragConfig.systemprompt : '';
+	const ragConfig = parseRagConfig(repository.ragConfig);
+	const systemprompt = getSystemPrompt(ragConfig);
+	const numberDocuments = getNumberDocuments(ragConfig);
 
-	return { repositoryUrl: repository.url, repositoryName: repository.name, systemprompt };
+	return { repositoryUrl: repository.url, repositoryName: repository.name, systemprompt, numberDocuments };
 };

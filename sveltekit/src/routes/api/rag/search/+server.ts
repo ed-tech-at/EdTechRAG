@@ -1,8 +1,8 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
-import { embedText } from '$lib/server/embed';
 import { findRepositoryContext } from '$lib/server/rag';
+import { getNumberDocuments, parseRagConfig } from '$lib/ragContext';
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: unknown;
@@ -36,7 +36,8 @@ export const POST: RequestHandler = async ({ request }) => {
 	if (!repository) {
 		throw error(404, 'Repository not found');
 	}
-	const result = await findRepositoryContext(repoUrl, prompt);
+	const ragConfig = parseRagConfig(repository.ragConfig);
+	const result = await findRepositoryContext(repoUrl, prompt, getNumberDocuments(ragConfig));
 
 	return json({
 		success: true,

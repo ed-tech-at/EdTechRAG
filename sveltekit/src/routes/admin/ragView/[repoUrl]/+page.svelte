@@ -2,8 +2,9 @@
 	import { tick } from 'svelte';
 	import { marked } from 'marked';
 	import type { ActionData, PageData } from './$types';
+	import { formatRagContext, getRagContextUrl, getRagMetadataJson } from '$lib/ragContext';
 
-    import { resolve } from '$app/paths';
+	import { resolve } from '$app/paths';
 
 	export let data: PageData;
 	export let form: ActionData;
@@ -16,6 +17,14 @@
 		form && typeof form === 'object' && 'systemprompt' in form
 			? ((form as { systemprompt?: string }).systemprompt ?? '')
 			: (data.systemprompt ?? '');
+	let numberDocumentsInput =
+		form && typeof form === 'object' && 'numberDocuments' in form
+			? Number((form as { numberDocuments?: number }).numberDocuments ?? data.numberDocuments ?? 4)
+			: (data.numberDocuments ?? 4);
+	let metaTagsInput =
+		form && typeof form === 'object' && 'metaTags' in form
+			? ((form as { metaTags?: string }).metaTags ?? '')
+			: (data.metaTags ?? []).join(', ');
 	const systemPromptMessage =
 		form && typeof form === 'object' && 'systemPromptSaved' in form
 			? (form as { message?: string }).message ?? ''
@@ -33,7 +42,7 @@
 		status: 'searching' | 'answering' | 'done' | 'error';
 	};
 	let interactions: Interaction[] = [];
-	let transcriptEl: HTMLDivElement | null = null;
+	let transcriptEl: HTMLElement | null = null;
 
 	type SearchResult = {
 		id: string;
@@ -57,22 +66,18 @@
 			: undefined;
 	let promptInput = '';
 
-	const metaValue = (result: SearchResult, key: string) => {
-		const meta = (result.meta ?? {}) as Record<string, unknown>;
-		const value = meta[key];
-		return typeof value === 'string' ? value : undefined;
-	};
-	marked.setOptions({ mangle: false, headerIds: false });
-
 	const renderMarkdown = (md?: string) => (md ? marked.parse(md) : '');
 
-	const contextString = (results: SearchResult[]) =>
-		results
-			.map((result) => {
-				const url = metaValue(result, 'url') ?? result.remoteUrl ?? '—';
-				return `CONTENT:\n${result.content ?? '—'}\nURL: ${url}`;
-			})
-			.join('\n\n');
+	const configuredMetaTags = () =>
+		metaTagsInput
+			.split(/[\n,]/)
+			.map((item) => item.trim())
+			.filter(Boolean)
+			.filter((tag, index, all) => all.indexOf(tag) === index);
+
+	const contextString = (results: SearchResult[]) => formatRagContext(results, configuredMetaTags());
+	const metadataJsonString = (result: SearchResult) =>
+		JSON.stringify(getRagMetadataJson(result, configuredMetaTags()));
 
 	const logInteraction = async (payload: {
 		question: string;
@@ -257,8 +262,29 @@
 				bind:value={systemPromptInput}
 				placeholder="Enter the repository system prompt..."
 			></textarea>
+			<div class="config-grid">
+				<label>
+					<span>numberDocuments</span>
+					<input
+						type="number"
+						name="numberDocuments"
+						min="1"
+						step="1"
+						bind:value={numberDocumentsInput}
+					/>
+				</label>
+				<label>
+					<span>metaTags</span>
+					<input
+						type="text"
+						name="metaTags"
+						bind:value={metaTagsInput}
+						placeholder="author, year"
+					/>
+				</label>
+			</div>
 			<div class="system-prompt-actions">
-				<button type="submit">Save system prompt</button>
+				<button type="submit">Save ragConfig</button>
 			</div>
 		</form>
 	</section>
@@ -316,24 +342,27 @@
 								{:else}
 									<span class="label inline">CONTEXT FROM DATABASE</span><br />
 									{#each item.results as result, rIdx}
-										{result.content ?? '—'}<br />
 										URL:
-										{#if metaValue(result, 'url')}
+										{#if getRagContextUrl(result) !== '—'}
 											<a
 												class="link"
-												href={metaValue(result, 'url')}
+												href={getRagContextUrl(result)}
 												target="_blank"
 												rel="noreferrer"
 											>
-												{metaValue(result, 'url')}
-											</a>
-										{:else if result.remoteUrl}
-											<a class="link" href={result.remoteUrl} target="_blank" rel="noreferrer">
-												{result.remoteUrl}
+												{getRagContextUrl(result)}
 											</a>
 										{:else}
 											<span>—</span>
 										{/if}
+										<br />
+										METADATA_JSON:
+										<br />
+										{metadataJsonString(result)}
+										<br />
+										CONTENT:
+										<br />
+										{result.content ?? '—'}
 										{#if rIdx !== item.results.length - 1}
 											<br /><br />
 										{/if}
@@ -481,6 +510,26 @@
 		background: white;
 	}
 
+	.config-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+
+	.config-grid label {
+		display: grid;
+		gap: 0.35rem;
+	}
+
+	.config-grid input {
+		width: 100%;
+		padding: 0.75rem;
+		border-radius: 6px;
+		border: 1px solid #cfd6e0;
+		font: inherit;
+		background: white;
+	}
+
 	.system-prompt-actions {
 		display: flex;
 		justify-content: flex-end;
@@ -517,6 +566,13 @@
 		font-size: 0.95rem;
 		line-height: 1.45;
 		white-space: pre-wrap;
+	}
+
+	@media (max-width: 900px) {
+		.conversation-row,
+		.config-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 
 	.bubble.user {

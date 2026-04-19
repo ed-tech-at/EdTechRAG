@@ -3,6 +3,12 @@ import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
 import { findRepositoryContext } from '$lib/server/rag';
 import { filterAllowedRepositories, requireAllowedRepository } from '$lib/server/repository';
+import {
+	getMetaTags,
+	getNumberDocuments,
+	getSystemPrompt,
+	parseRagConfig
+} from '$lib/ragContext';
 
 export const load: PageServerLoad = async ({ cookies, params, url }) => {
 	const { repoUrl } = params;
@@ -16,11 +22,10 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 		throw error(404, 'Repository not found');
 	}
 
-	const ragConfig =
-		repository.ragConfig && typeof repository.ragConfig === 'object' && !Array.isArray(repository.ragConfig)
-			? (repository.ragConfig as Record<string, unknown>)
-			: undefined;
-	const systemprompt = typeof ragConfig?.systemprompt === 'string' ? ragConfig.systemprompt : '';
+	const ragConfig = parseRagConfig(repository.ragConfig);
+	const systemprompt = getSystemPrompt(ragConfig);
+	const numberDocuments = getNumberDocuments(ragConfig);
+	const metaTags = getMetaTags(ragConfig);
 
 	const repoListRaw = await prisma.repository.findMany({
 		include: {
@@ -45,7 +50,7 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 		};
 	});
 
-	return { repository, repositories, systemprompt };
+	return { repository, repositories, systemprompt, numberDocuments, metaTags };
 };
 
 export const actions: Actions = {
@@ -56,6 +61,25 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const systempromptValue = formData.get('systemprompt');
 		const systemprompt = typeof systempromptValue === 'string' ? systempromptValue : '';
+		const numberDocumentsValue = formData.get('numberDocuments');
+		const metaTagsValue = formData.get('metaTags');
+		const parsedNumberDocuments =
+			typeof numberDocumentsValue === 'string' && numberDocumentsValue.trim()
+				? Number(numberDocumentsValue)
+				: undefined;
+		const numberDocuments =
+			typeof parsedNumberDocuments === 'number' &&
+			Number.isFinite(parsedNumberDocuments) &&
+			parsedNumberDocuments > 0
+				? Math.floor(parsedNumberDocuments)
+				: undefined;
+		const metaTags =
+			typeof metaTagsValue === 'string'
+				? metaTagsValue
+						.split(/[\n,]/)
+						.map((item) => item.trim())
+						.filter(Boolean)
+				: [];
 
 		try {
 			const repository = await prisma.repository.findUnique({
@@ -67,19 +91,16 @@ export const actions: Actions = {
 				return fail(404, { success: false, message: 'Repository not found.' });
 			}
 
-			const ragConfig =
-				repository.ragConfig &&
-				typeof repository.ragConfig === 'object' &&
-				!Array.isArray(repository.ragConfig)
-					? (repository.ragConfig as Record<string, unknown>)
-					: {};
+			const ragConfig = parseRagConfig(repository.ragConfig) ?? {};
 
 			await prisma.repository.update({
 				where: { url: repoUrl },
 				data: {
 					ragConfig: {
 						...ragConfig,
-						systemprompt
+						systemprompt,
+						numberDocuments,
+						metaTags
 					}
 				}
 			});
@@ -88,7 +109,9 @@ export const actions: Actions = {
 				success: true,
 				systemPromptSaved: true,
 				systemprompt,
-				message: 'System prompt saved.'
+				numberDocuments,
+				metaTags: metaTags.join(', '),
+				message: 'RAG config saved.'
 			};
 		} catch (err) {
 			console.error('System prompt update error', err);
@@ -96,7 +119,9 @@ export const actions: Actions = {
 				success: false,
 				systemPromptSaved: false,
 				systemprompt,
-				message: 'Saving system prompt failed. See server logs.'
+				numberDocuments,
+				metaTags: metaTags.join(', '),
+				message: 'Saving RAG config failed. See server logs.'
 			});
 		}
 	},
@@ -112,7 +137,16 @@ export const actions: Actions = {
 		const prompt = query.trim();
 
 		try {
-			const { results, message } = await findRepositoryContext(repoUrl, prompt);
+			const repository = await prisma.repository.findUnique({
+				where: { url: repoUrl },
+				select: { ragConfig: true }
+			});
+			const ragConfig = parseRagConfig(repository?.ragConfig);
+			const { results, message } = await findRepositoryContext(
+				repoUrl,
+				prompt,
+				getNumberDocuments(ragConfig)
+			);
 			const resultsEncode = JSON.stringify(results);
 
 			return {

@@ -3,12 +3,9 @@
 	import { resolve } from '$app/paths';
 
 	import { renderMarkdownWithBlankTargets } from '$lib/markdown';
-
-
 	export let data: PageData;
 
-
-	let numItems = 4;
+	let numItems = data.numberDocuments ?? 4;
 		const numOptions = [2, 4, 6, 8, 10, 12, 15, 20];
 	
 

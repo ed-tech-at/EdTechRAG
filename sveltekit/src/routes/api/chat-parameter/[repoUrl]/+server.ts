@@ -4,6 +4,12 @@ import { findRepositoryContext } from '$lib/server/rag';
 import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
 import { streamChatText } from '$lib/server/chatStream';
+import {
+	formatRagContext,
+	getMetaTags,
+	getNumberDocuments,
+	parseRagConfig
+} from '$lib/ragContext';
 
 const encoder = new TextEncoder();
 const CONTEXT_START = '__EDTECH_CONTEXT_START__\n';
@@ -58,20 +64,17 @@ export const POST: RequestHandler = async ({ request, params }) => {
 
 	try {
 		const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+		const ragConfig = parseRagConfig(repository.ragConfig);
 		const numberLimit = typeof payload.numItems === 'number' ? payload.numItems : undefined;
-		const { results } = await findRepositoryContext(repoUrl, prompt, numberLimit);
-
-		const context = results
-			.map((result) => {
-				const meta = (result.meta ?? {}) as Record<string, unknown>;
-				const url = typeof meta['url'] === 'string' ? meta['url'] : result.remoteUrl ?? '—';
-				return `CONTENT:\n${result.content ?? '—'}\nURL: ${url}`;
-			})
-			.join('\n\n');
+		const { results } = await findRepositoryContext(
+			repoUrl,
+			prompt,
+			numberLimit ?? getNumberDocuments(ragConfig)
+		);
+		const context = formatRagContext(results, getMetaTags(ragConfig));
 
 		// const systemprompt = repository.ragConfig?.systemprompt
 		const systemprompt = typeof payload.systemprompt === 'string' ? payload.systemprompt : '';
-
 
 		const messages = buildChatMessages({
 			systemprompt,

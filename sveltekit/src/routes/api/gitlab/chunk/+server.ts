@@ -4,6 +4,7 @@ import prisma from '$lib/server/db';
 import type { Prisma } from '../../../../generated/prisma/client';
 import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitter';
 import { logGitLabApiRequest, parseGitLabApiRequest } from '$lib/server/gitlabApi';
+import { parseRagConfig } from '$lib/ragContext';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const parsed = await parseGitLabApiRequest(request);
@@ -29,14 +30,9 @@ export const POST: RequestHandler = async ({ request }) => {
 	const gitlabRef =
 		typeof repoConfig['ref'] === 'string' && repoConfig['ref'] ? repoConfig['ref'] : 'main';
 
-	let chunkSize: number | undefined;
-	let chunkOverlap: number | undefined;
-	if (repository.ragConfig && typeof repository.ragConfig === 'object') {
-		const ragConfig = repository.ragConfig as Record<string, unknown>;
-		chunkSize = typeof ragConfig.chunkSize === 'number' ? ragConfig.chunkSize : undefined;
-		chunkOverlap =
-			typeof ragConfig.chunkOverlap === 'number' ? ragConfig.chunkOverlap : undefined;
-	}
+	const ragConfig = parseRagConfig(repository.ragConfig);
+	const chunkSize = ragConfig?.chunkSize;
+	const chunkOverlap = ragConfig?.chunkOverlap;
 
 	const dataFiles = await prisma.dataFile.findMany({
 		where: {

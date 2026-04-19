@@ -6,6 +6,7 @@ import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitte
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
 import { requireValidJwt } from '$lib/server/jwt';
 import { isRepositoryAllowed } from '$lib/server/repository';
+import { parseRagConfig } from '$lib/ragContext';
 
 export const load: PageServerLoad = async ({ cookies, params, url }) => {
 	const session = await requireValidJwt(cookies, url);
@@ -177,24 +178,23 @@ export const actions: Actions = {
 		});
 
 
-		let spliterOptions = {};
-		if ( existingDataFile.repository?.ragConfig?.chunkSize !== undefined	) {
-			spliterOptions.chunkSize = existingDataFile.repository?.ragConfig?.chunkSize;
+		if (!existingDataFile) {
+			return fail(404, { success: false, message: 'Data file not found.' });
 		}
 
-		if ( existingDataFile.repository?.ragConfig?.chunkOverlap !== undefined	) {
-			spliterOptions.chunkOverlap = existingDataFile.repository?.ragConfig?.chunkOverlap;
+		const ragConfig = parseRagConfig(existingDataFile.repository?.ragConfig);
+		const spliterOptions: { chunkSize?: number; chunkOverlap?: number } = {};
+		if (ragConfig?.chunkSize !== undefined) {
+			spliterOptions.chunkSize = ragConfig.chunkSize;
 		}
-		
+		if (ragConfig?.chunkOverlap !== undefined) {
+			spliterOptions.chunkOverlap = ragConfig.chunkOverlap;
+		}
 
 		const chunks = await splitTextIntoChunks(content, spliterOptions);
 
 		if (chunks.length === 0) {
 			return fail(400, { success: false, message: 'No chunks found after splitting.' });
-		}
-
-		if (!existingDataFile) {
-			return fail(404, { success: false, message: 'Data file not found.' });
 		}
 
 		if (!isRepositoryAllowed(session, existingDataFile.repositoryUrl)) {
