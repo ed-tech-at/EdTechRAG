@@ -45,7 +45,7 @@ export function getNumberDocuments(ragConfig: RagConfig | undefined, fallback: n
 }
 
 export function getMetaTags(ragConfig: RagConfig | undefined): string[] {
-	return (ragConfig?.metaTags ?? []).filter((tag) => tag.toLowerCase() !== 'url');
+	return ragConfig?.metaTags ?? [];
 }
 
 function getMetaRecord(meta: unknown): Record<string, unknown> {
@@ -83,8 +83,19 @@ export function getRagMetadataJson(
 ): Record<string, string> {
 	const meta = getMetaRecord(result.meta);
 	const metadata: Record<string, string> = {};
+	const includeUrl = metaTags.length > 0;
+
+	if (includeUrl) {
+		const url = getRagContextUrl(result);
+		if (url !== '—') {
+			metadata.url = url;
+		}
+	}
 
 	for (const tag of metaTags) {
+		if (tag.toLowerCase() === 'url') {
+			continue;
+		}
 		const value = stringifyMetaValue(meta[tag]);
 		if (value !== undefined) {
 			metadata[tag] = value;
