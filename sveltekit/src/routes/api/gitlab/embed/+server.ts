@@ -5,6 +5,9 @@ import { embedText } from '$lib/server/embed';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
 import { logGitLabApiRequest, parseGitLabApiRequest } from '$lib/server/gitlabApi';
 
+const isRateLimitError = (message: string) =>
+	message.includes('Embedding API error: 429') || message.includes('"RateLimitReached"');
+
 export const POST: RequestHandler = async ({ request }) => {
 	const parsed = await parseGitLabApiRequest(request);
 	if (!parsed.ok) {
@@ -83,6 +86,8 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const success = errors.length === 0;
+	const hasRateLimitError = errors.some(isRateLimitError);
+	const responseStatus = success ? 200 : hasRateLimitError ? 429 : 500;
 	const responseBody = {
 		success,
 		status: success ? 'embedded' : 'partial',
@@ -96,7 +101,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	};
 
 	await logGitLabApiRequest(request, '/api/gitlab/embed/', repositoryUrl, {
-		status: 200,
+		status: responseStatus,
 		success,
 		resultStatus: responseBody.status,
 		message: responseBody.message,
@@ -106,5 +111,5 @@ export const POST: RequestHandler = async ({ request }) => {
 		errors
 	});
 
-	return json(responseBody);
+	return json(responseBody, { status: responseStatus });
 };
