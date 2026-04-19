@@ -4,6 +4,13 @@ import { findRepositoryContext } from '$lib/server/rag';
 import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
 import { streamChatText } from '$lib/server/chatStream';
+import {
+	formatRagContext,
+	getMetaTags,
+	getNumberDocuments,
+	getSystemPrompt,
+	parseRagConfig
+} from '$lib/ragContext';
 
 const corsHeaders = (_origin: string | null): Record<string, string> => ({
 	'Access-Control-Allow-Origin': '*',
@@ -53,21 +60,14 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	}
 
 	try {
-		const { results } = await findRepositoryContext(repoUrl, prompt);
-
-		const context = results
-			.map((result) => {
-				const meta = (result.meta ?? {}) as Record<string, unknown>;
-				const url = typeof meta['url'] === 'string' ? meta['url'] : result.remoteUrl ?? '—';
-				return `CONTENT:\n${result.content ?? '—'}\nURL: ${url}`;
-			})
-			.join('\n\n');
-
-		const ragConfig =
-			repository.ragConfig && typeof repository.ragConfig === 'object' && !Array.isArray(repository.ragConfig)
-				? (repository.ragConfig as Record<string, unknown>)
-				: undefined;
-		const systemprompt = typeof ragConfig?.systemprompt === 'string' ? ragConfig.systemprompt : '';
+		const ragConfig = parseRagConfig(repository.ragConfig);
+		const { results } = await findRepositoryContext(
+			repoUrl,
+			prompt,
+			getNumberDocuments(ragConfig)
+		);
+		const context = formatRagContext(results, getMetaTags(ragConfig));
+		const systemprompt = getSystemPrompt(ragConfig);
 
 		const messages = buildChatMessages({
 			systemprompt,

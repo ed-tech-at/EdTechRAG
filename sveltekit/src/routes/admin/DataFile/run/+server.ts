@@ -4,6 +4,7 @@ import prisma from '$lib/server/db';
 import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitter';
 import { requireValidJwt } from '$lib/server/jwt';
 import { isRepositoryAllowed } from '$lib/server/repository';
+import { parseRagConfig } from '$lib/ragContext';
 
 export const POST: RequestHandler = async ({ cookies, url }) => {
 	const session = await requireValidJwt(cookies, url);
@@ -82,16 +83,15 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 	
 
 	
-	let spliterOptions = {};
-
-	if ( allowedDataFile.repository?.ragConfig?.chunkSize !== undefined	) {
-		spliterOptions.chunkSize = allowedDataFile.repository?.ragConfig?.chunkSize;
+	const ragConfig = parseRagConfig(allowedDataFile.repository?.ragConfig);
+	const spliterOptions: { chunkSize?: number; chunkOverlap?: number } = {};
+	if (ragConfig?.chunkSize !== undefined) {
+		spliterOptions.chunkSize = ragConfig.chunkSize;
+	}
+	if (ragConfig?.chunkOverlap !== undefined) {
+		spliterOptions.chunkOverlap = ragConfig.chunkOverlap;
 	}
 
-	if ( allowedDataFile.repository?.ragConfig?.chunkOverlap !== undefined	) {
-		spliterOptions.chunkOverlap = allowedDataFile.repository?.ragConfig?.chunkOverlap;
-	}
-	
 
 	const chunks = await splitTextIntoChunks(cleanedText, spliterOptions);
 

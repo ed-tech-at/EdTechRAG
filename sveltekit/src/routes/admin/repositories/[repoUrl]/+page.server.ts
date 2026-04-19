@@ -1,9 +1,9 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
-import { embedText } from '$lib/server/embed';
 import { findRepositoryContext } from '$lib/server/rag';
 import { requireAllowedRepository } from '$lib/server/repository';
+import { getNumberDocuments, parseRagConfig } from '$lib/ragContext';
 
 export const load: PageServerLoad = async ({ cookies, params, url }) => {
 	const { repoUrl } = params;
@@ -32,8 +32,13 @@ export const actions: Actions = {
 		}
 
 		try {
+			const repository = await prisma.repository.findUnique({
+				where: { url: repoUrl },
+				select: { ragConfig: true }
+			});
+			const ragConfig = parseRagConfig(repository?.ragConfig);
 
-			return await findRepositoryContext(repoUrl, query);
+			return await findRepositoryContext(repoUrl, query, getNumberDocuments(ragConfig));
 
 			// const vector = await embedText(query, repoUrl);
 			// const vectorLiteral = `[${vector.join(',')}]`;
