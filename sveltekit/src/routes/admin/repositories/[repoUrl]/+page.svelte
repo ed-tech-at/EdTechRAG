@@ -1,22 +1,9 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
-    import { resolve } from '$app/paths';
+	import { resolve } from '$app/paths';
 
 	export let data: PageData;
 	export let form: ActionData;
-
-	let searching = false;
-
-	const searchResults =
-		form && typeof form === 'object' && 'results' in form
-			? (form as { results?: SearchResult[] }).results
-			: undefined;
-
-	const metaValue = (result: SearchResult, key: string) => {
-		const meta = (result.meta ?? {}) as Record<string, unknown>;
-		const value = meta[key];
-		return typeof value === 'string' ? value : undefined;
-	};
 
 	type SearchResult = {
 		id: string;
@@ -28,85 +15,310 @@
 		remoteUrl?: string;
 		meta?: Record<string, unknown>;
 	};
+
+	$: fallbackConfig = data.config;
+	$: submittedConfig =
+		form && typeof form === 'object' && 'config' in form
+			? (form as { config?: typeof fallbackConfig }).config
+			: undefined;
+	$: config = submittedConfig ?? fallbackConfig;
+	$: repositoryExists =
+		form && typeof form === 'object' && 'repositoryExists' in form
+			? Boolean((form as { repositoryExists?: boolean }).repositoryExists)
+			: data.repositoryExists;
+	$: configMessage =
+		form && typeof form === 'object' && 'configSaved' in form
+			? ((form as { message?: string }).message ?? '')
+			: '';
+	$: formMessage =
+		form && typeof form === 'object' && !('results' in form) && !('configSaved' in form)
+			? ((form as { message?: string }).message ?? '')
+			: '';
+	$: formSuccess =
+		form && typeof form === 'object' && 'success' in form
+			? Boolean((form as { success?: boolean }).success)
+			: false;
+	let searching = false;
+	let saving = false;
+	let publicBaseUrl = data.config.github.publicBaseUrl;
+	let webhookPath = data.config.github.webhookPath;
+	$: if (form) {
+		saving = false;
+		searching = false;
+	}
+	$: if (config) {
+		publicBaseUrl = config.github.publicBaseUrl;
+		webhookPath = config.github.webhookPath;
+	}
+	$: webhookUrl = webhookPath.trim()
+		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
+		: `${publicBaseUrl.replace(/\/$/, '')}/webhook`;
+
+	$: searchResults =
+		form && typeof form === 'object' && 'results' in form
+			? (form as { results?: SearchResult[] }).results
+			: undefined;
+
+	const metaValue = (result: SearchResult, key: string) => {
+		const meta = (result.meta ?? {}) as Record<string, unknown>;
+		const value = meta[key];
+		return typeof value === 'string' ? value : undefined;
+	};
 </script>
 
 <section class="page">
-	<div class="header">
-		<a class="link" href={resolve('/admin/repositories')}>← Back to repositories</a>
-		<h1>Repository: {data.repositoryName}</h1>
-		<p class="muted">EdTechRag URL: {data.repositoryUrl}</p>
-		<p>
-			<a class="link" href={resolve(`/admin/repositories/${encodeURIComponent(data.repositoryUrl)}/files`)}>
-				View files →
-			</a>
-		</p>
-		{#if form?.message}
-			<p class={`notice ${form?.success ? 'success' : 'error'}`}>{form.message}</p>
+	<header class="header">
+		<a class="link" href={resolve('/admin/repositories')}>Back to repositories</a>
+		<div class="title-row">
+			<div>
+				<p class="eyebrow">{repositoryExists ? 'Repository config' : 'Create repository'}</p>
+				<h1>{config.repositoryName}</h1>
+				<p class="muted">EdTechRAG URL: {config.repositoryUrl}</p>
+			</div>
+			{#if repositoryExists}
+				<a
+					class="secondary-button"
+					href={resolve(`/admin/repositories/${encodeURIComponent(config.repositoryUrl)}/files`)}
+				>
+					View files
+				</a>
+			{/if}
+		</div>
+		{#if configMessage}
+			<p class="notice success">{configMessage}</p>
+		{:else if formMessage}
+			<p class={`notice ${formSuccess ? 'success' : 'error'}`}>{formMessage}</p>
 		{/if}
-	</div>
+	</header>
 
-	<section class="search">
-		<form method="POST" action="?/search" class="search-form" on:submit={() => (searching = true)}>
-			<label>
-				Search chunks in this repository (vector similarity)
-				<input type="text" name="query" placeholder="Ask a question or paste text" required />
-			</label>
+	<section class="panel">
+		<div class="panel-head">
+			<div>
+				<h2>Configuration</h2>
+				<p class="muted">Secrets are write-only. Leave password fields empty to keep existing values.</p>
+			</div>
+		</div>
+
+		<form method="POST" action="?/saveConfig" class="config-form" on:submit={() => (saving = true)}>
+			<div class="field-grid">
+				<label>
+					Repository name
+					<input name="name" value={config.repositoryName} required />
+				</label>
+				<label>
+					GitHub repository path
+					<input name="repository_path" placeholder="owner/repository" value={config.github.repositoryPath} required />
+				</label>
+			</div>
+
+			<div class="section-band">
+				<h3>GitHub2EdTechRAG</h3>
+				<div class="field-grid">
+					<label>
+						Bridge public base URL
+						<input name="github2_public_base_url" bind:value={publicBaseUrl} required />
+					</label>
+					<label>
+						Mounted repo path
+						<input
+							name="github2_webhook_path"
+							bind:value={webhookPath}
+							placeholder="optional; e.g. my-project"
+						/>
+					</label>
+				</div>
+				<label>
+					EdTechRAG shared secret
+					<input
+						type="password"
+						name="Github2EdTechRAG_SHARED_SECRET"
+						placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
+						autocomplete="new-password"
+					/>
+				</label>
+				<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
+			</div>
+
+			<div class="section-band">
+				<h3>LLM</h3>
+				<div class="field-grid">
+					<label>
+						OpenAI-compatible API key
+						<input
+							type="password"
+							name="OPENAI_API_KEY"
+							placeholder={config.llm.hasOpenAiApiKey ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
+							autocomplete="new-password"
+						/>
+					</label>
+					<label>
+						Chat API base
+						<input name="OPENAI_API_BASE" value={config.llm.openAiApiBase} required />
+					</label>
+					<label>
+						Chat model
+						<input name="CHAT_MODEL" value={config.llm.chatModel} required />
+					</label>
+					<label>
+						API language
+						<select name="API_LANGUAGE">
+							<option value="chat/completions" selected={config.llm.apiLanguage === 'chat/completions'}>
+								chat/completions
+							</option>
+							<option value="responses" selected={config.llm.apiLanguage === 'responses'}>responses</option>
+						</select>
+					</label>
+					<label>
+						Reasoning effort
+						<select name="reasoning_effort">
+							{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
+								<option value={option} selected={config.llm.reasoningEffort === option}>{option}</option>
+							{/each}
+						</select>
+					</label>
+					<label>
+						Text verbosity
+						<select name="text_verbosity">
+							{#each ['low', 'medium', 'high'] as option}
+								<option value={option} selected={config.llm.textVerbosity === option}>{option}</option>
+							{/each}
+						</select>
+					</label>
+				</div>
+			</div>
+
+			<div class="section-band">
+				<h3>Embeddings</h3>
+				<div class="field-grid">
+					<label>
+						Embedding API key
+						<input
+							type="password"
+							name="OPENAI_API_KEY_EMBEDDING"
+							placeholder={config.llm.hasEmbeddingApiKey ? 'Already set; enter a new value to overwrite' : 'Optional; falls back to LLM API key'}
+							autocomplete="new-password"
+						/>
+					</label>
+					<label>
+						Embedding API base
+						<input name="OPENAI_API_BASE_EMBEDDING" value={config.llm.embeddingBase} required />
+					</label>
+					<label>
+						Embedding model
+						<input name="EMBEDDING_MODEL" value={config.llm.embeddingModel} required />
+					</label>
+				</div>
+			</div>
+
+			<div class="section-band">
+				<h3>Azure OpenAI</h3>
+				<div class="field-grid">
+					<label>
+						Azure URL
+						<input name="AZURE_URL" value={config.llm.azureUrl} placeholder="optional" />
+					</label>
+					<label>
+						Azure deployment model
+						<input name="AZURE_MODEL" value={config.llm.azureModel} placeholder="optional" />
+					</label>
+					<label>
+						Azure API version
+						<input name="AZURE_API_VERSION" value={config.llm.azureApiVersion} />
+					</label>
+				</div>
+			</div>
+
+			<div class="section-band">
+				<h3>RAG</h3>
+				<div class="field-grid">
+					<label>
+						Chunk size
+						<input name="chunkSize" type="number" min="1" value={config.rag.chunkSize ?? ''} />
+					</label>
+					<label>
+						Chunk overlap
+						<input name="chunkOverlap" type="number" min="0" value={config.rag.chunkOverlap ?? ''} />
+					</label>
+					<label>
+						Number of documents
+						<input name="numberDocuments" type="number" min="1" value={config.rag.numberDocuments} />
+					</label>
+					<label>
+						Metadata tags
+						<input name="metaTags" value={config.rag.metaTags.join(', ')} placeholder="url, title, folder" />
+					</label>
+				</div>
+				<label>
+					System prompt
+					<textarea name="systemprompt" rows="6">{config.rag.systemprompt}</textarea>
+				</label>
+			</div>
+
 			<div class="actions">
-				<button type="submit" disabled={searching}>{searching ? 'Searching…' : 'Search'}</button>
-				{#if searching}
-					<span class="loader" aria-live="polite">Working…</span>
-				{/if}
+				<button type="submit" disabled={saving}>{saving ? 'Saving...' : repositoryExists ? 'Save config' : 'Create repository'}</button>
 			</div>
 		</form>
-		{#if searchResults}
-			<div class="results">
-				{#if searchResults.length === 0}
-					<p class="muted">No results.</p>
-				{:else}
-					{#each searchResults as result}
-						<article class="result">
-							<div class="result-meta">
-								<strong>Chunk {result.chunkNr ?? '-'}</strong>
-								<span class="muted">DataFile: {result.dataFileId}</span>
-								<span class="muted">Similarity: {(result.similarity * 100).toFixed(1)}%</span>
-								{#if result.embeddingModel}
-									<span class="muted">Model: {result.embeddingModel}</span>
-								{/if}
-								{#if metaValue(result, 'url') || result.remoteUrl}
-									<span class="muted">
-										URL:
-										{#if metaValue(result, 'url')}
-											<a
-												class="link"
-												href={metaValue(result, 'url')}
-												target="_blank"
-												rel="noreferrer"
-											>
-												{metaValue(result, 'url')}
-											</a>
-										{:else if result.remoteUrl}
-											<a
-												class="link"
-												href={result.remoteUrl}
-												target="_blank"
-												rel="noreferrer"
-											>
-												{result.remoteUrl}
-											</a>
-										{/if}
-									</span>
-								{/if}
-								{#if metaValue(result, 'folder')}
-									<span class="muted">Folder: {metaValue(result, 'folder')}</span>
-								{/if}
-							</div>
-							<pre>{result.content ?? '—'}</pre>
-						</article>
-					{/each}
-				{/if}
-			</div>
-		{/if}
 	</section>
+
+	{#if repositoryExists}
+		<section class="panel">
+			<div class="panel-head">
+				<div>
+					<h2>Search</h2>
+					<p class="muted">Search chunks in this repository by vector similarity.</p>
+				</div>
+			</div>
+			<form method="POST" action="?/search" class="search-form" on:submit={() => (searching = true)}>
+				<label>
+					Query
+					<input type="text" name="query" placeholder="Ask a question or paste text" required />
+				</label>
+				<div class="actions">
+					<button type="submit" disabled={searching}>{searching ? 'Searching...' : 'Search'}</button>
+					{#if searching}
+						<span class="loader" aria-live="polite">Working...</span>
+					{/if}
+				</div>
+			</form>
+			{#if searchResults}
+				<div class="results">
+					{#if searchResults.length === 0}
+						<p class="muted">No results.</p>
+					{:else}
+						{#each searchResults as result}
+							<article class="result">
+								<div class="result-meta">
+									<strong>Chunk {result.chunkNr ?? '-'}</strong>
+									<span class="muted">DataFile: {result.dataFileId}</span>
+									<span class="muted">Similarity: {(result.similarity * 100).toFixed(1)}%</span>
+									{#if result.embeddingModel}
+										<span class="muted">Model: {result.embeddingModel}</span>
+									{/if}
+									{#if metaValue(result, 'url') || result.remoteUrl}
+										<span class="muted">
+											URL:
+											<a
+												class="link"
+												href={metaValue(result, 'url') ?? result.remoteUrl}
+												target="_blank"
+												rel="noreferrer"
+											>
+												{metaValue(result, 'url') ?? result.remoteUrl}
+											</a>
+										</span>
+									{/if}
+									{#if metaValue(result, 'folder')}
+										<span class="muted">Folder: {metaValue(result, 'folder')}</span>
+									{/if}
+								</div>
+								<pre>{result.content ?? '-'}</pre>
+							</article>
+						{/each}
+					{/if}
+				</div>
+			{/if}
+		</section>
+	{/if}
 </section>
 
 <style>
@@ -115,8 +327,51 @@
 		gap: 1rem;
 	}
 
-	.header h1 {
-		margin: 0.25rem 0;
+	.header {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.title-row,
+	.panel-head,
+	.actions,
+	.result-meta {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+	}
+
+	.title-row,
+	.panel-head {
+		justify-content: space-between;
+		align-items: flex-start;
+	}
+
+	h1,
+	h2,
+	h3,
+	p {
+		margin: 0;
+	}
+
+	h1 {
+		margin-top: 0.15rem;
+	}
+
+	h2 {
+		font-size: 1.1rem;
+	}
+
+	h3 {
+		font-size: 1rem;
+	}
+
+	.eyebrow {
+		color: #666;
+		font-size: 0.85rem;
+		text-transform: uppercase;
+		letter-spacing: 0;
+		font-weight: 700;
 	}
 
 	.link {
@@ -130,13 +385,11 @@
 
 	.muted {
 		color: #666;
-		margin: 0;
 	}
 
 	.notice {
 		padding: 0.65rem 0.85rem;
 		border-radius: 6px;
-		margin: 0.25rem 0 0.5rem;
 	}
 
 	.notice.success {
@@ -151,29 +404,59 @@
 		border: 1px solid #f2c7c7;
 	}
 
-	.search {
+	.panel {
 		display: grid;
-		gap: 0.75rem;
-		padding: 0.75rem;
+		gap: 0.9rem;
+		padding: 0.85rem;
 		border: 1px solid #e3e3e3;
 		border-radius: 8px;
 		background: #fafafa;
 	}
 
+	.config-form,
 	.search-form {
 		display: grid;
-		gap: 0.5rem;
+		gap: 0.85rem;
 	}
 
-	.search-form input {
+	.section-band {
+		display: grid;
+		gap: 0.65rem;
+		padding-top: 0.85rem;
+		border-top: 1px solid #e3e3e3;
+	}
+
+	.field-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 0.75rem;
+	}
+
+	label {
+		display: grid;
+		gap: 0.35rem;
+		color: #333;
+		font-weight: 600;
+	}
+
+	input,
+	select,
+	textarea {
 		width: 100%;
 		padding: 0.5rem;
 		border-radius: 4px;
 		border: 1px solid #d0d0d0;
-		font-size: 1rem;
+		font: inherit;
+		font-weight: 400;
+		background: white;
 	}
 
-	button {
+	textarea {
+		resize: vertical;
+	}
+
+	button,
+	.secondary-button {
 		padding: 0.5rem 0.75rem;
 		border-radius: 4px;
 		border: 1px solid #1f7ae0;
@@ -181,12 +464,25 @@
 		color: white;
 		font-weight: 600;
 		cursor: pointer;
+		text-decoration: none;
+		white-space: nowrap;
 	}
 
-	.actions {
-		display: flex;
-		gap: 0.75rem;
-		align-items: center;
+	button:disabled {
+		opacity: 0.7;
+		cursor: wait;
+	}
+
+	.readonly {
+		padding: 0.55rem;
+		background: white;
+		border: 1px solid #e3e3e3;
+		border-radius: 6px;
+		overflow-wrap: anywhere;
+	}
+
+	code {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	}
 
 	.loader {
@@ -209,10 +505,8 @@
 	}
 
 	.result-meta {
-		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem 1rem;
-		align-items: center;
 	}
 
 	pre {

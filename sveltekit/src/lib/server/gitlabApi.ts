@@ -6,7 +6,10 @@ export const normalizeString = (value: unknown) =>
 export const getSignatureSecret = (value: unknown) => {
 	if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
 	const config = value as Record<string, unknown>;
-	return normalizeString(config.GitLab2EdTechRAG_SHARED_SECRET);
+	return (
+		normalizeString(config.Github2EdTechRAG_SHARED_SECRET) ??
+		normalizeString(config.GitLab2EdTechRAG_SHARED_SECRET)
+	);
 };
 
 const toHex = (bytes: Uint8Array) =>
