@@ -253,6 +253,9 @@ cd Github2EdTechRAG/
 cp .env.example .env
 nano .env
 nano docker-compose.yml
+chmod -R 777 log/
+chmod -R 777 ssh/
+chmod -R 777 repos/
 docker compose build
 docker compose up -d
 
