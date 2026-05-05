@@ -1,10 +1,13 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import { env } from '$env/dynamic/public';
 
 	let { children } = $props();
-  import './fonts.css';
+	import './fonts.css';
 
-
+	const defaultFooterHtml =
+		'<a href="https://github.com/ed-tech-at/edtechrag" target="_blank">Code @ GitHub</a>';
+	const footerHtml = `${env.PUBLIC_FOOTER_HTML || ''}${defaultFooterHtml}`;
 </script>
 
 <svelte:head>
@@ -14,8 +17,7 @@
 {@render children()}
 </main>
 <footer>
-	<a href='https://www.tugraz.at/go/impressum' target="_blank">Impressum</a>
-	<a href="https://www.tugraz.at/go/flaait" target="_blank">FLAAIT Group at LLT at TU Graz</a>
+	{@html footerHtml}
 </footer>
 
 <style>
@@ -32,14 +34,16 @@
 		background-color: #263B48;
 		height: 70px;
 	}
-	nav a, footer a {
+	:global(nav a),
+	footer :global(a) {
 		color: white;
 	}
 	main {
 		padding: 20px;
 		min-height: calc(100dvh - 70px);
 	}
-	nav, footer {
+	:global(nav),
+	footer {
 		display: flex;
 		position: sticky;
 		width: 100%;
