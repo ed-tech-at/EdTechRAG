@@ -15,11 +15,6 @@ RUN apk add --no-cache ca-certificates git openssh-client \
 COPY --from=build /out/github2edtechrag /usr/local/bin/github2edtechrag
 
 USER app
-ENV ADDR=:8080 \
-	GITHUB_REPOS_DIR=/repos \
-	LOG_DIR=/log \
-	GITHUB_SSH_KEY_PATH=/app/.ssh/id_ed25519 \
-	PUBLIC_BASE_URL=https://github2.edtechrag.local
 
 EXPOSE 8080
 ENTRYPOINT ["github2edtechrag"]

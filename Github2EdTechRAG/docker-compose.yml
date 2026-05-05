@@ -8,12 +8,6 @@ services:
     env_file:
       - path: .env
         required: false
-    environment:
-      ADDR: ":8080"
-      PUBLIC_BASE_URL: "https://github2.edtechrag.local"
-      GITHUB_REPOS_DIR: "/repos"
-      LOG_DIR: "/log"
-      GITHUB_SSH_KEY_PATH: "/app/.ssh/id_ed25519"
     volumes:
       - ./repos:/repos
       - ./log:/log

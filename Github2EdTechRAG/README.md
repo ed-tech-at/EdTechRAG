@@ -6,11 +6,16 @@ Small GitHub webhook bridge for EdTechRAG.
 
 Copy `.env.example` to `.env` and set:
 
+The Docker image does not bake runtime configuration; `docker-compose.yml` loads `.env` into the container.
+
 - `GITHUBSECRET`: GitHub webhook secret. Configure the webhook URL as `https://github2.edtechrag.local/webhook` and select push events.
 - `Github2EdTechRAG_ENDPOINT`: EdTechRAG API base, usually ending in `/api/gitlab` while the existing EdTechRAG endpoints are reused.
 - `Github2EdTechRAG_SHARED_SECRET`: outgoing HMAC secret expected by the matching repository `updateConfig` in EdTechRAG.
+- `ADDR`: listen address inside the container, usually `:8080`.
 - `PUBLIC_BASE_URL`: public URL where this bridge exposes `/raw` file content for EdTechRAG chunking.
-- `LOG_DIR`: task log directory inside the container, defaults to `/log`.
+- `GITHUB_REPOS_DIR`: repository checkout directory inside the container, usually `/repos`.
+- `LOG_DIR`: task log directory inside the container, usually `/log`.
+- `GITHUB_SSH_KEY_PATH`: SSH deploy key path inside the container, usually `/app/.ssh/id_ed25519`.
 
 ## Repository checkout
 
