@@ -239,11 +239,30 @@ git clone git@github.com:ed-tech-at/EdTechRAG.git
 cp -r EdTechRAG/docker/* .
 cp -r EdTechRAG/Github2EdTechRAG .
 
-nano pgvector/docker-compose.yml
-
+cd pgvector
 docker network create pgvector_net
+nano docker-compose.yml
+chmod -R 777 pgadmin_data/
+docker compose up -d
+
+cd ..
 
 
+
+cd Github2EdTechRAG/
+cp .env.example .env
+nano .env
+nano docker-compose.yml
+docker compose build
+docker compose up -d
+
+
+cd EdTechRAG/sveltekit/
+cp .env.example .env
+nano .env
+cd ../../
+docker compose build
+docker compose up -d
 
 
 

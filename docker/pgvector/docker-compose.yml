@@ -13,7 +13,7 @@ services:
     volumes:
       - ./pgdata:/var/lib/postgresql  # PostgreSQL-Datenbank wird im Host-Ordner ./pgdata gespeichert
     ports:
-      - 5434:5432
+      - 5432:5432
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -21,6 +21,7 @@ services:
     restart: unless-stopped
     depends_on:
       - pgvector-edtechrag
+      - traefik_net
 
     environment:
       PGADMIN_DEFAULT_EMAIL: dev@ed-tech.at

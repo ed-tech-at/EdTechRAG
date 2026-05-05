@@ -8,6 +8,8 @@ datasource db {
 }
 
 model Repository {
+  id            Int         @id @default(autoincrement())
+
   url          String     @unique
   name         String
 
