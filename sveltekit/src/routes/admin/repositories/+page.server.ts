@@ -1,7 +1,18 @@
-import type { PageServerLoad } from './$types';
+import { fail, redirect } from '@sveltejs/kit';
+import { resolve } from '$app/paths';
+import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
 import { requireValidJwt } from '$lib/server/jwt';
-import { filterAllowedRepositories } from '$lib/server/repository';
+import { filterAllowedRepositories, isRepositoryAllowed } from '$lib/server/repository';
+
+const optionalString = (value: FormDataEntryValue | null) =>
+	typeof value === 'string' && value.trim() ? value.trim() : undefined;
+
+const deriveName = (repoUrl: string) => {
+	const cleaned = repoUrl.replace(/\/$/, '');
+	const last = cleaned.split('/').filter(Boolean).pop();
+	return last || repoUrl;
+};
 
 export const load: PageServerLoad = async ({ cookies, url }) => {
 	const session = await requireValidJwt(cookies, url);
@@ -29,4 +40,56 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	});
 
 	return { repositories };
+};
+
+export const actions: Actions = {
+	createRepository: async ({ cookies, request, url }) => {
+		const session = await requireValidJwt(cookies, url);
+		const formData = await request.formData();
+		const repositoryUrl = optionalString(formData.get('repositoryUrl'));
+
+		if (!repositoryUrl) {
+			return fail(400, {
+				success: false,
+				message: 'Repository URL is required.'
+			});
+		}
+
+		if (!isRepositoryAllowed(session, repositoryUrl)) {
+			return fail(403, {
+				success: false,
+				message: 'Repository access denied for this URL.',
+				repositoryUrl
+			});
+		}
+
+		const existing = await prisma.repository.findUnique({
+			where: { url: repositoryUrl },
+			select: { url: true }
+		});
+
+		if (existing) {
+			return fail(409, {
+				success: false,
+				message: 'Repository already exists.',
+				repositoryUrl
+			});
+		}
+
+		await prisma.repository.create({
+			data: {
+				url: repositoryUrl,
+				name: deriveName(repositoryUrl),
+				updateConfig: {},
+				LLM_API: {},
+				ragConfig: {
+					numberDocuments: 4,
+					metaTags: [],
+					systemprompt: ''
+				}
+			}
+		});
+
+		throw redirect(303, resolve(`/admin/repositories/${encodeURIComponent(repositoryUrl)}`));
+	}
 };

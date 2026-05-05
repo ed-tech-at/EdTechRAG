@@ -6,11 +6,11 @@ import { findRepositoryContext } from '$lib/server/rag';
 import { requireAllowedRepository } from '$lib/server/repository';
 import { getNumberDocuments, parseRagConfig } from '$lib/ragContext';
 
-const DEFAULT_CHAT_BASE = 'https://api.openai.com/v1';
-const DEFAULT_EMBEDDING_BASE = 'https://api.openai.com/v1/embeddings';
-const DEFAULT_CHAT_MODEL = 'gpt-4.1-mini';
-const DEFAULT_EMBEDDING_MODEL = 'text-embedding-3-small';
-const DEFAULT_GITHUB2_BASE = 'https://github2.edtechrag.local';
+const DEFAULT_CHAT_BASE = '';
+const DEFAULT_EMBEDDING_BASE = '';
+const DEFAULT_CHAT_MODEL = '';
+const DEFAULT_EMBEDDING_MODEL = '';
+const DEFAULT_GITHUB2_BASE = '';
 
 const asRecord = (value: unknown): Record<string, unknown> =>
 	value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -88,7 +88,7 @@ const publicConfig = (repository: {
 			textVerbosity: stringValue(llm.text_verbosity, 'medium'),
 			azureUrl: stringValue(llm.AZURE_URL),
 			azureModel: stringValue(llm.AZURE_MODEL),
-			azureApiVersion: stringValue(llm.AZURE_API_VERSION, '2024-02-01'),
+			azureApiVersion: stringValue(llm.AZURE_API_VERSION, ''),
 			embeddingBase: stringValue(llm.OPENAI_API_BASE_EMBEDDING, DEFAULT_EMBEDDING_BASE),
 			embeddingModel: stringValue(llm.EMBEDDING_MODEL, DEFAULT_EMBEDDING_MODEL)
 		},
@@ -131,7 +131,7 @@ const formState = (
 			textVerbosity: optionalString(formData.get('text_verbosity')) ?? 'medium',
 			azureUrl: optionalString(formData.get('AZURE_URL')) ?? '',
 			azureModel: optionalString(formData.get('AZURE_MODEL')) ?? '',
-			azureApiVersion: optionalString(formData.get('AZURE_API_VERSION')) ?? '2024-02-01',
+			azureApiVersion: optionalString(formData.get('AZURE_API_VERSION')) ?? '',
 			embeddingBase:
 				optionalString(formData.get('OPENAI_API_BASE_EMBEDDING')) ?? DEFAULT_EMBEDDING_BASE,
 			embeddingModel: optionalString(formData.get('EMBEDDING_MODEL')) ?? DEFAULT_EMBEDDING_MODEL
@@ -176,7 +176,7 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					textVerbosity: 'medium',
 					azureUrl: '',
 					azureModel: '',
-					azureApiVersion: '2024-02-01',
+					azureApiVersion: '',
 					embeddingBase: DEFAULT_EMBEDDING_BASE,
 					embeddingModel: DEFAULT_EMBEDDING_MODEL
 				},

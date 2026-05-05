@@ -107,7 +107,7 @@
 				</label>
 				<label>
 					GitHub repository path
-					<input name="repository_path" placeholder="owner/repository" value={config.github.repositoryPath} required />
+					<input name="repository_path" placeholder="owner/repository" value={config.github.repositoryPath} />
 				</label>
 			</div>
 
@@ -128,12 +128,12 @@
 					</label>
 				</div>
 				<label>
-					EdTechRAG shared secret
+					Github shared secret for Github2EdTechRAG
 					<input
 						type="password"
 						name="Github2EdTechRAG_SHARED_SECRET"
 						placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
-						autocomplete="new-password"
+						
 					/>
 				</label>
 				<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
@@ -223,7 +223,7 @@
 					</label>
 					<label>
 						Azure API version
-						<input name="AZURE_API_VERSION" value={config.llm.azureApiVersion} />
+						<input name="AZURE_API_VERSION" value={config.llm.azureApiVersion} placeholder="optional"  />
 					</label>
 				</div>
 			</div>
