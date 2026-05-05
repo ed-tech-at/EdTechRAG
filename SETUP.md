@@ -229,3 +229,21 @@ GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO edtechrag_dev;
 GRANT USAGE ON TYPE public.vector TO edtechrag_dev;
 
 ```
+
+
+# Deployment
+
+mkdir edtechrag
+cd edtechrag
+git clone git@github.com:ed-tech-at/EdTechRAG.git
+cp -r EdTechRAG/docker/* .
+cp -r EdTechRAG/Github2EdTechRAG .
+
+nano pgvector/docker-compose.yml
+
+docker network create pgvector_net
+
+
+
+
+

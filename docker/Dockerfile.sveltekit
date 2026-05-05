@@ -5,7 +5,7 @@ FROM node:24 AS deps
 WORKDIR /app
 
 # Install dependencies
-COPY ./edtechrag/sveltekit/package.json ./edtechrag/sveltekit/package-lock.json ./
+COPY ./EdTechRAG/sveltekit/package.json ./EdTechRAG/sveltekit/package-lock.json ./
 
 RUN npm ci
 
@@ -19,7 +19,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source
-COPY ./edtechrag/sveltekit/ ./
+COPY ./EdTechRAG/sveltekit/ ./
 
 
 # Avoid DB/side effects during build
@@ -37,7 +37,7 @@ RUN npm run build
 # ───────────────────────────────
 FROM node:24 AS prod-deps
 WORKDIR /app
-COPY ./edtechrag/sveltekit/package.json ./edtechrag/sveltekit/package-lock.json ./
+COPY ./EdTechRAG/sveltekit/package.json ./EdTechRAG/sveltekit/package-lock.json ./
 
 ENV NODE_ENV=production
 

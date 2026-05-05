@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile.sveltekit
     env_file:
-      - ./edtechrag/sveltekit/.env
+      - ./EdTechRAG/sveltekit/.env
     restart: unless-stopped
     labels:
       - "traefik.enable=true"

@@ -15,7 +15,7 @@ The Docker image does not bake runtime configuration; `docker-compose.yml` loads
 - `PUBLIC_BASE_URL`: public URL where this bridge exposes `/raw` file content for EdTechRAG chunking.
 - `GITHUB_REPOS_DIR`: repository checkout directory inside the container, usually `/repos`.
 - `LOG_DIR`: task log directory inside the container, usually `/log`.
-- `GITHUB_SSH_KEY_PATH`: SSH deploy key path inside the container, usually `/app/.ssh/id_ed25519`.
+- `GITHUB_SSH_KEY_PATH`: SSH deploy key path inside the container, usually `/app/.ssh/id_ed25519`. Readonly is enough, create with `ssh-keygen -t ed25519 -C "github_readonly"`
 
 ## Repository checkout
 
