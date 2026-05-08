@@ -48,7 +48,7 @@
 		position: sticky;
 		width: 100%;
 		justify-content: space-between;
-		background-color: #F70146;
+		background-color: #39515f;
 		color: white;
 		padding: 20px;
 		height: 70px;

@@ -86,9 +86,9 @@ const publicConfig = (repository: {
 			apiLanguage: stringValue(llm.API_LANGUAGE, 'chat/completions'),
 			reasoningEffort: stringValue(llm.reasoning_effort, 'none'),
 			textVerbosity: stringValue(llm.text_verbosity, 'medium'),
-			azureUrl: stringValue(llm.AZURE_URL),
-			azureModel: stringValue(llm.AZURE_MODEL),
-			azureApiVersion: stringValue(llm.AZURE_API_VERSION, ''),
+			// azureUrl: stringValue(llm.AZURE_URL),
+			// azureModel: stringValue(llm.AZURE_MODEL),
+			// azureApiVersion: stringValue(llm.AZURE_API_VERSION, ''),
 			embeddingBase: stringValue(llm.OPENAI_API_BASE_EMBEDDING, DEFAULT_EMBEDDING_BASE),
 			embeddingModel: stringValue(llm.EMBEDDING_MODEL, DEFAULT_EMBEDDING_MODEL)
 		},
@@ -129,9 +129,9 @@ const formState = (
 			apiLanguage: optionalString(formData.get('API_LANGUAGE')) ?? 'chat/completions',
 			reasoningEffort: optionalString(formData.get('reasoning_effort')) ?? 'none',
 			textVerbosity: optionalString(formData.get('text_verbosity')) ?? 'medium',
-			azureUrl: optionalString(formData.get('AZURE_URL')) ?? '',
-			azureModel: optionalString(formData.get('AZURE_MODEL')) ?? '',
-			azureApiVersion: optionalString(formData.get('AZURE_API_VERSION')) ?? '',
+			// azureUrl: optionalString(formData.get('AZURE_URL')) ?? '',
+			// azureModel: optionalString(formData.get('AZURE_MODEL')) ?? '',
+			// azureApiVersion: optionalString(formData.get('AZURE_API_VERSION')) ?? '',
 			embeddingBase:
 				optionalString(formData.get('OPENAI_API_BASE_EMBEDDING')) ?? DEFAULT_EMBEDDING_BASE,
 			embeddingModel: optionalString(formData.get('EMBEDDING_MODEL')) ?? DEFAULT_EMBEDDING_MODEL
@@ -174,9 +174,9 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					apiLanguage: 'chat/completions',
 					reasoningEffort: 'none',
 					textVerbosity: 'medium',
-					azureUrl: '',
-					azureModel: '',
-					azureApiVersion: '',
+					// azureUrl: '',
+					// azureModel: '',
+					// azureApiVersion: '',
 					embeddingBase: DEFAULT_EMBEDDING_BASE,
 					embeddingModel: DEFAULT_EMBEDDING_MODEL
 				},
@@ -288,9 +288,9 @@ export const actions: Actions = {
 			API_LANGUAGE: apiLanguage,
 			reasoning_effort: optionalString(formData.get('reasoning_effort')) ?? 'none',
 			text_verbosity: optionalString(formData.get('text_verbosity')) ?? 'medium',
-			AZURE_URL: optionalString(formData.get('AZURE_URL')) ?? '',
-			AZURE_MODEL: optionalString(formData.get('AZURE_MODEL')) ?? '',
-			AZURE_API_VERSION: optionalString(formData.get('AZURE_API_VERSION')) ?? '2024-02-01',
+			// AZURE_URL: optionalString(formData.get('AZURE_URL')) ?? '',
+			// AZURE_MODEL: optionalString(formData.get('AZURE_MODEL')) ?? '',
+			// AZURE_API_VERSION: optionalString(formData.get('AZURE_API_VERSION')) ?? '2024-02-01',
 			OPENAI_API_BASE_EMBEDDING: embeddingBase,
 			EMBEDDING_MODEL: embeddingModel
 		};

@@ -116,7 +116,7 @@
 				<div class="field-grid">
 					<label>
 						Bridge public base URL
-						<input name="github2_public_base_url" bind:value={publicBaseUrl} required />
+						<input name="github2_public_base_url" bind:value={publicBaseUrl}  />
 					</label>
 					<label>
 						Mounted repo path
@@ -210,38 +210,22 @@
 				</div>
 			</div>
 
-			<div class="section-band">
-				<h3>Azure OpenAI</h3>
-				<div class="field-grid">
-					<label>
-						Azure URL
-						<input name="AZURE_URL" value={config.llm.azureUrl} placeholder="optional" />
-					</label>
-					<label>
-						Azure deployment model
-						<input name="AZURE_MODEL" value={config.llm.azureModel} placeholder="optional" />
-					</label>
-					<label>
-						Azure API version
-						<input name="AZURE_API_VERSION" value={config.llm.azureApiVersion} placeholder="optional"  />
-					</label>
-				</div>
-			</div>
+		
 
 			<div class="section-band">
 				<h3>RAG</h3>
 				<div class="field-grid">
 					<label>
 						Chunk size
-						<input name="chunkSize" type="number" min="1" value={config.rag.chunkSize ?? ''} />
+						<input name="chunkSize" type="number" min="1" value={config.rag.chunkSize ?? ''} placeholder="4000" />
 					</label>
 					<label>
 						Chunk overlap
-						<input name="chunkOverlap" type="number" min="0" value={config.rag.chunkOverlap ?? ''} />
+						<input name="chunkOverlap" type="number" min="0" value={config.rag.chunkOverlap ?? ''} placeholder="150" />
 					</label>
 					<label>
 						Number of documents
-						<input name="numberDocuments" type="number" min="1" value={config.rag.numberDocuments} />
+						<input name="numberDocuments" type="number" min="1" value={config.rag.numberDocuments} placeholder="4" />
 					</label>
 					<label>
 						Metadata tags
