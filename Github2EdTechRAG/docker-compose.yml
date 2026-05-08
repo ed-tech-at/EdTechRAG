@@ -1,0 +1,30 @@
+services:
+  github2-edtechrag:
+    container_name: github2-edtechrag
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./repos:/repos
+      - ./log:/log
+      - ./ssh:/app/.ssh:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.github2-edtechrag.rule=Host(`github2.edtechrag.local`)"
+      - "traefik.http.services.github2-edtechrag.loadbalancer.server.port=8080"
+      - "traefik.http.routers.github2-edtechrag.entrypoints=websecure"
+      - "traefik.http.routers.github2-edtechrag.tls.certresolver=myresolver"
+      - "traefik.docker.network=traefik_net"
+    networks:
+      - traefik_net
+      - postgresql_net
+
+networks:
+  traefik_net:
+    external: true
+  postgresql_net:
+    external: true

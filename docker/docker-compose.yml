@@ -1,0 +1,30 @@
+
+services:
+  edtechrag:
+    container_name: edrechrag
+    image: edtechrag:releaseGithub
+    build:
+      context: .
+      dockerfile: Dockerfile.sveltekit
+    env_file:
+      - ./EdTechRAG/sveltekit/.env
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+
+      - "traefik.http.routers.edtechrag-releaseGithub.rule=Host(`edtechrag.local`) && (PathPrefix(`/edtechrag`))"
+      - "traefik.http.services.edtechrag-releaseGithub.loadbalancer.server.port=3000"
+      - "traefik.http.routers.edtechrag-releaseGithub.entrypoints=websecure"
+      - "traefik.http.routers.edtechrag-releaseGithub.tls.certresolver=myresolver"
+
+      - "traefik.docker.network=traefik_net"
+
+    networks:
+      - traefik_net
+      - pgvector_net
+
+networks:
+  traefik_net:
+    external: true
+  pgvector_net:
+    external: true

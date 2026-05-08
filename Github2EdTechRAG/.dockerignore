@@ -1,0 +1,6 @@
+.env
+ssh
+repos
+log
+.git
+docker-compose.yml

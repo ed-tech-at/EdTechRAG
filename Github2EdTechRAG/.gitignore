@@ -1,0 +1,7 @@
+.env
+ssh/*
+!ssh/.gitkeep
+repos/*
+!repos/.gitkeep
+log/*
+!log/.gitkeep

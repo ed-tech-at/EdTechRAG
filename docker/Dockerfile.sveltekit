@@ -1,0 +1,100 @@
+# ───────────────────────────────
+# 1) Base deps (cache-friendly)
+# ───────────────────────────────
+FROM node:24 AS deps
+WORKDIR /app
+
+# Install dependencies
+COPY ./EdTechRAG/sveltekit/package.json ./EdTechRAG/sveltekit/package-lock.json ./
+
+RUN npm ci
+
+# ───────────────────────────────
+# 2) Builder (compile SvelteKit, generate Prisma client)
+# ───────────────────────────────
+FROM node:24 AS builder
+WORKDIR /app
+
+# Bring in node_modules from deps
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source
+COPY ./EdTechRAG/sveltekit/ ./
+
+
+# Avoid DB/side effects during build
+ENV SKIP_DB=1
+
+
+# Prisma client
+#RUN npx prisma generate
+
+# Build for production
+RUN npm run build
+
+# ───────────────────────────────
+# 3) Prod deps (only production packages)
+# ───────────────────────────────
+FROM node:24 AS prod-deps
+WORKDIR /app
+COPY ./EdTechRAG/sveltekit/package.json ./EdTechRAG/sveltekit/package-lock.json ./
+
+ENV NODE_ENV=production
+
+RUN apt-get update && apt-get install -y \
+  openssl libssl-dev \
+  libfontconfig1 \
+  libfreetype6 \
+  libjpeg62-turbo \
+  libpng-dev \
+  libpixman-1-dev \
+  libglib2.0-0
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fontconfig \
+    fonts-liberation && \
+    fc-cache -f -v
+
+
+# Install only production dependencies
+RUN npm ci --omit=dev
+
+# ───────────────────────────────
+# 4) Runner (slim runtime image)
+# ───────────────────────────────
+FROM node:24-slim AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy prod node_modules
+COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
+
+# Copy built app and static assets
+COPY --from=builder --chown=node:node /app/build ./build
+COPY --from=builder --chown=node:node /app/static ./static
+
+# Copy Prisma schema (for migrate) and generated client/engines
+COPY --from=builder --chown=node:node /app/prisma ./prisma
+COPY --from=builder --chown=node:node /app/node_modules/@prisma ./node_modules/@prisma
+#COPY --from=builder --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
+#COPY --from=builder --chown=node:node /app/prisma ./prisma
+COPY --from=builder --chown=node:node /app/prisma.config.ts ./prisma.config.ts
+
+# (Optional) If your app needs .svelte-kit at runtime, keep this; otherwise you can omit.
+COPY --from=builder --chown=node:node /app/.svelte-kit ./.svelte-kit
+
+# Use a non-root user for safety (node image provides 'node')
+##RUN chown -R node:node /app
+
+USER node
+
+EXPOSE 3000
+
+# Run pending migrations, then start the server
+# If you don't want migrations at container start, replace with just "node ./build"
+CMD ["sh", "-c", "npx prisma migrate deploy && node ./build"]
