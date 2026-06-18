@@ -28,6 +28,7 @@ type config struct {
 	edtechEndpoint string
 	edtechSecret   string
 	publicBaseURL  string
+	subfolder      string
 	reposDir       string
 	logDir         string
 	sshKeyPath     string
@@ -93,13 +94,18 @@ var (
 func main() {
 	cfg := loadConfig()
 
+	prefix := ""
+	if cfg.subfolder != "" {
+		prefix = "/" + cfg.subfolder
+	}
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc(prefix+"/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok\n"))
 	})
-	mux.HandleFunc("/webhook", cfg.handleWebhook)
-	mux.HandleFunc("/raw", cfg.handleRaw)
+	mux.HandleFunc(prefix+"/webhook", cfg.handleWebhook)
+	mux.HandleFunc(prefix+"/raw", cfg.handleRaw)
 
 	log.Printf("Github2EdTechRAG listening on %s", cfg.addr)
 	log.Fatal(http.ListenAndServe(cfg.addr, mux))
@@ -112,6 +118,7 @@ func loadConfig() config {
 		edtechEndpoint: firstEnv("Github2EdTechRAG_ENDPOINT", "EDTECHRAG_ENDPOINT"),
 		edtechSecret:   firstEnv("Github2EdTechRAG_SHARED_SECRET", "GitLab2EdTechRAG_SHARED_SECRET", "EDTECHRAG_SHARED_SECRET"),
 		publicBaseURL:  strings.TrimRight(envOr("PUBLIC_BASE_URL", "https://github2.edtechrag.local"), "/"),
+		subfolder:      strings.Trim(envOr("SUBFOLDER", ""), "/"),
 		reposDir:       envOr("GITHUB_REPOS_DIR", "/repos"),
 		logDir:         envOr("LOG_DIR", "/log"),
 		sshKeyPath:     envOr("GITHUB_SSH_KEY_PATH", "/app/.ssh/id_ed25519"),
@@ -545,6 +552,9 @@ func (cfg config) buildEdTechPayload(r *http.Request, payload githubPushPayload,
 	baseURL := cfg.publicBaseURL
 	if baseURL == "" {
 		baseURL = requestBaseURL(r)
+	}
+	if cfg.subfolder != "" {
+		baseURL = strings.TrimRight(baseURL, "/") + "/" + cfg.subfolder
 	}
 
 	toRawURLs := func(paths []string) []string {
