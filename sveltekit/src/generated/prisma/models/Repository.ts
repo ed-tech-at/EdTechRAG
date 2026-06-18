@@ -20,21 +20,34 @@ export type RepositoryModel = runtime.Types.Result.DefaultSelection<Prisma.$Repo
 
 export type AggregateRepository = {
   _count: RepositoryCountAggregateOutputType | null
+  _avg: RepositoryAvgAggregateOutputType | null
+  _sum: RepositorySumAggregateOutputType | null
   _min: RepositoryMinAggregateOutputType | null
   _max: RepositoryMaxAggregateOutputType | null
 }
 
+export type RepositoryAvgAggregateOutputType = {
+  id: number | null
+}
+
+export type RepositorySumAggregateOutputType = {
+  id: number | null
+}
+
 export type RepositoryMinAggregateOutputType = {
+  id: number | null
   url: string | null
   name: string | null
 }
 
 export type RepositoryMaxAggregateOutputType = {
+  id: number | null
   url: string | null
   name: string | null
 }
 
 export type RepositoryCountAggregateOutputType = {
+  id: number
   url: number
   name: number
   updateConfig: number
@@ -44,17 +57,28 @@ export type RepositoryCountAggregateOutputType = {
 }
 
 
+export type RepositoryAvgAggregateInputType = {
+  id?: true
+}
+
+export type RepositorySumAggregateInputType = {
+  id?: true
+}
+
 export type RepositoryMinAggregateInputType = {
+  id?: true
   url?: true
   name?: true
 }
 
 export type RepositoryMaxAggregateInputType = {
+  id?: true
   url?: true
   name?: true
 }
 
 export type RepositoryCountAggregateInputType = {
+  id?: true
   url?: true
   name?: true
   updateConfig?: true
@@ -101,6 +125,18 @@ export type RepositoryAggregateArgs<ExtArgs extends runtime.Types.Extensions.Int
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: RepositoryAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: RepositorySumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: RepositoryMinAggregateInputType
@@ -131,22 +167,27 @@ export type RepositoryGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   _count?: RepositoryCountAggregateInputType | true
+  _avg?: RepositoryAvgAggregateInputType
+  _sum?: RepositorySumAggregateInputType
   _min?: RepositoryMinAggregateInputType
   _max?: RepositoryMaxAggregateInputType
 }
 
 export type RepositoryGroupByOutputType = {
+  id: number
   url: string
   name: string
   updateConfig: runtime.JsonValue | null
   LLM_API: runtime.JsonValue | null
   ragConfig: runtime.JsonValue | null
   _count: RepositoryCountAggregateOutputType | null
+  _avg: RepositoryAvgAggregateOutputType | null
+  _sum: RepositorySumAggregateOutputType | null
   _min: RepositoryMinAggregateOutputType | null
   _max: RepositoryMaxAggregateOutputType | null
 }
 
-type GetRepositoryGroupByPayload<T extends RepositoryGroupByArgs> = Prisma.PrismaPromise<
+export type GetRepositoryGroupByPayload<T extends RepositoryGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<RepositoryGroupByOutputType, T['by']> &
       {
@@ -165,6 +206,7 @@ export type RepositoryWhereInput = {
   AND?: Prisma.RepositoryWhereInput | Prisma.RepositoryWhereInput[]
   OR?: Prisma.RepositoryWhereInput[]
   NOT?: Prisma.RepositoryWhereInput | Prisma.RepositoryWhereInput[]
+  id?: Prisma.IntFilter<"Repository"> | number
   url?: Prisma.StringFilter<"Repository"> | string
   name?: Prisma.StringFilter<"Repository"> | string
   updateConfig?: Prisma.JsonNullableFilter<"Repository">
@@ -174,6 +216,7 @@ export type RepositoryWhereInput = {
 }
 
 export type RepositoryOrderByWithRelationInput = {
+  id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
   updateConfig?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -183,6 +226,7 @@ export type RepositoryOrderByWithRelationInput = {
 }
 
 export type RepositoryWhereUniqueInput = Prisma.AtLeast<{
+  id?: number
   url?: string
   AND?: Prisma.RepositoryWhereInput | Prisma.RepositoryWhereInput[]
   OR?: Prisma.RepositoryWhereInput[]
@@ -192,23 +236,27 @@ export type RepositoryWhereUniqueInput = Prisma.AtLeast<{
   LLM_API?: Prisma.JsonNullableFilter<"Repository">
   ragConfig?: Prisma.JsonNullableFilter<"Repository">
   dataFiles?: Prisma.DataFileListRelationFilter
-}, "url">
+}, "id" | "url">
 
 export type RepositoryOrderByWithAggregationInput = {
+  id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
   updateConfig?: Prisma.SortOrderInput | Prisma.SortOrder
   LLM_API?: Prisma.SortOrderInput | Prisma.SortOrder
   ragConfig?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.RepositoryCountOrderByAggregateInput
+  _avg?: Prisma.RepositoryAvgOrderByAggregateInput
   _max?: Prisma.RepositoryMaxOrderByAggregateInput
   _min?: Prisma.RepositoryMinOrderByAggregateInput
+  _sum?: Prisma.RepositorySumOrderByAggregateInput
 }
 
 export type RepositoryScalarWhereWithAggregatesInput = {
   AND?: Prisma.RepositoryScalarWhereWithAggregatesInput | Prisma.RepositoryScalarWhereWithAggregatesInput[]
   OR?: Prisma.RepositoryScalarWhereWithAggregatesInput[]
   NOT?: Prisma.RepositoryScalarWhereWithAggregatesInput | Prisma.RepositoryScalarWhereWithAggregatesInput[]
+  id?: Prisma.IntWithAggregatesFilter<"Repository"> | number
   url?: Prisma.StringWithAggregatesFilter<"Repository"> | string
   name?: Prisma.StringWithAggregatesFilter<"Repository"> | string
   updateConfig?: Prisma.JsonNullableWithAggregatesFilter<"Repository">
@@ -226,6 +274,7 @@ export type RepositoryCreateInput = {
 }
 
 export type RepositoryUncheckedCreateInput = {
+  id?: number
   url: string
   name: string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -244,6 +293,7 @@ export type RepositoryUpdateInput = {
 }
 
 export type RepositoryUncheckedUpdateInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
   url?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -253,6 +303,7 @@ export type RepositoryUncheckedUpdateInput = {
 }
 
 export type RepositoryCreateManyInput = {
+  id?: number
   url: string
   name: string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -269,6 +320,7 @@ export type RepositoryUpdateManyMutationInput = {
 }
 
 export type RepositoryUncheckedUpdateManyInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
   url?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -277,6 +329,7 @@ export type RepositoryUncheckedUpdateManyInput = {
 }
 
 export type RepositoryCountOrderByAggregateInput = {
+  id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
   updateConfig?: Prisma.SortOrder
@@ -284,14 +337,24 @@ export type RepositoryCountOrderByAggregateInput = {
   ragConfig?: Prisma.SortOrder
 }
 
+export type RepositoryAvgOrderByAggregateInput = {
+  id?: Prisma.SortOrder
+}
+
 export type RepositoryMaxOrderByAggregateInput = {
+  id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
 }
 
 export type RepositoryMinOrderByAggregateInput = {
+  id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
+}
+
+export type RepositorySumOrderByAggregateInput = {
+  id?: Prisma.SortOrder
 }
 
 export type RepositoryScalarRelationFilter = {
@@ -301,6 +364,14 @@ export type RepositoryScalarRelationFilter = {
 
 export type StringFieldUpdateOperationsInput = {
   set?: string
+}
+
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type RepositoryCreateNestedOneWithoutDataFilesInput = {
@@ -326,6 +397,7 @@ export type RepositoryCreateWithoutDataFilesInput = {
 }
 
 export type RepositoryUncheckedCreateWithoutDataFilesInput = {
+  id?: number
   url: string
   name: string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -358,6 +430,7 @@ export type RepositoryUpdateWithoutDataFilesInput = {
 }
 
 export type RepositoryUncheckedUpdateWithoutDataFilesInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
   url?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -397,6 +470,7 @@ export type RepositoryCountOutputTypeCountDataFilesArgs<ExtArgs extends runtime.
 
 
 export type RepositorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  id?: boolean
   url?: boolean
   name?: boolean
   updateConfig?: boolean
@@ -407,6 +481,7 @@ export type RepositorySelect<ExtArgs extends runtime.Types.Extensions.InternalAr
 }, ExtArgs["result"]["repository"]>
 
 export type RepositorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  id?: boolean
   url?: boolean
   name?: boolean
   updateConfig?: boolean
@@ -415,6 +490,7 @@ export type RepositorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
 }, ExtArgs["result"]["repository"]>
 
 export type RepositorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
+  id?: boolean
   url?: boolean
   name?: boolean
   updateConfig?: boolean
@@ -423,6 +499,7 @@ export type RepositorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
 }, ExtArgs["result"]["repository"]>
 
 export type RepositorySelectScalar = {
+  id?: boolean
   url?: boolean
   name?: boolean
   updateConfig?: boolean
@@ -430,7 +507,7 @@ export type RepositorySelectScalar = {
   ragConfig?: boolean
 }
 
-export type RepositoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"url" | "name" | "updateConfig" | "LLM_API" | "ragConfig", ExtArgs["result"]["repository"]>
+export type RepositoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "url" | "name" | "updateConfig" | "LLM_API" | "ragConfig", ExtArgs["result"]["repository"]>
 export type RepositoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   dataFiles?: boolean | Prisma.Repository$dataFilesArgs<ExtArgs>
   _count?: boolean | Prisma.RepositoryCountOutputTypeDefaultArgs<ExtArgs>
@@ -444,6 +521,7 @@ export type $RepositoryPayload<ExtArgs extends runtime.Types.Extensions.Internal
     dataFiles: Prisma.$DataFilePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
+    id: number
     url: string
     name: string
     updateConfig: runtime.JsonValue | null
@@ -532,8 +610,8 @@ export interface RepositoryDelegate<ExtArgs extends runtime.Types.Extensions.Int
    * // Get first 10 Repositories
    * const repositories = await prisma.repository.findMany({ take: 10 })
    * 
-   * // Only select the `url`
-   * const repositoryWithUrlOnly = await prisma.repository.findMany({ select: { url: true } })
+   * // Only select the `id`
+   * const repositoryWithIdOnly = await prisma.repository.findMany({ select: { id: true } })
    * 
    */
   findMany<T extends RepositoryFindManyArgs>(args?: Prisma.SelectSubset<T, RepositoryFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RepositoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -577,9 +655,9 @@ export interface RepositoryDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *   ]
    * })
    * 
-   * // Create many Repositories and only return the `url`
-   * const repositoryWithUrlOnly = await prisma.repository.createManyAndReturn({
-   *   select: { url: true },
+   * // Create many Repositories and only return the `id`
+   * const repositoryWithIdOnly = await prisma.repository.createManyAndReturn({
+   *   select: { id: true },
    *   data: [
    *     // ... provide data here
    *   ]
@@ -668,9 +746,9 @@ export interface RepositoryDelegate<ExtArgs extends runtime.Types.Extensions.Int
    *   ]
    * })
    * 
-   * // Update zero or more Repositories and only return the `url`
-   * const repositoryWithUrlOnly = await prisma.repository.updateManyAndReturn({
-   *   select: { url: true },
+   * // Update zero or more Repositories and only return the `id`
+   * const repositoryWithIdOnly = await prisma.repository.updateManyAndReturn({
+   *   select: { id: true },
    *   where: {
    *     // ... provide filter here
    *   },
@@ -873,6 +951,7 @@ export interface Prisma__RepositoryClient<T, Null = never, ExtArgs extends runti
  * Fields of the Repository model
  */
 export interface RepositoryFieldRefs {
+  readonly id: Prisma.FieldRef<"Repository", 'Int'>
   readonly url: Prisma.FieldRef<"Repository", 'String'>
   readonly name: Prisma.FieldRef<"Repository", 'String'>
   readonly updateConfig: Prisma.FieldRef<"Repository", 'Json'>
@@ -1074,6 +1153,11 @@ export type RepositoryFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Skip the first `n` Repositories.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Repositories.
+   */
   distinct?: Prisma.RepositoryScalarFieldEnum | Prisma.RepositoryScalarFieldEnum[]
 }
 

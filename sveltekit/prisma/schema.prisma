@@ -40,11 +40,15 @@ model ChatLog {
   id            Int      @id @default(autoincrement())
   repositoryUrl String?
   endpoint      String?
-  
+
   question      String?
   context       String?
   answer        String?
-  
+
+  username      String?
+  history       Json?
+  source        String?
+
   createdAt     DateTime @default(now())
 }
 
