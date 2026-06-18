@@ -1,5 +1,37 @@
 /* EdTechRAG Moodle block chatbot embed – all classes scoped under .at-ed-tech-edtechrag-emd-* */
 
+/* ══════════════════════════════════════════════════════════
+   Theme variables
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Theme: tugraz (default) ── */
+.at-ed-tech-edtechrag-emd-host {
+  --at-ed-tech-edtechrag-emd-primary:              #285F82;
+  --at-ed-tech-edtechrag-emd-shadow:               rgba(40, 95, 130, 0.45);
+  --at-ed-tech-edtechrag-emd-shadow-hover:         rgba(40, 95, 130, 0.55);
+  --at-ed-tech-edtechrag-emd-footer-border:        #d0dde6;
+  --at-ed-tech-edtechrag-emd-accent:               #F70146;
+  --at-ed-tech-edtechrag-emd-accent-hover:         #c70039;
+  --at-ed-tech-edtechrag-emd-user-bubble:          #5191C1;
+  --at-ed-tech-edtechrag-emd-user-link:            #c5dff0;
+}
+
+/* ── Theme: imoox ── */
+.at-ed-tech-edtechrag-emd-host.at-ed-tech-edtechrag-emd-design-imoox {
+  --at-ed-tech-edtechrag-emd-primary:              #4B2D7F;
+  --at-ed-tech-edtechrag-emd-shadow:               rgba(75, 45, 127, 0.45);
+  --at-ed-tech-edtechrag-emd-shadow-hover:         rgba(75, 45, 127, 0.55);
+  --at-ed-tech-edtechrag-emd-footer-border:        #ece8f3;
+  --at-ed-tech-edtechrag-emd-accent:               #E05A2B;
+  --at-ed-tech-edtechrag-emd-accent-hover:         #c9501f;
+  --at-ed-tech-edtechrag-emd-user-bubble:          #1f7ae0;
+  --at-ed-tech-edtechrag-emd-user-link:            #cce0ff;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Base / reset
+   ══════════════════════════════════════════════════════════ */
+
 .at-ed-tech-edtechrag-emd-host {
   font-family: 'Jost', system-ui, -apple-system, sans-serif;
   font-size: 15px;
@@ -22,20 +54,20 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #4B2D7F;
+  background: var(--at-ed-tech-edtechrag-emd-primary);
   border: none;
   cursor: pointer;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(75, 45, 127, 0.45);
+  box-shadow: 0 4px 16px var(--at-ed-tech-edtechrag-emd-shadow);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .at-ed-tech-edtechrag-emd-fab:hover {
   transform: scale(1.08);
-  box-shadow: 0 6px 20px rgba(75, 45, 127, 0.55);
+  box-shadow: 0 6px 20px var(--at-ed-tech-edtechrag-emd-shadow-hover);
 }
 
 .at-ed-tech-edtechrag-emd-fab img {
@@ -82,7 +114,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: #4B2D7F;
+  background: var(--at-ed-tech-edtechrag-emd-primary);
   color: white;
   flex-shrink: 0;
 }
@@ -145,7 +177,7 @@
 /* ── Greeting ── */
 .at-ed-tech-edtechrag-emd-greeting {
   text-align: center;
-  color: #E05A2B;
+  color: var(--at-ed-tech-edtechrag-emd-accent);
   font-weight: 700;
   font-size: 1rem;
   line-height: 1.4;
@@ -156,7 +188,7 @@
 .at-ed-tech-edtechrag-emd-faq-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #4B2D7F;
+  color: var(--at-ed-tech-edtechrag-emd-primary);
   margin: 4px 0 6px;
 }
 
@@ -168,7 +200,7 @@
 }
 
 .at-ed-tech-edtechrag-emd-faq-pill {
-  background: #E05A2B;
+  background: var(--at-ed-tech-edtechrag-emd-accent);
   color: white;
   border: none;
   border-radius: 24px;
@@ -183,7 +215,7 @@
 }
 
 .at-ed-tech-edtechrag-emd-faq-pill:hover {
-  background: #c9501f;
+  background: var(--at-ed-tech-edtechrag-emd-accent-hover);
   transform: translateY(-1px);
 }
 
@@ -212,9 +244,9 @@
 }
 
 .at-ed-tech-edtechrag-emd-bubble.at-ed-tech-edtechrag-emd-user .at-ed-tech-edtechrag-emd-bubble-content {
-  background: #1f7ae0;
+  background: var(--at-ed-tech-edtechrag-emd-user-bubble);
   color: white;
-  border-color: #1f7ae0;
+  border-color: var(--at-ed-tech-edtechrag-emd-user-bubble);
 }
 
 .at-ed-tech-edtechrag-emd-bubble-content p {
@@ -226,12 +258,12 @@
 }
 
 .at-ed-tech-edtechrag-emd-bubble-content a {
-  color: #1f7ae0;
+  color: var(--at-ed-tech-edtechrag-emd-user-bubble);
   word-break: break-all;
 }
 
 .at-ed-tech-edtechrag-emd-bubble.at-ed-tech-edtechrag-emd-user .at-ed-tech-edtechrag-emd-bubble-content a {
-  color: #cce0ff;
+  color: var(--at-ed-tech-edtechrag-emd-user-link);
 }
 
 .at-ed-tech-edtechrag-emd-bubble-content pre {
@@ -260,19 +292,23 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 5px 12px;
-  border-top: 1px solid #ece8f3;
+  border-top: 1px solid var(--at-ed-tech-edtechrag-emd-footer-border);
   background: #fafafa;
   flex-shrink: 0;
 }
 
+.at-ed-tech-edtechrag-emd-footer.at-ed-tech-edtechrag-emd-has-sponsor {
+  justify-content: space-between;
+}
+
 .at-ed-tech-edtechrag-emd-sponsor-link {
   font-size: 0.75rem;
-  color: #4B2D7F;
+  color: var(--at-ed-tech-edtechrag-emd-primary);
   text-decoration: none;
-  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .at-ed-tech-edtechrag-emd-sponsor-link:hover {
@@ -328,7 +364,7 @@
 }
 
 .at-ed-tech-edtechrag-emd-input:focus {
-  border-color: #4B2D7F;
+  border-color: var(--at-ed-tech-edtechrag-emd-primary);
 }
 
 .at-ed-tech-edtechrag-emd-input::placeholder {
@@ -340,7 +376,7 @@
   height: 38px;
   border-radius: 50%;
   border: none;
-  background: #E05A2B;
+  background: var(--at-ed-tech-edtechrag-emd-accent);
   color: white;
   cursor: pointer;
   display: flex;
@@ -352,7 +388,7 @@
 }
 
 .at-ed-tech-edtechrag-emd-send:hover:not(:disabled) {
-  background: #c9501f;
+  background: var(--at-ed-tech-edtechrag-emd-accent-hover);
   transform: scale(1.05);
 }
 

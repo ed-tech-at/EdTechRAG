@@ -54,6 +54,8 @@
     var baseUrl      = d.edtechragBaseUrl || '/edtechrag/';
     if (!baseUrl.endsWith('/')) baseUrl += '/';
 
+    var design = d.design || 'tugraz';
+
     var messages = [];
     var loading  = false;
     var decoder  = new TextDecoder();
@@ -78,6 +80,9 @@
 
     /* ── Build DOM ── */
     var host = el('div', cn('host'));
+    if (design !== 'tugraz') {
+      host.classList.add(cn('design-' + design));
+    }
 
     /* Panel */
     var panel = el('div', cn('panel'));
@@ -137,10 +142,11 @@
       var sponsorA = el('a', cn('sponsor-link'), { href: sponsorLink, target: '_blank', rel: 'noopener noreferrer' });
       sponsorA.textContent = sponsorText;
       footerEl.appendChild(sponsorA);
+      footerEl.classList.add(cn('has-sponsor'));
     }
 
     var clearBtn = el('button', cn('clear-btn'));
-    clearBtn.textContent = 'Chat löschen';
+    clearBtn.textContent = 'Chat leeren';
     footerEl.appendChild(clearBtn);
 
     /* Composer */
