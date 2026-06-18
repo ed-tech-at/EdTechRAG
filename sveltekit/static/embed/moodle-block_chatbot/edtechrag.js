@@ -45,6 +45,7 @@
   function initWidget(configDiv) {
     var d = configDiv.dataset;
     var embedId      = d.embedId      || '';
+    var username     = d.username     || '';
     var greeting     = d.greeting     || '';
     var assistantName = d.assistantName || 'Chatbot';
     var assistantIcon = d.assistantIcon || '';
@@ -269,11 +270,11 @@
       var assistantIndex = messages.length - 1;
       var assistantContentEl = addBubble('assistant', '<span class="' + cn('muted') + '">…</span>');
 
-      var url = baseUrl + 'api/chat/' + encodeURIComponent(embedId);
+      var url = baseUrl + 'api/embed/' + encodeURIComponent(embedId);
       fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text, history: history })
+        body: JSON.stringify({ prompt: text, history: history, username: username, source: window.location.href })
       }).then(function (res) {
         if (!res.ok || !res.body) throw new Error('Request failed (' + res.status + ')');
         var reader = res.body.getReader();

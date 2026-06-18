@@ -213,7 +213,7 @@ export type GitlabApiLogGroupByOutputType = {
   _max: GitlabApiLogMaxAggregateOutputType | null
 }
 
-type GetGitlabApiLogGroupByPayload<T extends GitlabApiLogGroupByArgs> = Prisma.PrismaPromise<
+export type GetGitlabApiLogGroupByPayload<T extends GitlabApiLogGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<GitlabApiLogGroupByOutputType, T['by']> &
       {
@@ -1079,6 +1079,11 @@ export type GitlabApiLogFindManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * Skip the first `n` GitlabApiLogs.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of GitlabApiLogs.
+   */
   distinct?: Prisma.GitlabApiLogScalarFieldEnum | Prisma.GitlabApiLogScalarFieldEnum[]
 }
 
