@@ -172,7 +172,7 @@
       var fabImg = el('img', '', { src: assistantIcon, alt: assistantName });
       fab.appendChild(fabImg);
     } else {
-      fab.innerHTML = '<svg class="' + cn('fab-icon') + '" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="20"/><rect x="11" y="13" width="18" height="12" rx="4" fill="white"/><circle cx="16" cy="19" r="2.5" fill="#4B2D7F"/><circle cx="24" cy="19" r="2.5" fill="#4B2D7F"/><rect x="17" y="27" width="6" height="3" rx="1.5" fill="white"/></svg>';
+      fab.innerHTML = '<svg style="width:28px;height:28px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/><circle cx="7" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="12" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="17" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/></svg>';
     }
 
     host.appendChild(panel);
