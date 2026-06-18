@@ -49,6 +49,7 @@
     var greeting     = d.greeting     || '';
     var assistantName = d.assistantName || 'Chatbot';
     var assistantIcon = d.assistantIcon || '';
+    var brandImageUrl = d.brandImageUrl || '';
     var sponsorLink  = d.sponsorLink  || '';
     var sponsorText  = d.sponsorText  || '';
     var defaultMessages = parseDefaultMessages(d.defaultMessages);
@@ -93,11 +94,11 @@
     var header = el('div', cn('header'));
 
     var avatar;
-    if (assistantIcon) {
-      avatar = el('img', cn('avatar'), { src: assistantIcon, alt: assistantName });
+    if (brandImageUrl) {
+      avatar = el('img', cn('avatar'), { src: brandImageUrl, alt: assistantName });
     } else {
       avatar = el('div', cn('avatar'));
-      avatar.innerHTML = '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" style="width:42px;height:42px;fill:#c9a0ff"><circle cx="20" cy="20" r="20"/><rect x="13" y="14" width="14" height="10" rx="3" fill="white"/><circle cx="16" cy="19" r="2" fill="#4B2D7F"/><circle cx="24" cy="19" r="2" fill="#4B2D7F"/></svg>';
+      avatar.innerHTML = '<svg style="width:28px;height:28px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/><circle cx="7" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="12" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="17" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/></svg>';
     }
 
     var titleEl = el('span', cn('title'));
