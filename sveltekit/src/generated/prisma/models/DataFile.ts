@@ -202,7 +202,7 @@ export type DataFileGroupByOutputType = {
   _max: DataFileMaxAggregateOutputType | null
 }
 
-type GetDataFileGroupByPayload<T extends DataFileGroupByArgs> = Prisma.PrismaPromise<
+export type GetDataFileGroupByPayload<T extends DataFileGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<DataFileGroupByOutputType, T['by']> &
       {
@@ -444,14 +444,6 @@ export type NullableStringFieldUpdateOperationsInput = {
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
-}
-
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
 }
 
 export type DataFileCreateWithoutRepositoryInput = {
@@ -1241,6 +1233,11 @@ export type DataFileFindManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Skip the first `n` DataFiles.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of DataFiles.
+   */
   distinct?: Prisma.DataFileScalarFieldEnum | Prisma.DataFileScalarFieldEnum[]
 }
 
