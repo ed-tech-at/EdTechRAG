@@ -80,7 +80,7 @@
       } catch (e) { return false; }
     }
 
-    /* ── Build DOM ── */
+    /* -- Build DOM -- */
     var host = el('div', cn('host'));
     if (design !== 'tugraz') {
       host.classList.add(cn('design-' + design));
@@ -153,7 +153,7 @@
 
     /* Composer */
     var composer  = el('div', cn('composer'));
-    var textarea  = el('textarea', cn('input'), { rows: '1', placeholder: 'Nachricht schreiben …' });
+    var textarea  = el('textarea', cn('input'), { rows: '1', placeholder: 'Nachricht schreiben ...' });
     var sendBtn   = el('button', cn('send'));
     sendBtn.setAttribute('aria-label', 'Senden');
     sendBtn.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
@@ -181,7 +181,7 @@
     host.appendChild(fab);
     document.body.appendChild(host);
 
-    /* ── History restore ── */
+    /* -- History restore -- */
     function renderSavedHistory() {
       var hadHistory = loadHistory();
       if (!hadHistory) return;
@@ -214,7 +214,7 @@
       if (faqLabelEl) faqLabelEl.style.display = '';
     }
 
-    /* ── State helpers ── */
+    /* -- State helpers -- */
     function setOpen(open) {
       if (open) {
         panel.removeAttribute('hidden');
@@ -245,7 +245,7 @@
       return content;
     }
 
-    /* ── Send ── */
+    /* -- Send -- */
     function send(text) {
       text = typeof text === 'string' ? text.trim() : textarea.value.trim();
       if (!text || loading) return;
@@ -269,7 +269,7 @@
       var assistantRaw = '';
       messages.push({ role: 'assistant', content: '' });
       var assistantIndex = messages.length - 1;
-      var assistantContentEl = addBubble('assistant', '<span class="' + cn('muted') + '">…</span>');
+      var assistantContentEl = addBubble('assistant', '<span class="' + cn('muted') + '">...</span>');
 
       var url = baseUrl + 'api/embed/' + encodeURIComponent(embedId);
       fetch(url, {
@@ -306,10 +306,10 @@
       });
     }
 
-    /* ── Init: restore saved history ── */
+    /* -- Init: restore saved history -- */
     renderSavedHistory();
 
-    /* ── Events ── */
+    /* -- Events -- */
     fab.addEventListener('click', function () { setOpen(true); });
     closeBtn.addEventListener('click', function () { setOpen(false); });
     sendBtn.addEventListener('click', function () { send(); });

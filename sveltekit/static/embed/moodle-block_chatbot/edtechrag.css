@@ -1,10 +1,10 @@
-/* EdTechRAG Moodle block chatbot embed – all classes scoped under .at-ed-tech-edtechrag-emd-* */
+/* EdTechRAG Moodle block chatbot embed - all classes scoped under .at-ed-tech-edtechrag-emd-* */
 
-/* ══════════════════════════════════════════════════════════
+/* ==========================================================
    Theme variables
-   ══════════════════════════════════════════════════════════ */
+   ========================================================== */
 
-/* ── Theme: tugraz (default) ── */
+/* -- Theme: tugraz (default) -- */
 .at-ed-tech-edtechrag-emd-host {
   --at-ed-tech-edtechrag-emd-primary:              #285F82;
   --at-ed-tech-edtechrag-emd-shadow:               rgba(40, 95, 130, 0.45);
@@ -16,7 +16,7 @@
   --at-ed-tech-edtechrag-emd-user-link:            #c5dff0;
 }
 
-/* ── Theme: imoox ── */
+/* -- Theme: imoox -- */
 .at-ed-tech-edtechrag-emd-host.at-ed-tech-edtechrag-emd-design-imoox {
   --at-ed-tech-edtechrag-emd-primary:              #4B2D7F;
   --at-ed-tech-edtechrag-emd-shadow:               rgba(75, 45, 127, 0.45);
@@ -28,12 +28,12 @@
   --at-ed-tech-edtechrag-emd-user-link:            #cce0ff;
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ==========================================================
    Base / reset
-   ══════════════════════════════════════════════════════════ */
+   ========================================================== */
 
 .at-ed-tech-edtechrag-emd-host {
-  font-family: 'Jost', system-ui, -apple-system, sans-serif;
+  font-family: 'Jost', 'Source Sans Pro', system-ui, -apple-system, sans-serif;
   font-size: 15px;
   line-height: 1.5;
   box-sizing: border-box;
@@ -45,7 +45,7 @@
   box-sizing: inherit;
 }
 
-/* ── Floating action button ── */
+/* -- Floating action button -- */
 .at-ed-tech-edtechrag-emd-fab {
   position: fixed;
   bottom: 24px;
@@ -83,7 +83,7 @@
   fill: white;
 }
 
-/* ── Chat panel ── */
+/* -- Chat panel -- */
 .at-ed-tech-edtechrag-emd-panel {
   position: fixed;
   bottom: 96px;
@@ -108,7 +108,7 @@
   display: flex;
 }
 
-/* ── Header ── */
+/* -- Header -- */
 .at-ed-tech-edtechrag-emd-header {
   display: flex;
   align-items: center;
@@ -165,7 +165,7 @@
   background: rgba(255,255,255,0.15);
 }
 
-/* ── Messages area ── */
+/* -- Messages area -- */
 .at-ed-tech-edtechrag-emd-messages {
   flex: 1;
   overflow-y: auto;
@@ -177,7 +177,7 @@
   min-height: 0;
 }
 
-/* ── Greeting ── */
+/* -- Greeting -- */
 .at-ed-tech-edtechrag-emd-greeting {
   text-align: center;
   color: var(--at-ed-tech-edtechrag-emd-accent);
@@ -187,7 +187,7 @@
   padding: 4px 0 8px;
 }
 
-/* ── FAQ section ── */
+/* -- FAQ section -- */
 .at-ed-tech-edtechrag-emd-faq-label {
   font-size: 0.85rem;
   font-weight: 600;
@@ -222,7 +222,7 @@
   transform: translateY(-1px);
 }
 
-/* ── Message bubbles ── */
+/* -- Message bubbles -- */
 .at-ed-tech-edtechrag-emd-bubble {
   display: flex;
 }
@@ -288,7 +288,7 @@
   font-size: 0.85em;
 }
 
-/* ── Footer (sponsor + clear button) ── */
+/* -- Footer (sponsor + clear button) -- */
 .at-ed-tech-edtechrag-emd-footer {
   display: flex;
   align-items: center;
@@ -337,7 +337,7 @@
   background: #fdf0ef;
 }
 
-/* ── Composer ── */
+/* -- Composer -- */
 .at-ed-tech-edtechrag-emd-composer {
   display: flex;
   align-items: flex-end;
@@ -406,7 +406,7 @@
   fill: white;
 }
 
-/* ── Scrollbar styling ── */
+/* -- Scrollbar styling -- */
 .at-ed-tech-edtechrag-emd-messages::-webkit-scrollbar {
   width: 4px;
 }
@@ -420,7 +420,7 @@
   border-radius: 2px;
 }
 
-/* ── Mobile ── */
+/* -- Mobile -- */
 @media (max-width: 480px) {
   .at-ed-tech-edtechrag-emd-panel {
     right: 8px;
