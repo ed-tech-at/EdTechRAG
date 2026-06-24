@@ -4,8 +4,20 @@
    Theme variables
    ========================================================== */
 
-/* -- Theme: tugraz (default) -- */
+/* -- Theme: imoox (default) -- */
 .at-ed-tech-edtechrag-emd-host {
+  --at-ed-tech-edtechrag-emd-primary:              #4B2D7F;
+  --at-ed-tech-edtechrag-emd-shadow:               rgba(75, 45, 127, 0.45);
+  --at-ed-tech-edtechrag-emd-shadow-hover:         rgba(75, 45, 127, 0.55);
+  --at-ed-tech-edtechrag-emd-footer-border:        #ece8f3;
+  --at-ed-tech-edtechrag-emd-accent:               #E05A2B;
+  --at-ed-tech-edtechrag-emd-accent-hover:         #c9501f;
+  --at-ed-tech-edtechrag-emd-user-bubble:          #1f7ae0;
+  --at-ed-tech-edtechrag-emd-user-link:            #cce0ff;
+}
+
+/* -- Theme: tc -- */
+.at-ed-tech-edtechrag-emd-host.at-ed-tech-edtechrag-emd-design-tc {
   --at-ed-tech-edtechrag-emd-primary:              #285F82;
   --at-ed-tech-edtechrag-emd-shadow:               rgba(40, 95, 130, 0.45);
   --at-ed-tech-edtechrag-emd-shadow-hover:         rgba(40, 95, 130, 0.55);
