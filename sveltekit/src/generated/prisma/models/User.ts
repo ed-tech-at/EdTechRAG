@@ -27,11 +27,13 @@ export type AggregateUser = {
 }
 
 export type UserAvgAggregateOutputType = {
+  role: number | null
   cryptVersion: number | null
   isDeleted: number | null
 }
 
 export type UserSumAggregateOutputType = {
+  role: number | null
   cryptVersion: number | null
   isDeleted: number | null
 }
@@ -39,6 +41,7 @@ export type UserSumAggregateOutputType = {
 export type UserMinAggregateOutputType = {
   id: string | null
   email: string | null
+  role: number | null
   password: string | null
   cryptVersion: number | null
   isDeleted: number | null
@@ -48,6 +51,7 @@ export type UserMinAggregateOutputType = {
 export type UserMaxAggregateOutputType = {
   id: string | null
   email: string | null
+  role: number | null
   password: string | null
   cryptVersion: number | null
   isDeleted: number | null
@@ -58,6 +62,7 @@ export type UserCountAggregateOutputType = {
   id: number
   email: number
   repositoryJson: number
+  role: number
   password: number
   cryptVersion: number
   isDeleted: number
@@ -67,11 +72,13 @@ export type UserCountAggregateOutputType = {
 
 
 export type UserAvgAggregateInputType = {
+  role?: true
   cryptVersion?: true
   isDeleted?: true
 }
 
 export type UserSumAggregateInputType = {
+  role?: true
   cryptVersion?: true
   isDeleted?: true
 }
@@ -79,6 +86,7 @@ export type UserSumAggregateInputType = {
 export type UserMinAggregateInputType = {
   id?: true
   email?: true
+  role?: true
   password?: true
   cryptVersion?: true
   isDeleted?: true
@@ -88,6 +96,7 @@ export type UserMinAggregateInputType = {
 export type UserMaxAggregateInputType = {
   id?: true
   email?: true
+  role?: true
   password?: true
   cryptVersion?: true
   isDeleted?: true
@@ -98,6 +107,7 @@ export type UserCountAggregateInputType = {
   id?: true
   email?: true
   repositoryJson?: true
+  role?: true
   password?: true
   cryptVersion?: true
   isDeleted?: true
@@ -195,6 +205,7 @@ export type UserGroupByOutputType = {
   id: string
   email: string
   repositoryJson: runtime.JsonValue | null
+  role: number
   password: string
   cryptVersion: number
   isDeleted: number
@@ -228,6 +239,7 @@ export type UserWhereInput = {
   id?: Prisma.StringFilter<"User"> | string
   email?: Prisma.StringFilter<"User"> | string
   repositoryJson?: Prisma.JsonNullableFilter<"User">
+  role?: Prisma.IntFilter<"User"> | number
   password?: Prisma.StringFilter<"User"> | string
   cryptVersion?: Prisma.IntFilter<"User"> | number
   isDeleted?: Prisma.IntFilter<"User"> | number
@@ -238,6 +250,7 @@ export type UserOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   repositoryJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  role?: Prisma.SortOrder
   password?: Prisma.SortOrder
   cryptVersion?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
@@ -251,6 +264,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   repositoryJson?: Prisma.JsonNullableFilter<"User">
+  role?: Prisma.IntFilter<"User"> | number
   password?: Prisma.StringFilter<"User"> | string
   cryptVersion?: Prisma.IntFilter<"User"> | number
   isDeleted?: Prisma.IntFilter<"User"> | number
@@ -261,6 +275,7 @@ export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   repositoryJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  role?: Prisma.SortOrder
   password?: Prisma.SortOrder
   cryptVersion?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
@@ -279,6 +294,7 @@ export type UserScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"User"> | string
   email?: Prisma.StringWithAggregatesFilter<"User"> | string
   repositoryJson?: Prisma.JsonNullableWithAggregatesFilter<"User">
+  role?: Prisma.IntWithAggregatesFilter<"User"> | number
   password?: Prisma.StringWithAggregatesFilter<"User"> | string
   cryptVersion?: Prisma.IntWithAggregatesFilter<"User"> | number
   isDeleted?: Prisma.IntWithAggregatesFilter<"User"> | number
@@ -289,6 +305,7 @@ export type UserCreateInput = {
   id?: string
   email: string
   repositoryJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  role?: number
   password: string
   cryptVersion?: number
   isDeleted?: number
@@ -299,6 +316,7 @@ export type UserUncheckedCreateInput = {
   id?: string
   email: string
   repositoryJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  role?: number
   password: string
   cryptVersion?: number
   isDeleted?: number
@@ -309,6 +327,7 @@ export type UserUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   repositoryJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  role?: Prisma.IntFieldUpdateOperationsInput | number
   password?: Prisma.StringFieldUpdateOperationsInput | string
   cryptVersion?: Prisma.IntFieldUpdateOperationsInput | number
   isDeleted?: Prisma.IntFieldUpdateOperationsInput | number
@@ -319,6 +338,7 @@ export type UserUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   repositoryJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  role?: Prisma.IntFieldUpdateOperationsInput | number
   password?: Prisma.StringFieldUpdateOperationsInput | string
   cryptVersion?: Prisma.IntFieldUpdateOperationsInput | number
   isDeleted?: Prisma.IntFieldUpdateOperationsInput | number
@@ -329,6 +349,7 @@ export type UserCreateManyInput = {
   id?: string
   email: string
   repositoryJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  role?: number
   password: string
   cryptVersion?: number
   isDeleted?: number
@@ -339,6 +360,7 @@ export type UserUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   repositoryJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  role?: Prisma.IntFieldUpdateOperationsInput | number
   password?: Prisma.StringFieldUpdateOperationsInput | string
   cryptVersion?: Prisma.IntFieldUpdateOperationsInput | number
   isDeleted?: Prisma.IntFieldUpdateOperationsInput | number
@@ -349,6 +371,7 @@ export type UserUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   repositoryJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  role?: Prisma.IntFieldUpdateOperationsInput | number
   password?: Prisma.StringFieldUpdateOperationsInput | string
   cryptVersion?: Prisma.IntFieldUpdateOperationsInput | number
   isDeleted?: Prisma.IntFieldUpdateOperationsInput | number
@@ -359,6 +382,7 @@ export type UserCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   repositoryJson?: Prisma.SortOrder
+  role?: Prisma.SortOrder
   password?: Prisma.SortOrder
   cryptVersion?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
@@ -366,6 +390,7 @@ export type UserCountOrderByAggregateInput = {
 }
 
 export type UserAvgOrderByAggregateInput = {
+  role?: Prisma.SortOrder
   cryptVersion?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
 }
@@ -373,6 +398,7 @@ export type UserAvgOrderByAggregateInput = {
 export type UserMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
+  role?: Prisma.SortOrder
   password?: Prisma.SortOrder
   cryptVersion?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
@@ -382,6 +408,7 @@ export type UserMaxOrderByAggregateInput = {
 export type UserMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
+  role?: Prisma.SortOrder
   password?: Prisma.SortOrder
   cryptVersion?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
@@ -389,6 +416,7 @@ export type UserMinOrderByAggregateInput = {
 }
 
 export type UserSumOrderByAggregateInput = {
+  role?: Prisma.SortOrder
   cryptVersion?: Prisma.SortOrder
   isDeleted?: Prisma.SortOrder
 }
@@ -399,6 +427,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   id?: boolean
   email?: boolean
   repositoryJson?: boolean
+  role?: boolean
   password?: boolean
   cryptVersion?: boolean
   isDeleted?: boolean
@@ -409,6 +438,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   email?: boolean
   repositoryJson?: boolean
+  role?: boolean
   password?: boolean
   cryptVersion?: boolean
   isDeleted?: boolean
@@ -419,6 +449,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   id?: boolean
   email?: boolean
   repositoryJson?: boolean
+  role?: boolean
   password?: boolean
   cryptVersion?: boolean
   isDeleted?: boolean
@@ -429,13 +460,14 @@ export type UserSelectScalar = {
   id?: boolean
   email?: boolean
   repositoryJson?: boolean
+  role?: boolean
   password?: boolean
   cryptVersion?: boolean
   isDeleted?: boolean
   createdAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "repositoryJson" | "password" | "cryptVersion" | "isDeleted" | "createdAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "repositoryJson" | "role" | "password" | "cryptVersion" | "isDeleted" | "createdAt", ExtArgs["result"]["user"]>
 
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
@@ -444,6 +476,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     id: string
     email: string
     repositoryJson: runtime.JsonValue | null
+    role: number
     password: string
     cryptVersion: number
     isDeleted: number
@@ -874,6 +907,7 @@ export interface UserFieldRefs {
   readonly id: Prisma.FieldRef<"User", 'String'>
   readonly email: Prisma.FieldRef<"User", 'String'>
   readonly repositoryJson: Prisma.FieldRef<"User", 'Json'>
+  readonly role: Prisma.FieldRef<"User", 'Int'>
   readonly password: Prisma.FieldRef<"User", 'String'>
   readonly cryptVersion: Prisma.FieldRef<"User", 'Int'>
   readonly isDeleted: Prisma.FieldRef<"User", 'Int'>

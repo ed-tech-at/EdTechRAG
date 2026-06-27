@@ -862,6 +862,7 @@ export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
   repositoryJson: 'repositoryJson',
+  role: 'role',
   password: 'password',
   cryptVersion: 'cryptVersion',
   isDeleted: 'isDeleted',

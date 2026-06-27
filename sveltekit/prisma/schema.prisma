@@ -58,7 +58,8 @@ model User {
   id       String  @id @default(uuid())
   email    String  @unique
 
-  repositoryJson  Json?
+  repositoryJson Json?
+  role           Int @default(3)
 
   password String
   cryptVersion Int @default(0)

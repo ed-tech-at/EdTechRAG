@@ -1,5 +1,6 @@
 import type { LayoutServerLoad } from './$types';
 import { requireValidJwt } from '$lib/server/jwt';
+import { canManageUsers, SITE_ROLE } from '$lib/siteRole';
 
 type AdminBreadcrumb = {
 	label: string;
@@ -68,6 +69,10 @@ const buildAdminBreadcrumbs = (pathname: string): AdminBreadcrumb[] => {
 		return breadcrumbs;
 	}
 
+	if (section === 'users') {
+		return [{ label: 'User management' }];
+	}
+
 	return [{ label: decodePathSegment(section) }];
 };
 
@@ -78,9 +83,10 @@ export const load: LayoutServerLoad = async ({ cookies, url, setHeaders }) => {
 		expires: '0'
 	});
 
-	await requireValidJwt(cookies, url);
+	const session = await requireValidJwt(cookies, url);
 
 	return {
-		breadcrumbs: buildAdminBreadcrumbs(url.pathname)
+		breadcrumbs: buildAdminBreadcrumbs(url.pathname),
+		canManageUsers: canManageUsers(session.role ?? SITE_ROLE.GUEST)
 	};
 };

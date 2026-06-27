@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { createSessionJWT, checkJwt } from '$lib/server/jwt';
 import prisma from '$lib/server/db';
 import { resolve } from '$app/paths';
+import { SITE_ROLE } from '$lib/siteRole';
 
 
 export async function hashPasswordV2(password: string, userId: string) {
@@ -69,7 +70,8 @@ export async function login(email: string, password: string, cookies: any): Prom
   const token = await createSessionJWT(
     {
       userId: user.id,
-      allow_regex: getAllowRegex(user.repositoryJson)
+      allow_regex: getAllowRegex(user.repositoryJson),
+      role: user.role ?? SITE_ROLE.GUEST
     },
     maxAgeSec
   );

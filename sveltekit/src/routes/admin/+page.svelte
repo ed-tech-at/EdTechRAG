@@ -1,11 +1,15 @@
 <script lang="ts">
-import { resolve } from '$app/paths';
+	import { resolve } from '$app/paths';
+	import type { PageData } from './$types';
 
-	const links = [
+	export let data: PageData;
+
+	$: links = [
 		{ href: resolve('/admin/repositories'), label: 'Your Repositories' },
 		{ href: resolve('/admin/DataFile'), label: 'All data files' },
 		{ href: resolve('/admin/embeddings'), label: 'All Embeddings' },
-		{ href: resolve('/admin/ragView'), label: 'RAG VIEW' }
+		{ href: resolve('/admin/ragView'), label: 'RAG VIEW' },
+		...(data.canManageUsers ? [{ href: resolve('/admin/users'), label: 'User management' }] : [])
 	];
 </script>
 
