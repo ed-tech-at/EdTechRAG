@@ -28,7 +28,9 @@ const buildAdminBreadcrumbs = (pathname: string): AdminBreadcrumb[] => {
 	}
 
 	if (section === 'repositories') {
-		const breadcrumbs: AdminBreadcrumb[] = [{ label: 'Repositories', href: '/admin/repositories' }];
+		const breadcrumbs: AdminBreadcrumb[] = [
+			{ label: 'Configure repositories', href: '/admin/repositories' }
+		];
 
 		if (slug) {
 			const encodedSlug = encodePathSegment(slug);
@@ -40,6 +42,16 @@ const buildAdminBreadcrumbs = (pathname: string): AdminBreadcrumb[] => {
 
 		if (child === 'files' && slug) {
 			breadcrumbs.push({ label: 'Files' });
+		}
+
+		return breadcrumbs;
+	}
+
+	if (section === 'search-vectors') {
+		const breadcrumbs: AdminBreadcrumb[] = [{ label: 'Search vectors', href: '/admin/search-vectors' }];
+
+		if (slug) {
+			breadcrumbs.push({ label: decodePathSegment(slug) });
 		}
 
 		return breadcrumbs;

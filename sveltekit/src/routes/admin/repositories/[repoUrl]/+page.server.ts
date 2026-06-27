@@ -2,8 +2,13 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { Prisma } from '../../../../generated/prisma/client';
 import prisma from '$lib/server/db';
-import { findRepositoryContext } from '$lib/server/rag';
 import { requireAllowedRepository } from '$lib/server/repository';
+import {
+	defaultRepositoryAccess,
+	parseAccessCheckbox,
+	parseEmbedAllowedHostRegex,
+	validateRepositoryAccess
+} from '$lib/server/repositoryAccess';
 import { getNumberDocuments, parseRagConfig } from '$lib/ragContext';
 
 const DEFAULT_CHAT_BASE = '';
@@ -61,6 +66,11 @@ const publicConfig = (repository: {
 	updateConfig: unknown;
 	LLM_API: unknown;
 	ragConfig: unknown;
+	activeSimplePage: boolean;
+	activeSinglePage: boolean;
+	activeParameterPage: boolean;
+	activeEmbedApi: boolean;
+	embedAllowedHostRegex: string | null;
 }) => {
 	const updateConfig = asRecord(repository.updateConfig);
 	const llm = asRecord(repository.LLM_API);
@@ -98,6 +108,13 @@ const publicConfig = (repository: {
 			numberDocuments: getNumberDocuments(rag),
 			metaTags: rag?.metaTags ?? [],
 			systemprompt: rag?.systemprompt ?? ''
+		},
+		access: {
+			activeSimplePage: repository.activeSimplePage,
+			activeSinglePage: repository.activeSinglePage,
+			activeParameterPage: repository.activeParameterPage,
+			activeEmbedApi: repository.activeEmbedApi,
+			embedAllowedHostRegex: repository.embedAllowedHostRegex ?? ''
 		}
 	};
 };
@@ -142,6 +159,13 @@ const formState = (
 			numberDocuments: optionalNumber(formData.get('numberDocuments')) ?? 4,
 			metaTags: metaTagsFromForm(formData.get('metaTags')),
 			systemprompt: typeof formData.get('systemprompt') === 'string' ? String(formData.get('systemprompt')) : ''
+		},
+		access: {
+			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
+			activeSinglePage: parseAccessCheckbox(formData, 'activeSinglePage'),
+			activeParameterPage: parseAccessCheckbox(formData, 'activeParameterPage'),
+			activeEmbedApi: parseAccessCheckbox(formData, 'activeEmbedApi'),
+			embedAllowedHostRegex: parseEmbedAllowedHostRegex(formData) ?? ''
 		}
 	};
 };
@@ -186,6 +210,10 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					numberDocuments: 4,
 					metaTags: [],
 					systemprompt: ''
+				},
+				access: {
+					...defaultRepositoryAccess,
+					embedAllowedHostRegex: ''
 				}
 			}
 		};
@@ -254,6 +282,15 @@ export const actions: Actions = {
 			errors.push('Number of documents must be at least 1.');
 		}
 
+		const nextAccess = {
+			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
+			activeSinglePage: parseAccessCheckbox(formData, 'activeSinglePage'),
+			activeParameterPage: parseAccessCheckbox(formData, 'activeParameterPage'),
+			activeEmbedApi: parseAccessCheckbox(formData, 'activeEmbedApi'),
+			embedAllowedHostRegex: parseEmbedAllowedHostRegex(formData)
+		};
+		validateRepositoryAccess(nextAccess, errors);
+
 		if (errors.length > 0) {
 			return fail(400, {
 				success: false,
@@ -321,13 +358,15 @@ export const actions: Actions = {
 					name,
 					updateConfig: nextUpdateConfig as Prisma.InputJsonValue,
 					LLM_API: nextLLM as Prisma.InputJsonValue,
-					ragConfig: nextRag as Prisma.InputJsonValue
+					ragConfig: nextRag as Prisma.InputJsonValue,
+					...nextAccess
 				},
 				update: {
 					name,
 					updateConfig: nextUpdateConfig as Prisma.InputJsonValue,
 					LLM_API: nextLLM as Prisma.InputJsonValue,
-					ragConfig: nextRag as Prisma.InputJsonValue
+					ragConfig: nextRag as Prisma.InputJsonValue,
+					...nextAccess
 				}
 			});
 
@@ -357,33 +396,6 @@ export const actions: Actions = {
 					Boolean(embeddingApiKey) || hadEmbeddingApiKey
 				)
 			});
-		}
-	},
-	search: async ({ cookies, request, params, url }) => {
-		const { repoUrl } = params;
-		await requireAllowedRepository(cookies, url, repoUrl);
-		const formData = await request.formData();
-		const query = formData.get('query');
-
-		if (!query || typeof query !== 'string' || !query.trim()) {
-			return fail(400, { success: false, message: 'Please enter a search query.' });
-		}
-
-		try {
-			const repository = await prisma.repository.findUnique({
-				where: { url: repoUrl },
-				select: { ragConfig: true }
-			});
-
-			if (!repository) {
-				return fail(404, { success: false, message: 'Create the repository before searching.' });
-			}
-
-			const ragConfig = parseRagConfig(repository.ragConfig);
-			return await findRepositoryContext(repoUrl, query, getNumberDocuments(ragConfig));
-		} catch (err) {
-			console.error('Repository search error', err);
-			return fail(500, { success: false, message: 'Search failed. See server logs.' });
 		}
 	}
 };

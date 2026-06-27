@@ -823,7 +823,12 @@ export const RepositoryScalarFieldEnum = {
   name: 'name',
   updateConfig: 'updateConfig',
   LLM_API: 'LLM_API',
-  ragConfig: 'ragConfig'
+  ragConfig: 'ragConfig',
+  activeSimplePage: 'activeSimplePage',
+  activeSinglePage: 'activeSinglePage',
+  activeParameterPage: 'activeParameterPage',
+  activeEmbedApi: 'activeEmbedApi',
+  embedAllowedHostRegex: 'embedAllowedHostRegex'
 } as const
 
 export type RepositoryScalarFieldEnum = (typeof RepositoryScalarFieldEnum)[keyof typeof RepositoryScalarFieldEnum]
@@ -972,6 +977,13 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 

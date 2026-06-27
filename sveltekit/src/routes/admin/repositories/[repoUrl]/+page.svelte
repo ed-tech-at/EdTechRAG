@@ -5,17 +5,6 @@
 	export let data: PageData;
 	export let form: ActionData;
 
-	type SearchResult = {
-		id: string;
-		dataFileId: string;
-		chunkNr: number | null;
-		content: string | null;
-		similarity: number;
-		embeddingModel: string | null;
-		remoteUrl?: string;
-		meta?: Record<string, unknown>;
-	};
-
 	$: fallbackConfig = data.config;
 	$: submittedConfig =
 		form && typeof form === 'object' && 'config' in form
@@ -31,20 +20,18 @@
 			? ((form as { message?: string }).message ?? '')
 			: '';
 	$: formMessage =
-		form && typeof form === 'object' && !('results' in form) && !('configSaved' in form)
+		form && typeof form === 'object' && !('configSaved' in form)
 			? ((form as { message?: string }).message ?? '')
 			: '';
 	$: formSuccess =
 		form && typeof form === 'object' && 'success' in form
 			? Boolean((form as { success?: boolean }).success)
 			: false;
-	let searching = false;
 	let saving = false;
 	let publicBaseUrl = data.config.github.publicBaseUrl;
 	let webhookPath = data.config.github.webhookPath;
 	$: if (form) {
 		saving = false;
-		searching = false;
 	}
 	$: if (config) {
 		publicBaseUrl = config.github.publicBaseUrl;
@@ -53,17 +40,6 @@
 	$: webhookUrl = webhookPath.trim()
 		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
 		: `${publicBaseUrl.replace(/\/$/, '')}/webhook`;
-
-	$: searchResults =
-		form && typeof form === 'object' && 'results' in form
-			? (form as { results?: SearchResult[] }).results
-			: undefined;
-
-	const metaValue = (result: SearchResult, key: string) => {
-		const meta = (result.meta ?? {}) as Record<string, unknown>;
-		const value = meta[key];
-		return typeof value === 'string' ? value : undefined;
-	};
 </script>
 
 <section class="page">
@@ -76,12 +52,20 @@
 				<p class="muted">EdTechRAG URL: {config.repositoryUrl}</p>
 			</div>
 			{#if repositoryExists}
-				<a
-					class="secondary-button"
-					href={resolve(`/admin/repositories/${encodeURIComponent(config.repositoryUrl)}/files`)}
-				>
-					View files
-				</a>
+				<div class="header-actions">
+					<a
+						class="secondary-button"
+						href={resolve(`/admin/search-vectors/${encodeURIComponent(config.repositoryUrl)}`)}
+					>
+						Search vectors
+					</a>
+					<a
+						class="secondary-button"
+						href={resolve(`/admin/repositories/${encodeURIComponent(config.repositoryUrl)}/files`)}
+					>
+						View files
+					</a>
+				</div>
 			{/if}
 		</div>
 		{#if configMessage}
@@ -109,6 +93,49 @@
 					GitHub repository path
 					<input name="repository_path" placeholder="owner/repository" value={config.github.repositoryPath} />
 				</label>
+			</div>
+
+			<div class="section-band">
+				<h3>Active pages</h3>
+				<div class="checkbox-grid">
+					<label class="checkbox-label">
+						<input
+							type="checkbox"
+							name="activeSimplePage"
+							checked={config.access.activeSimplePage}
+						/>
+						<span>Simple page</span>
+					</label>
+					<label class="checkbox-label">
+						<input
+							type="checkbox"
+							name="activeSinglePage"
+							checked={config.access.activeSinglePage}
+						/>
+						<span>Single page</span>
+					</label>
+					<label class="checkbox-label">
+						<input
+							type="checkbox"
+							name="activeParameterPage"
+							checked={config.access.activeParameterPage}
+						/>
+						<span>Parameter page</span>
+					</label>
+					<label class="checkbox-label">
+						<input type="checkbox" name="activeEmbedApi" checked={config.access.activeEmbedApi} />
+						<span>/api/embed widget API</span>
+					</label>
+				</div>
+				<label>
+					Allowed embed host regex
+					<input
+						name="embedAllowedHostRegex"
+						value={config.access.embedAllowedHostRegex}
+						placeholder="^moodle\\.example\\.org$"
+					/>
+				</label>
+				<p class="muted">The embed regex matches only the browser Origin hostname.</p>
 			</div>
 
 			<div class="section-band">
@@ -243,66 +270,6 @@
 			</div>
 		</form>
 	</section>
-
-	{#if repositoryExists}
-		<section class="panel">
-			<div class="panel-head">
-				<div>
-					<h2>Search</h2>
-					<p class="muted">Search chunks in this repository by vector similarity.</p>
-				</div>
-			</div>
-			<form method="POST" action="?/search" class="search-form" on:submit={() => (searching = true)}>
-				<label>
-					Query
-					<input type="text" name="query" placeholder="Ask a question or paste text" required />
-				</label>
-				<div class="actions">
-					<button type="submit" disabled={searching}>{searching ? 'Searching...' : 'Search'}</button>
-					{#if searching}
-						<span class="loader" aria-live="polite">Working...</span>
-					{/if}
-				</div>
-			</form>
-			{#if searchResults}
-				<div class="results">
-					{#if searchResults.length === 0}
-						<p class="muted">No results.</p>
-					{:else}
-						{#each searchResults as result}
-							<article class="result">
-								<div class="result-meta">
-									<strong>Chunk {result.chunkNr ?? '-'}</strong>
-									<span class="muted">DataFile: {result.dataFileId}</span>
-									<span class="muted">Similarity: {(result.similarity * 100).toFixed(1)}%</span>
-									{#if result.embeddingModel}
-										<span class="muted">Model: {result.embeddingModel}</span>
-									{/if}
-									{#if metaValue(result, 'url') || result.remoteUrl}
-										<span class="muted">
-											URL:
-											<a
-												class="link"
-												href={metaValue(result, 'url') ?? result.remoteUrl}
-												target="_blank"
-												rel="noreferrer"
-											>
-												{metaValue(result, 'url') ?? result.remoteUrl}
-											</a>
-										</span>
-									{/if}
-									{#if metaValue(result, 'folder')}
-										<span class="muted">Folder: {metaValue(result, 'folder')}</span>
-									{/if}
-								</div>
-								<pre>{result.content ?? '-'}</pre>
-							</article>
-						{/each}
-					{/if}
-				</div>
-			{/if}
-		</section>
-	{/if}
 </section>
 
 <style>
@@ -319,10 +286,15 @@
 	.title-row,
 	.panel-head,
 	.actions,
-	.result-meta {
+	.header-actions {
 		display: flex;
 		gap: 0.75rem;
 		align-items: center;
+	}
+
+	.header-actions {
+		flex-wrap: wrap;
+		justify-content: flex-end;
 	}
 
 	.title-row,
@@ -397,8 +369,7 @@
 		background: #fafafa;
 	}
 
-	.config-form,
-	.search-form {
+	.config-form {
 		display: grid;
 		gap: 0.85rem;
 	}
@@ -416,10 +387,23 @@
 		gap: 0.75rem;
 	}
 
+	.checkbox-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+		gap: 0.5rem 0.75rem;
+	}
+
 	label {
 		display: grid;
 		gap: 0.35rem;
 		color: #333;
+		font-weight: 600;
+	}
+
+	.checkbox-label {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
 		font-weight: 600;
 	}
 
@@ -433,6 +417,10 @@
 		font: inherit;
 		font-weight: 400;
 		background: white;
+	}
+
+	input[type='checkbox'] {
+		width: auto;
 	}
 
 	textarea {
@@ -469,37 +457,4 @@
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	}
 
-	.loader {
-		color: #1f7ae0;
-		font-size: 0.95rem;
-	}
-
-	.results {
-		display: grid;
-		gap: 0.75rem;
-	}
-
-	.result {
-		border: 1px solid #e3e3e3;
-		border-radius: 6px;
-		padding: 0.65rem;
-		background: white;
-		display: grid;
-		gap: 0.35rem;
-	}
-
-	.result-meta {
-		flex-wrap: wrap;
-		gap: 0.5rem 1rem;
-	}
-
-	pre {
-		margin: 0;
-		overflow: auto;
-		font-size: 0.95rem;
-		background: #f7f7f7;
-		border-radius: 6px;
-		padding: 0.65rem;
-		border: 1px solid #e3e3e3;
-	}
 </style>

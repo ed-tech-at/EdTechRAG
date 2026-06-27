@@ -17,6 +17,12 @@ model Repository {
   LLM_API      Json?
   ragConfig    Json?
 
+  activeSimplePage    Boolean @default(false)
+  activeSinglePage    Boolean @default(false)
+  activeParameterPage Boolean @default(false)
+  activeEmbedApi      Boolean @default(false)
+  embedAllowedHostRegex String?
+
   dataFiles    DataFile[]
 }
 
