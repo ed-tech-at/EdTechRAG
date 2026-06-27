@@ -49,16 +49,71 @@ const uniqueMoved = (entries: MovedEntry[]) => {
 	});
 };
 
+const emptyParsedChanges = () => ({
+	added: [] as string[],
+	modified: [] as string[],
+	deleted: [] as string[],
+	moved: [] as MovedEntry[]
+});
+
+const parseRawChangesZ = (value: string) => {
+	const result = emptyParsedChanges();
+	const fields = value.split('\0').filter(Boolean);
+
+	for (let i = 0; i < fields.length; ) {
+		const statusRaw = fields[i++];
+		const status = statusRaw?.[0];
+		if (!status || i >= fields.length) continue;
+
+		if (status === 'R') {
+			const from = normalizeString(fields[i]);
+			const to = normalizeString(fields[i + 1]);
+			i += 2;
+			if (from && to) {
+				result.moved.push({ from, to });
+			}
+			continue;
+		}
+
+		if (status === 'C') {
+			const to = normalizeString(fields[i + 1] ?? fields[i]);
+			i += 2;
+			if (to) result.added.push(to);
+			continue;
+		}
+
+		const path = normalizeString(fields[i]);
+		i += 1;
+		if (!path) continue;
+
+		switch (status) {
+			case 'A':
+				result.added.push(path);
+				break;
+			case 'M':
+			case 'T':
+				result.modified.push(path);
+				break;
+			case 'D':
+				result.deleted.push(path);
+				break;
+			default:
+				break;
+		}
+	}
+
+	return result;
+};
+
 const parseRawChanges = (value: unknown) => {
-	const result = {
-		added: [] as string[],
-		modified: [] as string[],
-		deleted: [] as string[],
-		moved: [] as MovedEntry[]
-	};
+	const result = emptyParsedChanges();
 
 	if (typeof value !== 'string' || !value.trim()) {
 		return result;
+	}
+
+	if (value.includes('\0')) {
+		return parseRawChangesZ(value);
 	}
 
 	const lines = value.split('\n');
