@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { invalidate } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import AdminBreadcrumbs, { type AdminBreadcrumb } from './AdminBreadcrumbs.svelte';
 
@@ -6,6 +7,10 @@
 
 	const adminHref = resolve('/admin');
 	const logoutHref = resolve('/logout');
+
+	const handleLogout = () => {
+		void invalidate('auth:user');
+	};
 </script>
 
 <nav class="admin-nav">
@@ -20,7 +25,9 @@
 			<AdminBreadcrumbs {breadcrumbs} />
 		{/if}
 	</div>
-	<a class="logout" href={logoutHref} data-sveltekit-reload>Logout</a>
+	<form class="logout-form" method="POST" action={logoutHref} onsubmit={handleLogout}>
+		<button class="logout" type="submit">Logout</button>
+	</form>
 </nav>
 
 <style>
@@ -38,6 +45,10 @@
 		align-items: center;
 		gap: 0.8rem;
 		min-width: 0;
+	}
+
+	.logout-form {
+		margin: 0;
 	}
 
 	.brand,
@@ -62,6 +73,14 @@
 		padding: 0 0.6rem;
 		border-radius: 4px;
 		background: rgba(255, 255, 255, 0.12);
+	}
+
+	.logout {
+		padding: 0;
+		border: 0;
+		background: transparent;
+		font: inherit;
+		cursor: pointer;
 	}
 
 	.separator {

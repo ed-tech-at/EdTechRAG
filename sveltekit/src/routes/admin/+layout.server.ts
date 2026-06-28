@@ -88,7 +88,9 @@ const buildAdminBreadcrumbs = (pathname: string): AdminBreadcrumb[] => {
 	return [{ label: decodePathSegment(section) }];
 };
 
-export const load: LayoutServerLoad = async ({ cookies, url, setHeaders }) => {
+export const load: LayoutServerLoad = async ({ cookies, url, setHeaders, depends }) => {
+	depends('auth:user');
+
 	setHeaders({
 		'cache-control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
 		pragma: 'no-cache',

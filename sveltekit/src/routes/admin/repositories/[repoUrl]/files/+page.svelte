@@ -136,7 +136,7 @@
 							</a>
 						</td>
 						<td class="muted">{file.remoteUrl ?? '—'}</td>
-						<td class="muted">{file.meta?.path ?? '—'}</td>
+						<td class="muted">{file.metaPath ?? '—'}</td>
 						<!-- <td class="number">{file._count?.dataChunks ?? 0}</td> -->
 						<td>{formatDate(file.chunkedAt)}</td>
 						<td>{formatDate(file.createdAt)}</td>
