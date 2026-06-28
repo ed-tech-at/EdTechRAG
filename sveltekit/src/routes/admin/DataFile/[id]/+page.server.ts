@@ -20,7 +20,6 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 		where: { id: dataFileId },
 		include: {
 			repository: true
-			// _count: { select: { dataChunks: true } }
 		}
 	});
 
@@ -53,9 +52,20 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 		...row,
 		lastSeen: row.embeddedAt
 	}));
+	const lastSeen =
+		vectorRows.reduce<Date | null>((latest, row) => {
+			if (!row.embeddedAt) return latest;
+			return !latest || row.embeddedAt > latest ? row.embeddedAt : latest;
+		}, null) ?? dataFile.chunkedAt;
 
 	return {
-		dataFile,
+		dataFile: {
+			...dataFile,
+			lastSeen,
+			_count: {
+				dataChunks: vectorRows.length
+			}
+		},
 		dataChunks
 	};
 };
@@ -157,17 +167,19 @@ export const actions: Actions = {
 		const session = await requireValidJwt(cookies, url);
 		const dataFileId = Number(params.id);
 		const formData = await request.formData();
-		let contentForm = formData.get('content');
-
-		let { content: content, meta: mdMeta } = getMetaDataOutOfMd(contentForm);
-		
-
+		const contentForm = formData.get('content');
 
 		if (!Number.isInteger(dataFileId)) {
 			return fail(400, { success: false, message: 'Invalid data file id.' });
 		}
 
-		if (!content || typeof content !== 'string' || !content.trim()) {
+		if (typeof contentForm !== 'string' || !contentForm.trim()) {
+			return fail(400, { success: false, message: 'Please paste some text to split.' });
+		}
+
+		const { content, meta: mdMeta } = getMetaDataOutOfMd(contentForm);
+
+		if (!content.trim()) {
 			return fail(400, { success: false, message: 'Please paste some text to split.' });
 		}
 
