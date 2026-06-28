@@ -53,12 +53,7 @@
 			</div>
 			{#if repositoryExists}
 				<div class="header-actions">
-					<a
-						class="secondary-button"
-						href={resolve(`/admin/search-vectors/${encodeURIComponent(config.repositoryUrl)}`)}
-					>
-						Search vectors
-					</a>
+					
 					<a
 						class="secondary-button"
 						href={resolve(`/admin/repositories/${encodeURIComponent(config.repositoryUrl)}/files`)}
@@ -75,15 +70,14 @@
 		{/if}
 	</header>
 
-	<section class="panel">
-		<div class="panel-head">
-			<div>
-				<h2>Configuration</h2>
-				<p class="muted">Secrets are write-only. Leave password fields empty to keep existing values.</p>
-			</div>
-		</div>
+	<form method="POST" action="?/saveConfig" class="config-form" on:submit={() => (saving = true)}>
+		<p class="form-note">Secrets are write-only. Leave password fields empty to keep existing values.</p>
 
-		<form method="POST" action="?/saveConfig" class="config-form" on:submit={() => (saving = true)}>
+		<section class="config-section" aria-labelledby="configuration-heading">
+			<div class="section-head">
+				<h2 id="configuration-heading">Configuration</h2>
+				<p class="muted">Repository identity and source mapping.</p>
+			</div>
 			<div class="field-grid">
 				<label>
 					Repository name
@@ -94,182 +88,182 @@
 					<input name="repository_path" placeholder="owner/repository" value={config.github.repositoryPath} />
 				</label>
 			</div>
+		</section>
 
-			<div class="section-band">
-				<h3>Active pages</h3>
-				<div class="checkbox-grid">
-					<label class="checkbox-label">
-						<input
-							type="checkbox"
-							name="activeSimplePage"
-							checked={config.access.activeSimplePage}
-						/>
-						<span>Simple page</span>
-					</label>
-					<label class="checkbox-label">
-						<input
-							type="checkbox"
-							name="activeSinglePage"
-							checked={config.access.activeSinglePage}
-						/>
-						<span>Single page</span>
-					</label>
-					<label class="checkbox-label">
-						<input
-							type="checkbox"
-							name="activeParameterPage"
-							checked={config.access.activeParameterPage}
-						/>
-						<span>Parameter page</span>
-					</label>
-					<label class="checkbox-label">
-						<input type="checkbox" name="activeEmbedApi" checked={config.access.activeEmbedApi} />
-						<span>/api/embed widget API</span>
-					</label>
-				</div>
+		<section class="config-section" aria-labelledby="access-heading">
+			<div class="section-head">
+				<h2 id="access-heading">Access</h2>
+				<p class="muted">Public pages and embed API availability.</p>
+			</div>
+			<div class="checkbox-grid">
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeSimplePage" checked={config.access.activeSimplePage} />
+					<span>Simple page</span>
+				</label>
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeSinglePage" checked={config.access.activeSinglePage} />
+					<span>Single page</span>
+				</label>
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeParameterPage" checked={config.access.activeParameterPage} />
+					<span>Parameter page</span>
+				</label>
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeEmbedApi" checked={config.access.activeEmbedApi} />
+					<span>/api/embed widget API</span>
+				</label>
+			</div>
+			<label>
+				Allowed embed host regex
+				<input
+					name="embedAllowedHostRegex"
+					value={config.access.embedAllowedHostRegex}
+					placeholder="^moodle\\.example\\.org$"
+				/>
+			</label>
+			<p class="muted">The embed regex matches only the browser Origin hostname.</p>
+		</section>
+
+		<section class="config-section" aria-labelledby="bridge-heading">
+			<div class="section-head">
+				<h2 id="bridge-heading">GitHub2EdTechRAG</h2>
+				<p class="muted">Webhook bridge settings for repository updates.</p>
+			</div>
+			<div class="field-grid">
 				<label>
-					Allowed embed host regex
+					Bridge public base URL
+					<input name="github2_public_base_url" bind:value={publicBaseUrl} />
+				</label>
+				<label>
+					Mounted repo path
 					<input
-						name="embedAllowedHostRegex"
-						value={config.access.embedAllowedHostRegex}
-						placeholder="^moodle\\.example\\.org$"
+						name="github2_webhook_path"
+						bind:value={webhookPath}
+						placeholder="optional; e.g. my-project"
 					/>
 				</label>
-				<p class="muted">The embed regex matches only the browser Origin hostname.</p>
 			</div>
+			<label>
+				Github shared secret for Github2EdTechRAG
+				<input
+					type="password"
+					name="Github2EdTechRAG_SHARED_SECRET"
+					placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
+				/>
+			</label>
+			<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
+		</section>
 
-			<div class="section-band">
-				<h3>GitHub2EdTechRAG</h3>
-				<div class="field-grid">
-					<label>
-						Bridge public base URL
-						<input name="github2_public_base_url" bind:value={publicBaseUrl}  />
-					</label>
-					<label>
-						Mounted repo path
-						<input
-							name="github2_webhook_path"
-							bind:value={webhookPath}
-							placeholder="optional; e.g. my-project"
-						/>
-					</label>
-				</div>
+		<section class="config-section" aria-labelledby="llm-heading">
+			<div class="section-head">
+				<h2 id="llm-heading">LLM</h2>
+				<p class="muted">Chat model provider and generation settings.</p>
+			</div>
+			<div class="field-grid">
 				<label>
-					Github shared secret for Github2EdTechRAG
+					OpenAI-compatible API key
 					<input
 						type="password"
-						name="Github2EdTechRAG_SHARED_SECRET"
-						placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
-						
+						name="OPENAI_API_KEY"
+						placeholder={config.llm.hasOpenAiApiKey ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
+						autocomplete="new-password"
 					/>
 				</label>
-				<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
-			</div>
-
-			<div class="section-band">
-				<h3>LLM</h3>
-				<div class="field-grid">
-					<label>
-						OpenAI-compatible API key
-						<input
-							type="password"
-							name="OPENAI_API_KEY"
-							placeholder={config.llm.hasOpenAiApiKey ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
-							autocomplete="new-password"
-						/>
-					</label>
-					<label>
-						Chat API base
-						<input name="OPENAI_API_BASE" value={config.llm.openAiApiBase} required />
-					</label>
-					<label>
-						Chat model
-						<input name="CHAT_MODEL" value={config.llm.chatModel} required />
-					</label>
-					<label>
-						API language
-						<select name="API_LANGUAGE">
-							<option value="chat/completions" selected={config.llm.apiLanguage === 'chat/completions'}>
-								chat/completions
-							</option>
-							<option value="responses" selected={config.llm.apiLanguage === 'responses'}>responses</option>
-						</select>
-					</label>
-					<label>
-						Reasoning effort
-						<select name="reasoning_effort">
-							{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
-								<option value={option} selected={config.llm.reasoningEffort === option}>{option}</option>
-							{/each}
-						</select>
-					</label>
-					<label>
-						Text verbosity
-						<select name="text_verbosity">
-							{#each ['low', 'medium', 'high'] as option}
-								<option value={option} selected={config.llm.textVerbosity === option}>{option}</option>
-							{/each}
-						</select>
-					</label>
-				</div>
-			</div>
-
-			<div class="section-band">
-				<h3>Embeddings</h3>
-				<div class="field-grid">
-					<label>
-						Embedding API key
-						<input
-							type="password"
-							name="OPENAI_API_KEY_EMBEDDING"
-							placeholder={config.llm.hasEmbeddingApiKey ? 'Already set; enter a new value to overwrite' : 'Optional; falls back to LLM API key'}
-							autocomplete="new-password"
-						/>
-					</label>
-					<label>
-						Embedding API base
-						<input name="OPENAI_API_BASE_EMBEDDING" value={config.llm.embeddingBase} required />
-					</label>
-					<label>
-						Embedding model
-						<input name="EMBEDDING_MODEL" value={config.llm.embeddingModel} required />
-					</label>
-				</div>
-			</div>
-
-		
-
-			<div class="section-band">
-				<h3>RAG</h3>
-				<div class="field-grid">
-					<label>
-						Chunk size
-						<input name="chunkSize" type="number" min="1" value={config.rag.chunkSize ?? ''} placeholder="4000" />
-					</label>
-					<label>
-						Chunk overlap
-						<input name="chunkOverlap" type="number" min="0" value={config.rag.chunkOverlap ?? ''} placeholder="150" />
-					</label>
-					<label>
-						Number of documents
-						<input name="numberDocuments" type="number" min="1" value={config.rag.numberDocuments} placeholder="4" />
-					</label>
-					<label>
-						Metadata tags
-						<input name="metaTags" value={config.rag.metaTags.join(', ')} placeholder="url, title, folder" />
-					</label>
-				</div>
 				<label>
-					System prompt
-					<textarea name="systemprompt" rows="6">{config.rag.systemprompt}</textarea>
+					Chat API base
+					<input name="OPENAI_API_BASE" value={config.llm.openAiApiBase} required />
+				</label>
+				<label>
+					Chat model
+					<input name="CHAT_MODEL" value={config.llm.chatModel} required />
+				</label>
+				<label>
+					API language
+					<select name="API_LANGUAGE">
+						<option value="chat/completions" selected={config.llm.apiLanguage === 'chat/completions'}>
+							chat/completions
+						</option>
+						<option value="responses" selected={config.llm.apiLanguage === 'responses'}>responses</option>
+					</select>
+				</label>
+				<label>
+					Reasoning effort
+					<select name="reasoning_effort">
+						{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
+							<option value={option} selected={config.llm.reasoningEffort === option}>{option}</option>
+						{/each}
+					</select>
+				</label>
+				<label>
+					Text verbosity
+					<select name="text_verbosity">
+						{#each ['low', 'medium', 'high'] as option}
+							<option value={option} selected={config.llm.textVerbosity === option}>{option}</option>
+						{/each}
+					</select>
 				</label>
 			</div>
+		</section>
 
-			<div class="actions">
-				<button type="submit" disabled={saving}>{saving ? 'Saving...' : repositoryExists ? 'Save config' : 'Create repository'}</button>
+		<section class="config-section" aria-labelledby="embeddings-heading">
+			<div class="section-head">
+				<h2 id="embeddings-heading">Embeddings</h2>
+				<p class="muted">Embedding model provider used for vector search.</p>
 			</div>
-		</form>
-	</section>
+			<div class="field-grid">
+				<label>
+					Embedding API key
+					<input
+						type="password"
+						name="OPENAI_API_KEY_EMBEDDING"
+						placeholder={config.llm.hasEmbeddingApiKey ? 'Already set; enter a new value to overwrite' : 'Optional; falls back to LLM API key'}
+						autocomplete="new-password"
+					/>
+				</label>
+				<label>
+					Embedding API base
+					<input name="OPENAI_API_BASE_EMBEDDING" value={config.llm.embeddingBase} required />
+				</label>
+				<label>
+					Embedding model
+					<input name="EMBEDDING_MODEL" value={config.llm.embeddingModel} required />
+				</label>
+			</div>
+		</section>
+
+		<section class="config-section" aria-labelledby="rag-heading">
+			<div class="section-head">
+				<h2 id="rag-heading">RAG</h2>
+				<p class="muted">Retrieval chunking, document count, metadata, and prompt.</p>
+			</div>
+			<div class="field-grid">
+				<label>
+					Chunk size
+					<input name="chunkSize" type="number" min="1" value={config.rag.chunkSize ?? ''} placeholder="4000" />
+				</label>
+				<label>
+					Chunk overlap
+					<input name="chunkOverlap" type="number" min="0" value={config.rag.chunkOverlap ?? ''} placeholder="150" />
+				</label>
+				<label>
+					Number of documents
+					<input name="numberDocuments" type="number" min="1" value={config.rag.numberDocuments} placeholder="4" />
+				</label>
+				<label>
+					Metadata tags
+					<input name="metaTags" value={config.rag.metaTags.join(', ')} placeholder="url, title, folder" />
+				</label>
+			</div>
+			<label>
+				System prompt
+				<textarea name="systemprompt" rows="6">{config.rag.systemprompt}</textarea>
+			</label>
+		</section>
+
+		<div class="actions">
+			<button type="submit" disabled={saving}>{saving ? 'Saving...' : repositoryExists ? 'Save config' : 'Create repository'}</button>
+		</div>
+	</form>
 </section>
 
 <style>
@@ -284,7 +278,7 @@
 	}
 
 	.title-row,
-	.panel-head,
+	.section-head,
 	.actions,
 	.header-actions {
 		display: flex;
@@ -298,14 +292,13 @@
 	}
 
 	.title-row,
-	.panel-head {
+	.section-head {
 		justify-content: space-between;
 		align-items: flex-start;
 	}
 
 	h1,
 	h2,
-	h3,
 	p {
 		margin: 0;
 	}
@@ -316,10 +309,6 @@
 
 	h2 {
 		font-size: 1.1rem;
-	}
-
-	h3 {
-		font-size: 1rem;
 	}
 
 	.eyebrow {
@@ -360,25 +349,27 @@
 		border: 1px solid #f2c7c7;
 	}
 
-	.panel {
-		display: grid;
-		gap: 0.9rem;
-		padding: 0.85rem;
-		border: 1px solid #e3e3e3;
-		border-radius: 8px;
-		background: #fafafa;
-	}
-
 	.config-form {
 		display: grid;
-		gap: 0.85rem;
+		gap: 1rem;
 	}
 
-	.section-band {
-		display: grid;
-		gap: 0.65rem;
-		padding-top: 0.85rem;
+	.form-note {
+		padding: 0.75rem 0;
 		border-top: 1px solid #e3e3e3;
+		border-bottom: 1px solid #e3e3e3;
+		color: #666;
+	}
+
+	.config-section {
+		display: grid;
+		gap: 0.85rem;
+		padding: 1rem 0;
+		border-bottom: 1px solid #e3e3e3;
+	}
+
+	.section-head {
+		flex-wrap: wrap;
 	}
 
 	.field-grid {

@@ -1,5 +1,6 @@
 import prisma from '$lib/server/db';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
+import { quotedVectorColumn } from '$lib/server/vectorTable';
 
 // export const EMBEDDING_MODEL = 'embeddinggemma';
 
@@ -10,16 +11,19 @@ type EmbeddingResponse = {
 export async function embedText(text: string, repoUrl: string) {
 	const { apiKeyEmbedding, embeddingBase, embeddingModel } = await getEmbeddingConfig(repoUrl);
 	const buildEmbeddingUrl = () => new URL(embeddingBase).toString();
+	const vectorColumn = await quotedVectorColumn();
 
-	const existingVectorRows = await prisma.$queryRaw<{ vectorText: string | null }[]>`
-		SELECT "embeddingVector"::text AS "vectorText"
-		FROM "rag_vectors"."vector1536"
-		WHERE "content" = ${text}
-		  AND "embeddingModel" = ${embeddingModel}
-		  AND "embeddingVector" IS NOT NULL
-		ORDER BY "embeddedAt" DESC NULLS LAST
-		LIMIT 1
-	`;
+	const existingVectorRows = vectorColumn
+		? await prisma.$queryRaw<{ vectorText: string | null }[]>`
+			SELECT ${vectorColumn}::text AS "vectorText"
+			FROM "rag_vectors"."vector1536"
+			WHERE "content" = ${text}
+			  AND "embeddingModel" = ${embeddingModel}
+			  AND ${vectorColumn} IS NOT NULL
+			ORDER BY "embeddedAt" DESC NULLS LAST
+			LIMIT 1
+		`
+		: [];
 
 	const cachedVectorText = existingVectorRows[0]?.vectorText?.trim();
 	if (cachedVectorText) {
@@ -84,12 +88,18 @@ export async function embedChunkById(chunkId: string) {
 	}
 
 	const vector = await embedText(chunk.content, chunk.repositoryUrl);
+	const vectorColumn = await quotedVectorColumn();
+	if (!vectorColumn) {
+		throw new Error(
+			'The rag_vectors.vector1536 table has no embedding vector column. Add "embeddingVector" with type rag_vectors.vector(1536).'
+		);
+	}
 
 	const vectorLiteral = `[${vector.join(',')}]`;
 	const { embeddingModel } = await getEmbeddingConfig(chunk.repositoryUrl);
 
 	await prisma.$executeRaw`UPDATE "rag_vectors"."vector1536"
-		SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector,
+		SET ${vectorColumn} = ${vectorLiteral}::"rag_vectors".vector,
 			"embeddingModel" = ${embeddingModel},
 			"embeddedAt" = NOW(),
 			"invalidatedAt" = NULL

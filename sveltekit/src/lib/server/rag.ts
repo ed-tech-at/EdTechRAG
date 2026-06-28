@@ -1,5 +1,6 @@
 import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
+import { quotedVectorColumnForAlias } from '$lib/server/vectorTable';
 
 export type RagResult = {
 	id: string;
@@ -16,6 +17,15 @@ export type RagResult = {
 export async function findRepositoryContext(repoUrl: string, prompt: string, limit: number = 4) {
 	const vector = await embedText(prompt, repoUrl);
 	const vectorLiteral = `[${vector.join(',')}]`;
+	const vectorColumn = await quotedVectorColumnForAlias('rv');
+
+	if (!vectorColumn) {
+		return {
+			results: [],
+			message: 'The vector table has no embedding vector column.',
+			query: prompt
+		};
+	}
 
 	// console.log("searching for " + prompt);
 
@@ -34,13 +44,13 @@ export async function findRepositoryContext(repoUrl: string, prompt: string, lim
 			distance: number;
 		}[]
 	>`SELECT rv."id", rv."dataFileId", rv."chunkNr", rv."content", rv."embeddingModel", df."remoteUrl", df."meta",
-			(rv."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) AS distance
+			(${vectorColumn} OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) AS distance
 		FROM "rag_vectors"."vector1536" rv
 		LEFT JOIN "DataFile" df ON rv."dataFileId" = df."id"
-		WHERE rv."embeddingVector" IS NOT NULL
+		WHERE ${vectorColumn} IS NOT NULL
 		  AND rv."repositoryUrl" = ${repoUrl}
 		  AND rv."invalidatedAt" IS NULL
-		ORDER BY (rv."embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) ASC
+		ORDER BY (${vectorColumn} OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) ASC
 		LIMIT ${limit}`;
 
 	const results: RagResult[] = rows.map((row) => ({

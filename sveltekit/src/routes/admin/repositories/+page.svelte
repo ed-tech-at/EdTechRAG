@@ -48,13 +48,9 @@
 							</a>
 						</td>
 						<td class="muted">{repo.url}</td>
-						<td class="number">{repo.fileCount}</td>
-						<td class="actions-cell">
-							<a class="link" href={resolve(`/admin/search-vectors/${encodeURIComponent(repo.url)}`)}>
-								Search vectors
-							</a>
-						</td>
-						<!-- <td class="number">{repo.chunkCount}</td> -->
+						<td class="number"><a href={resolve(`/admin/repositories/${encodeURIComponent(repo.url)}/files`)}>{repo.fileCount}</a></td>
+
+						<td class="number"><a href={resolve(`/admin/repositories/${encodeURIComponent(repo.url)}`)}>Open</a></td>
 					</tr>
 				{/each}
 			</tbody>
