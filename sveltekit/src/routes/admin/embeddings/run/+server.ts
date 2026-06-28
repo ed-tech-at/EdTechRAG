@@ -6,12 +6,22 @@ import { getEmbeddingConfig } from '$lib/server/openaiClient';
 
 import { requireValidJwt } from '$lib/server/jwt';
 import { getRepositoryAccessRegex } from '$lib/server/repository';
+import { quotedVectorColumn } from '$lib/server/vectorTable';
 
 export const POST: RequestHandler = async ({ cookies, url }) => {
 	const session = await requireValidJwt(cookies, url);
 	const allowRegex = getRepositoryAccessRegex(session);
 	if (!allowRegex || !session.allow_regex) {
 		return json({ status: 'empty' });
+	}
+
+	const vectorColumn = await quotedVectorColumn();
+	if (!vectorColumn) {
+		return json({
+			status: 'error',
+			message:
+				'The rag_vectors.vector1536 table has no embedding vector column. Add "embeddingVector" with type rag_vectors.vector(1536).'
+		});
 	}
 
 	const pendingChunks = await prisma.$queryRaw<
@@ -22,7 +32,7 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 		}[]
 	>`SELECT "id","content","repositoryUrl"
 		FROM "rag_vectors"."vector1536"
-		WHERE "embeddingVector" IS NULL
+		WHERE ${vectorColumn} IS NULL
 		  AND "invalidatedAt" IS NULL
 		  AND "content" IS NOT NULL
 		  AND "repositoryUrl" IS NOT NULL
@@ -45,7 +55,7 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 
 		await prisma.$executeRaw`
 			UPDATE "rag_vectors"."vector1536"
-			SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector,
+			SET ${vectorColumn} = ${vectorLiteral}::"rag_vectors".vector,
 			    "embeddingModel" = ${embeddingModel},
 			    "embeddedAt" = NOW(),
 			    "invalidatedAt" = NULL

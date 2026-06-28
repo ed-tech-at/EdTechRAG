@@ -11,7 +11,7 @@
 
 <section class="page">
 	<header class="header">
-		<h1>Repositories</h1>
+		<h1>Configure repositories</h1>
 		<form method="POST" action="?/createRepository" class="create-form">
 			<input
 				name="repositoryUrl"
@@ -35,7 +35,8 @@
 				<tr>
 					<th>Name</th>
 					<th>URL</th>
-					<th>Files</th>
+					<th class="number">Files</th>
+					<th class="number">Actions</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -47,8 +48,9 @@
 							</a>
 						</td>
 						<td class="muted">{repo.url}</td>
-						<td class="number">{repo.fileCount}</td>
-						<!-- <td class="number">{repo.chunkCount}</td> -->
+						<td class="number"><a href={resolve(`/admin/repositories/${encodeURIComponent(repo.url)}/files`)}>{repo.fileCount}</a></td>
+
+						<td class="number"><a href={resolve(`/admin/repositories/${encodeURIComponent(repo.url)}`)}>Open</a></td>
 					</tr>
 				{/each}
 			</tbody>
@@ -146,5 +148,10 @@
 
 	.number {
 		text-align: right;
+	}
+
+	.actions-cell {
+		text-align: right;
+		white-space: nowrap;
 	}
 </style>

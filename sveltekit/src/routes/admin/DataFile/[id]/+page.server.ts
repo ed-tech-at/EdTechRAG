@@ -7,6 +7,7 @@ import { getEmbeddingConfig } from '$lib/server/openaiClient';
 import { requireValidJwt } from '$lib/server/jwt';
 import { isRepositoryAllowed } from '$lib/server/repository';
 import { parseRagConfig } from '$lib/ragContext';
+import { quotedVectorColumn } from '$lib/server/vectorTable';
 
 export const load: PageServerLoad = async ({ cookies, params, url }) => {
 	const session = await requireValidJwt(cookies, url);
@@ -260,12 +261,20 @@ export const actions: Actions = {
 			}
 
 			const vector = await embedText(chunk.content, chunk.repositoryUrl);
+			const vectorColumn = await quotedVectorColumn();
+			if (!vectorColumn) {
+				return fail(500, {
+					success: false,
+					message:
+						'The rag_vectors.vector1536 table has no embedding vector column. Add "embeddingVector" with type rag_vectors.vector(1536).'
+				});
+			}
 			const vectorLiteral = `[${vector.join(',')}]`;
 			const { embeddingModel } = await getEmbeddingConfig(chunk.repositoryUrl);
 
 			await prisma.$executeRaw`
 				UPDATE "rag_vectors"."vector1536"
-				SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector,
+				SET ${vectorColumn} = ${vectorLiteral}::"rag_vectors".vector,
 					"embeddingModel" = ${embeddingModel},
 					"embeddedAt" = NOW(),
 					"invalidatedAt" = NULL
@@ -311,6 +320,14 @@ export const actions: Actions = {
 			}
 
 			const vector = await embedText(query, dataFile.repositoryUrl);
+			const vectorColumn = await quotedVectorColumn();
+			if (!vectorColumn) {
+				return fail(500, {
+					success: false,
+					message:
+						'The rag_vectors.vector1536 table has no embedding vector column. Add "embeddingVector" with type rag_vectors.vector(1536).'
+				});
+			}
 			const vectorLiteral = `[${vector.join(',')}]`;
 			// console.log("vectorLiteral");
 			// console.log(vectorLiteral);
@@ -325,10 +342,10 @@ export const actions: Actions = {
 					distance: number;
 				}[]
 			>`SELECT "id", "dataFileId", "chunkNr", "content", "embeddingModel",
-					("embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) AS distance
+					(${vectorColumn} OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) AS distance
 				FROM "rag_vectors"."vector1536"
-				WHERE "embeddingVector" IS NOT NULL AND "dataFileId" = ${dataFileId}
-				ORDER BY ("embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) ASC
+				WHERE ${vectorColumn} IS NOT NULL AND "dataFileId" = ${dataFileId}
+				ORDER BY (${vectorColumn} OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) ASC
 				LIMIT 10`;
 
 			const results = rows.map((row) => ({

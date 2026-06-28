@@ -80,7 +80,12 @@ export const RepositoryScalarFieldEnum = {
   name: 'name',
   updateConfig: 'updateConfig',
   LLM_API: 'LLM_API',
-  ragConfig: 'ragConfig'
+  ragConfig: 'ragConfig',
+  activeSimplePage: 'activeSimplePage',
+  activeSinglePage: 'activeSinglePage',
+  activeParameterPage: 'activeParameterPage',
+  activeEmbedApi: 'activeEmbedApi',
+  embedAllowedHostRegex: 'embedAllowedHostRegex'
 } as const
 
 export type RepositoryScalarFieldEnum = (typeof RepositoryScalarFieldEnum)[keyof typeof RepositoryScalarFieldEnum]

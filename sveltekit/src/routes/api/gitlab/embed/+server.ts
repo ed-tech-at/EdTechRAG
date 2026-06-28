@@ -4,6 +4,7 @@ import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
 import { logGitLabApiRequest, parseGitLabApiRequest } from '$lib/server/gitlabApi';
+import { quotedVectorColumn } from '$lib/server/vectorTable';
 
 const isRateLimitError = (message: string) =>
 	message.includes('Embedding API error: 429') || message.includes('"RateLimitReached"');
@@ -20,6 +21,17 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const { repositoryUrl } = parsed;
+	const vectorColumn = await quotedVectorColumn();
+	if (!vectorColumn) {
+		const message =
+			'The rag_vectors.vector1536 table has no embedding vector column. Add "embeddingVector" with type rag_vectors.vector(1536).';
+		await logGitLabApiRequest(request, '/api/gitlab/embed/', repositoryUrl, {
+			status: 500,
+			success: false,
+			error: message
+		});
+		return json({ success: false, status: 'error', message }, { status: 500 });
+	}
 
 	const pendingChunks = await prisma.$queryRaw<
 		{
@@ -29,7 +41,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}[]
 	>`SELECT "id","content","repositoryUrl"
 		FROM "rag_vectors"."vector1536"
-		WHERE "embeddingVector" IS NULL
+		WHERE ${vectorColumn} IS NULL
 		  AND "invalidatedAt" IS NULL
 		  AND "content" IS NOT NULL
 		  AND "repositoryUrl" = ${repositoryUrl}
@@ -70,7 +82,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
 			await prisma.$executeRaw`
 				UPDATE "rag_vectors"."vector1536"
-				SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector,
+				SET ${vectorColumn} = ${vectorLiteral}::"rag_vectors".vector,
 				    "embeddingModel" = ${embeddingModel},
 				    "embeddedAt" = NOW(),
 				    "invalidatedAt" = NULL
