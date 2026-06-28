@@ -1,9 +1,11 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { Prisma } from '../../../../generated/prisma/client';
 import prisma from '$lib/server/db';
 
 import { requireValidJwt } from '$lib/server/jwt';
 import { getRepositoryAccessRegex } from '$lib/server/repository';
+import { quotedVectorColumn } from '$lib/server/vectorTable';
 
 export const GET: RequestHandler = async ({ cookies, url }) => {
 	const session = await requireValidJwt(cookies, url);
@@ -16,13 +18,17 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 		});
 	}
 
+	const vectorColumn = await quotedVectorColumn();
 
 	const rows = await prisma.$queryRaw<
 		{ total: bigint; invalidated: bigint; missing_vector: bigint }[]
 	>`SELECT
 			COUNT(*)::bigint AS total,
 			COUNT(*) FILTER (WHERE "invalidatedAt" IS NOT NULL)::bigint AS invalidated,
-			COUNT(*) FILTER (WHERE "embeddingVector" IS NULL AND "invalidatedAt" IS NULL)::bigint AS missing_vector
+			COUNT(*) FILTER (
+				WHERE ${vectorColumn ? Prisma.sql`${vectorColumn} IS NULL` : Prisma.sql`TRUE`}
+				  AND "invalidatedAt" IS NULL
+			)::bigint AS missing_vector
 		FROM "rag_vectors"."vector1536"
 		WHERE "repositoryUrl" IS NOT NULL
 		  AND "repositoryUrl" ~ ${session.allow_regex}`;

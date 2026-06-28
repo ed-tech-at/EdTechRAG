@@ -1,7 +1,9 @@
 import type { PageServerLoad } from './$types';
+import { Prisma } from '../../../generated/prisma/client';
 import prisma from '$lib/server/db';
 import { requireValidJwt } from '$lib/server/jwt';
 import { getRepositoryAccessRegex } from '$lib/server/repository';
+import { quotedVectorColumn } from '$lib/server/vectorTable';
 
 const PAGE_SIZE = 100;
 
@@ -46,6 +48,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 	const page = Math.min(currentPage, totalPages);
 	const offset = (page - 1) * PAGE_SIZE;
+	const vectorColumn = await quotedVectorColumn();
 
 	const items = await prisma.$queryRaw<VectorRow[]>`
 		SELECT
@@ -58,15 +61,17 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 			"createdAt",
 			"embeddedAt",
 			"invalidatedAt",
-			("embeddingVector" IS NOT NULL) AS "hasVector",
-			CASE
-				WHEN "embeddingVector" IS NOT NULL THEN LEFT(("embeddingVector"::text), 200)
-				ELSE NULL
-			END AS "vectorPreview"
+			${vectorColumn ? Prisma.sql`${vectorColumn} IS NOT NULL` : Prisma.sql`FALSE`} AS "hasVector",
+			${vectorColumn ? Prisma.sql`LEFT((${vectorColumn}::text), 200)` : Prisma.sql`NULL`} AS "vectorPreview"
 		FROM "rag_vectors"."vector1536"
 		WHERE "repositoryUrl" IS NOT NULL
 		  AND "repositoryUrl" ~ ${session.allow_regex}
-		ORDER BY ("invalidatedAt" IS NULL) DESC, ("embeddingVector" IS NULL) DESC, "embeddedAt" DESC NULLS LAST, "createdAt" ASC NULLS LAST, "id" DESC
+		ORDER BY
+			("invalidatedAt" IS NULL) DESC,
+			${vectorColumn ? Prisma.sql`(${vectorColumn} IS NULL) DESC,` : Prisma.empty}
+			"embeddedAt" DESC NULLS LAST,
+			"createdAt" ASC NULLS LAST,
+			"id" DESC
 		OFFSET ${offset}
 		LIMIT ${PAGE_SIZE}
 	`;

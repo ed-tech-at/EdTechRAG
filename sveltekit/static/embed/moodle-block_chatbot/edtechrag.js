@@ -2,6 +2,26 @@
   'use strict';
 
   var P = 'at-ed-tech-edtechrag-emd-';
+  var TEXT = {
+    de: {
+      close: 'Schließen',
+      faqLabel: 'Häufig gestellte Fragen:',
+      clearChat: 'Chat leeren',
+      placeholder: 'Nachricht schreiben ...',
+      send: 'Senden',
+      open: 'öffnen',
+      errorPrefix: 'Fehler:'
+    },
+    en: {
+      close: 'Close',
+      faqLabel: 'Frequently asked questions:',
+      clearChat: 'Clear chat',
+      placeholder: 'Write a message ...',
+      send: 'Send',
+      open: 'open',
+      errorPrefix: 'Error:'
+    }
+  };
 
   function cn(name) { return P + name; }
   function el(tag, classes, attrs) {
@@ -42,6 +62,11 @@
     return raw.split('|').map(function (s) { return s.trim(); }).filter(Boolean);
   }
 
+  function resolveLang(raw) {
+    if (raw === 'en' || raw === 'other') return 'en';
+    return 'de';
+  }
+
   function initWidget(configDiv) {
     var d = configDiv.dataset;
     var embedId      = d.embedId      || '';
@@ -56,6 +81,8 @@
     var baseUrl      = d.edtechragBaseUrl || '/edtechrag/';
     if (!baseUrl.endsWith('/')) baseUrl += '/';
 
+    var lang = resolveLang(d.lang);
+    var text = TEXT[lang];
     var design = d.design || 'tugraz';
 
     var messages = [];
@@ -105,7 +132,7 @@
     titleEl.textContent = assistantName;
 
     var closeBtn = el('button', cn('close'));
-    closeBtn.setAttribute('aria-label', 'Schließen');
+    closeBtn.setAttribute('aria-label', text.close);
     closeBtn.innerHTML = '&#x2715;';
 
     header.appendChild(avatar);
@@ -124,7 +151,7 @@
     var faqSection = null;
     if (defaultMessages.length > 0) {
       var faqLabel = el('div', cn('faq-label'));
-      faqLabel.textContent = 'Häufig gestellte Fragen:';
+      faqLabel.textContent = text.faqLabel;
       messagesEl.appendChild(faqLabel);
 
       faqSection = el('div', cn('faq'));
@@ -148,14 +175,14 @@
     }
 
     var clearBtn = el('button', cn('clear-btn'));
-    clearBtn.textContent = 'Chat leeren';
+    clearBtn.textContent = text.clearChat;
     footerEl.appendChild(clearBtn);
 
     /* Composer */
     var composer  = el('div', cn('composer'));
-    var textarea  = el('textarea', cn('input'), { rows: '1', placeholder: 'Nachricht schreiben ...' });
+    var textarea  = el('textarea', cn('input'), { rows: '1', placeholder: text.placeholder });
     var sendBtn   = el('button', cn('send'));
-    sendBtn.setAttribute('aria-label', 'Senden');
+    sendBtn.setAttribute('aria-label', text.send);
     sendBtn.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
 
     composer.appendChild(textarea);
@@ -168,7 +195,7 @@
 
     /* FAB */
     var fab = el('button', cn('fab'));
-    fab.setAttribute('aria-label', assistantName + ' öffnen');
+    fab.setAttribute('aria-label', assistantName + ' ' + text.open);
 
     if (assistantIcon) {
       var fabImg = el('img', '', { src: assistantIcon, alt: assistantName });
@@ -299,7 +326,7 @@
 
         return read();
       }).catch(function (err) {
-        assistantContentEl.innerHTML = '<span class="' + cn('muted') + '">Fehler: ' + escapeHtml(err.message) + '</span>';
+        assistantContentEl.innerHTML = '<span class="' + cn('muted') + '">' + text.errorPrefix + ' ' + escapeHtml(err.message) + '</span>';
         messages.pop();
         loading = false;
         sendBtn.disabled = false;

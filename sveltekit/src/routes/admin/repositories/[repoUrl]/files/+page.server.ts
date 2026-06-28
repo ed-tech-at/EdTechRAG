@@ -10,6 +10,14 @@ import { requireAllowedRepository } from '$lib/server/repository';
 
 // import { EMBEDDING_MODEL } from '$env/static/private';
 
+function getMetaPath(meta: unknown) {
+	if (!meta || typeof meta !== 'object' || Array.isArray(meta)) {
+		return null;
+	}
+
+	const path = (meta as { path?: unknown }).path;
+	return typeof path === 'string' ? path : null;
+}
 
 export const load: PageServerLoad = async ({ cookies, params, url }) => {
 	const { repoUrl } = params;
@@ -32,7 +40,12 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 		orderBy: { createdAt: 'desc' }
 	});
 
-	return { repositoryUrl: repository.url, repositoryName: repository.name, files };
+	const filesWithMetaPath = files.map((file) => ({
+		...file,
+		metaPath: getMetaPath(file.meta)
+	}));
+
+	return { repositoryUrl: repository.url, repositoryName: repository.name, files: filesWithMetaPath };
 };
 
 export const actions: Actions = {
@@ -41,10 +54,11 @@ export const actions: Actions = {
 		await requireAllowedRepository(cookies, url, repoUrl);
 		const formData = await request.formData();
 		// console.log(formData);
-		const fileId = parseInt(formData.get('fileId'));
+		const rawFileId = formData.get('fileId');
+		const fileId = typeof rawFileId === 'string' ? parseInt(rawFileId, 10) : NaN;
 		// console.log(fileId);
 
-		if (!fileId) {
+		if (!Number.isInteger(fileId)) {
 			return fail(400, { success: false, message: 'Missing file id.' });
 		}
 
@@ -85,6 +99,10 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		// const urlsText = formData.get('urls');
 		const singleUrl = formData.get('url');
+
+		if (typeof singleUrl !== 'string' || !singleUrl.trim()) {
+			return fail(400, { success: false, message: 'Missing URL.' });
+		}
 
 		const repository = await prisma.repository.findUnique({
 			where: { url: repoUrl }
@@ -134,7 +152,7 @@ export const actions: Actions = {
 			// for (const url of urls) {
 				try {
 					// const isFullUrl = /^https?:\/\//i.test(url);
-					const resolvedUrl = singleUrl;
+					const resolvedUrl = singleUrl.trim();
 					// const resolvedUrl =
 					// 	isFullUrl || !gitlabApiUrl || !gitlabToken
 					// 		? url

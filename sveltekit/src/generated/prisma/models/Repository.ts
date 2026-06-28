@@ -38,12 +38,22 @@ export type RepositoryMinAggregateOutputType = {
   id: number | null
   url: string | null
   name: string | null
+  activeSimplePage: boolean | null
+  activeSinglePage: boolean | null
+  activeParameterPage: boolean | null
+  activeEmbedApi: boolean | null
+  embedAllowedHostRegex: string | null
 }
 
 export type RepositoryMaxAggregateOutputType = {
   id: number | null
   url: string | null
   name: string | null
+  activeSimplePage: boolean | null
+  activeSinglePage: boolean | null
+  activeParameterPage: boolean | null
+  activeEmbedApi: boolean | null
+  embedAllowedHostRegex: string | null
 }
 
 export type RepositoryCountAggregateOutputType = {
@@ -53,6 +63,11 @@ export type RepositoryCountAggregateOutputType = {
   updateConfig: number
   LLM_API: number
   ragConfig: number
+  activeSimplePage: number
+  activeSinglePage: number
+  activeParameterPage: number
+  activeEmbedApi: number
+  embedAllowedHostRegex: number
   _all: number
 }
 
@@ -69,12 +84,22 @@ export type RepositoryMinAggregateInputType = {
   id?: true
   url?: true
   name?: true
+  activeSimplePage?: true
+  activeSinglePage?: true
+  activeParameterPage?: true
+  activeEmbedApi?: true
+  embedAllowedHostRegex?: true
 }
 
 export type RepositoryMaxAggregateInputType = {
   id?: true
   url?: true
   name?: true
+  activeSimplePage?: true
+  activeSinglePage?: true
+  activeParameterPage?: true
+  activeEmbedApi?: true
+  embedAllowedHostRegex?: true
 }
 
 export type RepositoryCountAggregateInputType = {
@@ -84,6 +109,11 @@ export type RepositoryCountAggregateInputType = {
   updateConfig?: true
   LLM_API?: true
   ragConfig?: true
+  activeSimplePage?: true
+  activeSinglePage?: true
+  activeParameterPage?: true
+  activeEmbedApi?: true
+  embedAllowedHostRegex?: true
   _all?: true
 }
 
@@ -180,6 +210,11 @@ export type RepositoryGroupByOutputType = {
   updateConfig: runtime.JsonValue | null
   LLM_API: runtime.JsonValue | null
   ragConfig: runtime.JsonValue | null
+  activeSimplePage: boolean
+  activeSinglePage: boolean
+  activeParameterPage: boolean
+  activeEmbedApi: boolean
+  embedAllowedHostRegex: string | null
   _count: RepositoryCountAggregateOutputType | null
   _avg: RepositoryAvgAggregateOutputType | null
   _sum: RepositorySumAggregateOutputType | null
@@ -212,6 +247,11 @@ export type RepositoryWhereInput = {
   updateConfig?: Prisma.JsonNullableFilter<"Repository">
   LLM_API?: Prisma.JsonNullableFilter<"Repository">
   ragConfig?: Prisma.JsonNullableFilter<"Repository">
+  activeSimplePage?: Prisma.BoolFilter<"Repository"> | boolean
+  activeSinglePage?: Prisma.BoolFilter<"Repository"> | boolean
+  activeParameterPage?: Prisma.BoolFilter<"Repository"> | boolean
+  activeEmbedApi?: Prisma.BoolFilter<"Repository"> | boolean
+  embedAllowedHostRegex?: Prisma.StringNullableFilter<"Repository"> | string | null
   dataFiles?: Prisma.DataFileListRelationFilter
 }
 
@@ -222,6 +262,11 @@ export type RepositoryOrderByWithRelationInput = {
   updateConfig?: Prisma.SortOrderInput | Prisma.SortOrder
   LLM_API?: Prisma.SortOrderInput | Prisma.SortOrder
   ragConfig?: Prisma.SortOrderInput | Prisma.SortOrder
+  activeSimplePage?: Prisma.SortOrder
+  activeSinglePage?: Prisma.SortOrder
+  activeParameterPage?: Prisma.SortOrder
+  activeEmbedApi?: Prisma.SortOrder
+  embedAllowedHostRegex?: Prisma.SortOrderInput | Prisma.SortOrder
   dataFiles?: Prisma.DataFileOrderByRelationAggregateInput
 }
 
@@ -235,6 +280,11 @@ export type RepositoryWhereUniqueInput = Prisma.AtLeast<{
   updateConfig?: Prisma.JsonNullableFilter<"Repository">
   LLM_API?: Prisma.JsonNullableFilter<"Repository">
   ragConfig?: Prisma.JsonNullableFilter<"Repository">
+  activeSimplePage?: Prisma.BoolFilter<"Repository"> | boolean
+  activeSinglePage?: Prisma.BoolFilter<"Repository"> | boolean
+  activeParameterPage?: Prisma.BoolFilter<"Repository"> | boolean
+  activeEmbedApi?: Prisma.BoolFilter<"Repository"> | boolean
+  embedAllowedHostRegex?: Prisma.StringNullableFilter<"Repository"> | string | null
   dataFiles?: Prisma.DataFileListRelationFilter
 }, "id" | "url">
 
@@ -245,6 +295,11 @@ export type RepositoryOrderByWithAggregationInput = {
   updateConfig?: Prisma.SortOrderInput | Prisma.SortOrder
   LLM_API?: Prisma.SortOrderInput | Prisma.SortOrder
   ragConfig?: Prisma.SortOrderInput | Prisma.SortOrder
+  activeSimplePage?: Prisma.SortOrder
+  activeSinglePage?: Prisma.SortOrder
+  activeParameterPage?: Prisma.SortOrder
+  activeEmbedApi?: Prisma.SortOrder
+  embedAllowedHostRegex?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.RepositoryCountOrderByAggregateInput
   _avg?: Prisma.RepositoryAvgOrderByAggregateInput
   _max?: Prisma.RepositoryMaxOrderByAggregateInput
@@ -262,6 +317,11 @@ export type RepositoryScalarWhereWithAggregatesInput = {
   updateConfig?: Prisma.JsonNullableWithAggregatesFilter<"Repository">
   LLM_API?: Prisma.JsonNullableWithAggregatesFilter<"Repository">
   ragConfig?: Prisma.JsonNullableWithAggregatesFilter<"Repository">
+  activeSimplePage?: Prisma.BoolWithAggregatesFilter<"Repository"> | boolean
+  activeSinglePage?: Prisma.BoolWithAggregatesFilter<"Repository"> | boolean
+  activeParameterPage?: Prisma.BoolWithAggregatesFilter<"Repository"> | boolean
+  activeEmbedApi?: Prisma.BoolWithAggregatesFilter<"Repository"> | boolean
+  embedAllowedHostRegex?: Prisma.StringNullableWithAggregatesFilter<"Repository"> | string | null
 }
 
 export type RepositoryCreateInput = {
@@ -270,6 +330,11 @@ export type RepositoryCreateInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: boolean
+  activeSinglePage?: boolean
+  activeParameterPage?: boolean
+  activeEmbedApi?: boolean
+  embedAllowedHostRegex?: string | null
   dataFiles?: Prisma.DataFileCreateNestedManyWithoutRepositoryInput
 }
 
@@ -280,6 +345,11 @@ export type RepositoryUncheckedCreateInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: boolean
+  activeSinglePage?: boolean
+  activeParameterPage?: boolean
+  activeEmbedApi?: boolean
+  embedAllowedHostRegex?: string | null
   dataFiles?: Prisma.DataFileUncheckedCreateNestedManyWithoutRepositoryInput
 }
 
@@ -289,6 +359,11 @@ export type RepositoryUpdateInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeSinglePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeParameterPage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeEmbedApi?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  embedAllowedHostRegex?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataFiles?: Prisma.DataFileUpdateManyWithoutRepositoryNestedInput
 }
 
@@ -299,6 +374,11 @@ export type RepositoryUncheckedUpdateInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeSinglePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeParameterPage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeEmbedApi?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  embedAllowedHostRegex?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dataFiles?: Prisma.DataFileUncheckedUpdateManyWithoutRepositoryNestedInput
 }
 
@@ -309,6 +389,11 @@ export type RepositoryCreateManyInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: boolean
+  activeSinglePage?: boolean
+  activeParameterPage?: boolean
+  activeEmbedApi?: boolean
+  embedAllowedHostRegex?: string | null
 }
 
 export type RepositoryUpdateManyMutationInput = {
@@ -317,6 +402,11 @@ export type RepositoryUpdateManyMutationInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeSinglePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeParameterPage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeEmbedApi?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  embedAllowedHostRegex?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RepositoryUncheckedUpdateManyInput = {
@@ -326,6 +416,11 @@ export type RepositoryUncheckedUpdateManyInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeSinglePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeParameterPage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeEmbedApi?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  embedAllowedHostRegex?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RepositoryCountOrderByAggregateInput = {
@@ -335,6 +430,11 @@ export type RepositoryCountOrderByAggregateInput = {
   updateConfig?: Prisma.SortOrder
   LLM_API?: Prisma.SortOrder
   ragConfig?: Prisma.SortOrder
+  activeSimplePage?: Prisma.SortOrder
+  activeSinglePage?: Prisma.SortOrder
+  activeParameterPage?: Prisma.SortOrder
+  activeEmbedApi?: Prisma.SortOrder
+  embedAllowedHostRegex?: Prisma.SortOrder
 }
 
 export type RepositoryAvgOrderByAggregateInput = {
@@ -345,12 +445,22 @@ export type RepositoryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  activeSimplePage?: Prisma.SortOrder
+  activeSinglePage?: Prisma.SortOrder
+  activeParameterPage?: Prisma.SortOrder
+  activeEmbedApi?: Prisma.SortOrder
+  embedAllowedHostRegex?: Prisma.SortOrder
 }
 
 export type RepositoryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   url?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  activeSimplePage?: Prisma.SortOrder
+  activeSinglePage?: Prisma.SortOrder
+  activeParameterPage?: Prisma.SortOrder
+  activeEmbedApi?: Prisma.SortOrder
+  embedAllowedHostRegex?: Prisma.SortOrder
 }
 
 export type RepositorySumOrderByAggregateInput = {
@@ -364,6 +474,14 @@ export type RepositoryScalarRelationFilter = {
 
 export type StringFieldUpdateOperationsInput = {
   set?: string
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
 }
 
 export type IntFieldUpdateOperationsInput = {
@@ -394,6 +512,11 @@ export type RepositoryCreateWithoutDataFilesInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: boolean
+  activeSinglePage?: boolean
+  activeParameterPage?: boolean
+  activeEmbedApi?: boolean
+  embedAllowedHostRegex?: string | null
 }
 
 export type RepositoryUncheckedCreateWithoutDataFilesInput = {
@@ -403,6 +526,11 @@ export type RepositoryUncheckedCreateWithoutDataFilesInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: boolean
+  activeSinglePage?: boolean
+  activeParameterPage?: boolean
+  activeEmbedApi?: boolean
+  embedAllowedHostRegex?: string | null
 }
 
 export type RepositoryCreateOrConnectWithoutDataFilesInput = {
@@ -427,6 +555,11 @@ export type RepositoryUpdateWithoutDataFilesInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeSinglePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeParameterPage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeEmbedApi?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  embedAllowedHostRegex?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type RepositoryUncheckedUpdateWithoutDataFilesInput = {
@@ -436,6 +569,11 @@ export type RepositoryUncheckedUpdateWithoutDataFilesInput = {
   updateConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   LLM_API?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ragConfig?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  activeSimplePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeSinglePage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeParameterPage?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  activeEmbedApi?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  embedAllowedHostRegex?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -476,6 +614,11 @@ export type RepositorySelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   updateConfig?: boolean
   LLM_API?: boolean
   ragConfig?: boolean
+  activeSimplePage?: boolean
+  activeSinglePage?: boolean
+  activeParameterPage?: boolean
+  activeEmbedApi?: boolean
+  embedAllowedHostRegex?: boolean
   dataFiles?: boolean | Prisma.Repository$dataFilesArgs<ExtArgs>
   _count?: boolean | Prisma.RepositoryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["repository"]>
@@ -487,6 +630,11 @@ export type RepositorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   updateConfig?: boolean
   LLM_API?: boolean
   ragConfig?: boolean
+  activeSimplePage?: boolean
+  activeSinglePage?: boolean
+  activeParameterPage?: boolean
+  activeEmbedApi?: boolean
+  embedAllowedHostRegex?: boolean
 }, ExtArgs["result"]["repository"]>
 
 export type RepositorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -496,6 +644,11 @@ export type RepositorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   updateConfig?: boolean
   LLM_API?: boolean
   ragConfig?: boolean
+  activeSimplePage?: boolean
+  activeSinglePage?: boolean
+  activeParameterPage?: boolean
+  activeEmbedApi?: boolean
+  embedAllowedHostRegex?: boolean
 }, ExtArgs["result"]["repository"]>
 
 export type RepositorySelectScalar = {
@@ -505,9 +658,14 @@ export type RepositorySelectScalar = {
   updateConfig?: boolean
   LLM_API?: boolean
   ragConfig?: boolean
+  activeSimplePage?: boolean
+  activeSinglePage?: boolean
+  activeParameterPage?: boolean
+  activeEmbedApi?: boolean
+  embedAllowedHostRegex?: boolean
 }
 
-export type RepositoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "url" | "name" | "updateConfig" | "LLM_API" | "ragConfig", ExtArgs["result"]["repository"]>
+export type RepositoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "url" | "name" | "updateConfig" | "LLM_API" | "ragConfig" | "activeSimplePage" | "activeSinglePage" | "activeParameterPage" | "activeEmbedApi" | "embedAllowedHostRegex", ExtArgs["result"]["repository"]>
 export type RepositoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   dataFiles?: boolean | Prisma.Repository$dataFilesArgs<ExtArgs>
   _count?: boolean | Prisma.RepositoryCountOutputTypeDefaultArgs<ExtArgs>
@@ -527,6 +685,11 @@ export type $RepositoryPayload<ExtArgs extends runtime.Types.Extensions.Internal
     updateConfig: runtime.JsonValue | null
     LLM_API: runtime.JsonValue | null
     ragConfig: runtime.JsonValue | null
+    activeSimplePage: boolean
+    activeSinglePage: boolean
+    activeParameterPage: boolean
+    activeEmbedApi: boolean
+    embedAllowedHostRegex: string | null
   }, ExtArgs["result"]["repository"]>
   composites: {}
 }
@@ -957,6 +1120,11 @@ export interface RepositoryFieldRefs {
   readonly updateConfig: Prisma.FieldRef<"Repository", 'Json'>
   readonly LLM_API: Prisma.FieldRef<"Repository", 'Json'>
   readonly ragConfig: Prisma.FieldRef<"Repository", 'Json'>
+  readonly activeSimplePage: Prisma.FieldRef<"Repository", 'Boolean'>
+  readonly activeSinglePage: Prisma.FieldRef<"Repository", 'Boolean'>
+  readonly activeParameterPage: Prisma.FieldRef<"Repository", 'Boolean'>
+  readonly activeEmbedApi: Prisma.FieldRef<"Repository", 'Boolean'>
+  readonly embedAllowedHostRegex: Prisma.FieldRef<"Repository", 'String'>
 }
     
 

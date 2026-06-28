@@ -7,6 +7,7 @@ import { getEmbeddingConfig } from '$lib/server/openaiClient';
 import { requireValidJwt } from '$lib/server/jwt';
 import { isRepositoryAllowed } from '$lib/server/repository';
 import { parseRagConfig } from '$lib/ragContext';
+import { quotedVectorColumn } from '$lib/server/vectorTable';
 
 export const load: PageServerLoad = async ({ cookies, params, url }) => {
 	const session = await requireValidJwt(cookies, url);
@@ -20,7 +21,6 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 		where: { id: dataFileId },
 		include: {
 			repository: true
-			// _count: { select: { dataChunks: true } }
 		}
 	});
 
@@ -53,9 +53,20 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 		...row,
 		lastSeen: row.embeddedAt
 	}));
+	const lastSeen =
+		vectorRows.reduce<Date | null>((latest, row) => {
+			if (!row.embeddedAt) return latest;
+			return !latest || row.embeddedAt > latest ? row.embeddedAt : latest;
+		}, null) ?? dataFile.chunkedAt;
 
 	return {
-		dataFile,
+		dataFile: {
+			...dataFile,
+			lastSeen,
+			_count: {
+				dataChunks: vectorRows.length
+			}
+		},
 		dataChunks
 	};
 };
@@ -157,17 +168,19 @@ export const actions: Actions = {
 		const session = await requireValidJwt(cookies, url);
 		const dataFileId = Number(params.id);
 		const formData = await request.formData();
-		let contentForm = formData.get('content');
-
-		let { content: content, meta: mdMeta } = getMetaDataOutOfMd(contentForm);
-		
-
+		const contentForm = formData.get('content');
 
 		if (!Number.isInteger(dataFileId)) {
 			return fail(400, { success: false, message: 'Invalid data file id.' });
 		}
 
-		if (!content || typeof content !== 'string' || !content.trim()) {
+		if (typeof contentForm !== 'string' || !contentForm.trim()) {
+			return fail(400, { success: false, message: 'Please paste some text to split.' });
+		}
+
+		const { content, meta: mdMeta } = getMetaDataOutOfMd(contentForm);
+
+		if (!content.trim()) {
 			return fail(400, { success: false, message: 'Please paste some text to split.' });
 		}
 
@@ -248,12 +261,20 @@ export const actions: Actions = {
 			}
 
 			const vector = await embedText(chunk.content, chunk.repositoryUrl);
+			const vectorColumn = await quotedVectorColumn();
+			if (!vectorColumn) {
+				return fail(500, {
+					success: false,
+					message:
+						'The rag_vectors.vector1536 table has no embedding vector column. Add "embeddingVector" with type rag_vectors.vector(1536).'
+				});
+			}
 			const vectorLiteral = `[${vector.join(',')}]`;
 			const { embeddingModel } = await getEmbeddingConfig(chunk.repositoryUrl);
 
 			await prisma.$executeRaw`
 				UPDATE "rag_vectors"."vector1536"
-				SET "embeddingVector" = ${vectorLiteral}::"rag_vectors".vector,
+				SET ${vectorColumn} = ${vectorLiteral}::"rag_vectors".vector,
 					"embeddingModel" = ${embeddingModel},
 					"embeddedAt" = NOW(),
 					"invalidatedAt" = NULL
@@ -299,6 +320,14 @@ export const actions: Actions = {
 			}
 
 			const vector = await embedText(query, dataFile.repositoryUrl);
+			const vectorColumn = await quotedVectorColumn();
+			if (!vectorColumn) {
+				return fail(500, {
+					success: false,
+					message:
+						'The rag_vectors.vector1536 table has no embedding vector column. Add "embeddingVector" with type rag_vectors.vector(1536).'
+				});
+			}
 			const vectorLiteral = `[${vector.join(',')}]`;
 			// console.log("vectorLiteral");
 			// console.log(vectorLiteral);
@@ -313,10 +342,10 @@ export const actions: Actions = {
 					distance: number;
 				}[]
 			>`SELECT "id", "dataFileId", "chunkNr", "content", "embeddingModel",
-					("embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) AS distance
+					(${vectorColumn} OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) AS distance
 				FROM "rag_vectors"."vector1536"
-				WHERE "embeddingVector" IS NOT NULL AND "dataFileId" = ${dataFileId}
-				ORDER BY ("embeddingVector" OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) ASC
+				WHERE ${vectorColumn} IS NOT NULL AND "dataFileId" = ${dataFileId}
+				ORDER BY (${vectorColumn} OPERATOR(rag_vectors.<=>) ${vectorLiteral}::rag_vectors.vector) ASC
 				LIMIT 10`;
 
 			const results = rows.map((row) => ({

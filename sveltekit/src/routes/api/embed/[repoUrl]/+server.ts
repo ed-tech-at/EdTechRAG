@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
 import { findRepositoryContext } from '$lib/server/rag';
+import { embedCorsHeaders, getAllowedEmbedOrigin } from '$lib/server/repositoryAccess';
 import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
 import { streamChatText } from '$lib/server/chatStream';
@@ -12,18 +13,26 @@ import {
 	parseRagConfig
 } from '$lib/ragContext';
 
-const corsHeaders = (_origin: string | null): Record<string, string> => ({
-	'Access-Control-Allow-Origin': '*',
-	'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-	'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-});
-
-export const OPTIONS: RequestHandler = async ({ request }) => {
+export const OPTIONS: RequestHandler = async ({ request, params }) => {
+	const { repoUrl } = params;
 	const origin = request.headers.get('origin');
+	const repository = await prisma.repository.findUnique({
+		where: { url: repoUrl },
+		select: { activeEmbedApi: true, embedAllowedHostRegex: true }
+	});
+
+	if (!repository) {
+		return new Response('Repository not found', { status: 404 });
+	}
+
+	const allowedOrigin = getAllowedEmbedOrigin(repository, origin);
+	if (!allowedOrigin) {
+		return new Response('Embed origin not allowed', { status: 403 });
+	}
 
 	return new Response(null, {
 		status: 204,
-		headers: corsHeaders(origin)
+		headers: embedCorsHeaders(allowedOrigin)
 	});
 };
 
@@ -31,11 +40,25 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	const { repoUrl } = params;
 	const origin = request.headers.get('origin');
 
+	const repository = await prisma.repository.findUnique({
+		where: { url: repoUrl }
+	});
+
+	if (!repository) {
+		return new Response('Repository not found', { status: 404 });
+	}
+
+	const allowedOrigin = getAllowedEmbedOrigin(repository, origin);
+	if (!allowedOrigin) {
+		return new Response('Embed origin not allowed', { status: 403 });
+	}
+	const corsHeaders = embedCorsHeaders(allowedOrigin);
+
 	let body: unknown;
 	try {
 		body = await request.json();
 	} catch (err) {
-		return new Response('Invalid JSON body', { status: 400, headers: corsHeaders(origin) });
+		return new Response('Invalid JSON body', { status: 400, headers: corsHeaders });
 	}
 
 	const prompt =
@@ -56,15 +79,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			: null;
 
 	if (!prompt) {
-		return new Response('Missing prompt', { status: 400, headers: corsHeaders(origin) });
-	}
-
-	const repository = await prisma.repository.findUnique({
-		where: { url: repoUrl }
-	});
-
-	if (!repository) {
-		return new Response('Repository not found', { status: 404, headers: corsHeaders(origin) });
+		return new Response('Missing prompt', { status: 400, headers: corsHeaders });
 	}
 
 	try {
@@ -117,14 +132,14 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			headers: {
 				'Content-Type': 'text/plain; charset=utf-8',
 				'Transfer-Encoding': 'chunked',
-				...corsHeaders(origin)
+				...corsHeaders
 			}
 		});
 	} catch (err) {
 		console.error('Embed endpoint error', err);
 		return new Response('Chat failed. See server logs.', {
 			status: 500,
-			headers: corsHeaders(origin)
+			headers: corsHeaders
 		});
 	}
 };

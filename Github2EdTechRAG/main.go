@@ -487,18 +487,18 @@ func detectChanges(repoDir string, before string, after string) (changeSet, erro
 		return changeSet{}, errors.New("delete-branch push does not have a head commit")
 	}
 	if isZeroSHA(before) {
-		out, err := gitOutput(config{}, repoDir, "ls-tree", "-r", "--name-only", after)
+		out, err := gitOutput(config{}, repoDir, "ls-tree", "-r", "-z", "--name-only", after)
 		if err != nil {
 			return changeSet{}, err
 		}
-		return changeSet{Added: lines(out)}, nil
+		return changeSet{Added: nullSeparatedPaths(out)}, nil
 	}
 
-	out, err := gitOutput(config{}, repoDir, "diff", "--name-status", "-M", before, after)
+	out, err := gitOutput(config{}, repoDir, "diff", "--name-status", "-z", "-M", before, after)
 	if err != nil {
 		return changeSet{}, err
 	}
-	return parseNameStatus(string(out)), nil
+	return parseNameStatusZ(out), nil
 }
 
 func changesFromCommits(commits []githubCommit) changeSet {
@@ -542,6 +542,52 @@ func parseNameStatus(raw string) changeSet {
 			}
 		}
 	}
+	changes.Added = uniqueStrings(changes.Added)
+	changes.Modified = uniqueStrings(changes.Modified)
+	changes.Deleted = uniqueStrings(changes.Deleted)
+	return changes
+}
+
+func parseNameStatusZ(raw []byte) changeSet {
+	changes := changeSet{}
+	fields := splitNUL(raw)
+
+	for i := 0; i < len(fields); {
+		status := fields[i]
+		i++
+		if status == "" || i >= len(fields) {
+			continue
+		}
+
+		switch status[0] {
+		case 'A':
+			changes.Added = append(changes.Added, fields[i])
+			i++
+		case 'M', 'T':
+			changes.Modified = append(changes.Modified, fields[i])
+			i++
+		case 'D':
+			changes.Deleted = append(changes.Deleted, fields[i])
+			i++
+		case 'R':
+			if i+1 < len(fields) {
+				changes.Moved = append(changes.Moved, movedEntry{From: fields[i], To: fields[i+1]})
+				i += 2
+			} else {
+				i = len(fields)
+			}
+		case 'C':
+			if i+1 < len(fields) {
+				changes.Added = append(changes.Added, fields[i+1])
+				i += 2
+			} else {
+				i = len(fields)
+			}
+		default:
+			i++
+		}
+	}
+
 	changes.Added = uniqueStrings(changes.Added)
 	changes.Modified = uniqueStrings(changes.Modified)
 	changes.Deleted = uniqueStrings(changes.Deleted)
@@ -758,6 +804,22 @@ func lines(out []byte) []string {
 		return nil
 	}
 	return uniqueStrings(values)
+}
+
+func nullSeparatedPaths(out []byte) []string {
+	return uniqueStrings(splitNUL(out))
+}
+
+func splitNUL(out []byte) []string {
+	raw := strings.Split(string(out), "\x00")
+	values := make([]string, 0, len(raw))
+	for _, value := range raw {
+		if value == "" {
+			continue
+		}
+		values = append(values, value)
+	}
+	return values
 }
 
 func uniqueStrings(values []string) []string {

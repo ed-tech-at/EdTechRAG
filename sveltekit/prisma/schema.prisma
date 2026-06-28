@@ -17,6 +17,12 @@ model Repository {
   LLM_API      Json?
   ragConfig    Json?
 
+  activeSimplePage    Boolean @default(false)
+  activeSinglePage    Boolean @default(false)
+  activeParameterPage Boolean @default(false)
+  activeEmbedApi      Boolean @default(false)
+  embedAllowedHostRegex String?
+
   dataFiles    DataFile[]
 }
 
@@ -58,7 +64,8 @@ model User {
   id       String  @id @default(uuid())
   email    String  @unique
 
-  repositoryJson  Json?
+  repositoryJson Json?
+  role           Int @default(3)
 
   password String
   cryptVersion Int @default(0)

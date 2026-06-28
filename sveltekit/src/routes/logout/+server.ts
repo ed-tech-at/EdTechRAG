@@ -2,7 +2,7 @@ import type { RequestHandler } from './$types';
 
 import { resolve } from '$app/paths';
 
-export const GET: RequestHandler = async ({ cookies }) => {
+const logout: RequestHandler = async ({ cookies }) => {
 	cookies.delete('jwt', {
 		path: resolve('/')
 	});
@@ -17,3 +17,5 @@ export const GET: RequestHandler = async ({ cookies }) => {
 		}
 	});
 };
+
+export const POST = logout;

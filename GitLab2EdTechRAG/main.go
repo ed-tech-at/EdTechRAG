@@ -28,6 +28,11 @@ func git(args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
+func gitRaw(args ...string) string {
+	out, _ := exec.Command("git", args...).Output()
+	return string(out)
+}
+
 func hmacHex(key string, msg []byte) string {
 	m := hmac.New(sha256.New, []byte(key))
 	m.Write(msg)
@@ -132,7 +137,7 @@ func main() {
 	}
 
 	_ = exec.Command("git", "fetch", "origin", base, head).Run()
-	diff := git("diff", "--name-status", "-M", base, head)
+	diff := gitRaw("diff", "--name-status", "-z", "-M", base, head)
 
 	payload := map[string]any{
 		"repository_path": repo,

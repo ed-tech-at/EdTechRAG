@@ -1,11 +1,16 @@
 <script lang="ts">
-import { resolve } from '$app/paths';
+	import { resolve } from '$app/paths';
+	import type { PageData } from './$types';
 
-	const links = [
-		{ href: resolve('/admin/repositories'), label: 'Your Repositories' },
+	export let data: PageData;
+
+	$: links = [
+		{ href: resolve('/admin/repositories'), label: 'Configure your repositories' },
+		{ href: resolve('/admin/search-vectors'), label: 'Search vectors' },
 		{ href: resolve('/admin/DataFile'), label: 'All data files' },
 		{ href: resolve('/admin/embeddings'), label: 'All Embeddings' },
-		{ href: resolve('/admin/ragView'), label: 'RAG VIEW' }
+		{ href: resolve('/admin/ragView'), label: 'RAG VIEW' },
+		...(data.canManageUsers ? [{ href: resolve('/admin/users'), label: 'User management' }] : [])
 	];
 </script>
 

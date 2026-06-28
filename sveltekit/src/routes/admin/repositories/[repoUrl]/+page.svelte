@@ -5,17 +5,6 @@
 	export let data: PageData;
 	export let form: ActionData;
 
-	type SearchResult = {
-		id: string;
-		dataFileId: string;
-		chunkNr: number | null;
-		content: string | null;
-		similarity: number;
-		embeddingModel: string | null;
-		remoteUrl?: string;
-		meta?: Record<string, unknown>;
-	};
-
 	$: fallbackConfig = data.config;
 	$: submittedConfig =
 		form && typeof form === 'object' && 'config' in form
@@ -31,20 +20,18 @@
 			? ((form as { message?: string }).message ?? '')
 			: '';
 	$: formMessage =
-		form && typeof form === 'object' && !('results' in form) && !('configSaved' in form)
+		form && typeof form === 'object' && !('configSaved' in form)
 			? ((form as { message?: string }).message ?? '')
 			: '';
 	$: formSuccess =
 		form && typeof form === 'object' && 'success' in form
 			? Boolean((form as { success?: boolean }).success)
 			: false;
-	let searching = false;
 	let saving = false;
 	let publicBaseUrl = data.config.github.publicBaseUrl;
 	let webhookPath = data.config.github.webhookPath;
 	$: if (form) {
 		saving = false;
-		searching = false;
 	}
 	$: if (config) {
 		publicBaseUrl = config.github.publicBaseUrl;
@@ -53,17 +40,6 @@
 	$: webhookUrl = webhookPath.trim()
 		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
 		: `${publicBaseUrl.replace(/\/$/, '')}/webhook`;
-
-	$: searchResults =
-		form && typeof form === 'object' && 'results' in form
-			? (form as { results?: SearchResult[] }).results
-			: undefined;
-
-	const metaValue = (result: SearchResult, key: string) => {
-		const meta = (result.meta ?? {}) as Record<string, unknown>;
-		const value = meta[key];
-		return typeof value === 'string' ? value : undefined;
-	};
 </script>
 
 <section class="page">
@@ -76,12 +52,15 @@
 				<p class="muted">EdTechRAG URL: {config.repositoryUrl}</p>
 			</div>
 			{#if repositoryExists}
-				<a
-					class="secondary-button"
-					href={resolve(`/admin/repositories/${encodeURIComponent(config.repositoryUrl)}/files`)}
-				>
-					View files
-				</a>
+				<div class="header-actions">
+					
+					<a
+						class="secondary-button"
+						href={resolve(`/admin/repositories/${encodeURIComponent(config.repositoryUrl)}/files`)}
+					>
+						View files
+					</a>
+				</div>
 			{/if}
 		</div>
 		{#if configMessage}
@@ -91,15 +70,14 @@
 		{/if}
 	</header>
 
-	<section class="panel">
-		<div class="panel-head">
-			<div>
-				<h2>Configuration</h2>
-				<p class="muted">Secrets are write-only. Leave password fields empty to keep existing values.</p>
-			</div>
-		</div>
+	<form method="POST" action="?/saveConfig" class="config-form" on:submit={() => (saving = true)}>
+		<p class="form-note">Secrets are write-only. Leave password fields empty to keep existing values.</p>
 
-		<form method="POST" action="?/saveConfig" class="config-form" on:submit={() => (saving = true)}>
+		<section class="config-section" aria-labelledby="configuration-heading">
+			<div class="section-head">
+				<h2 id="configuration-heading">Configuration</h2>
+				<p class="muted">Repository identity and source mapping.</p>
+			</div>
 			<div class="field-grid">
 				<label>
 					Repository name
@@ -110,199 +88,182 @@
 					<input name="repository_path" placeholder="owner/repository" value={config.github.repositoryPath} />
 				</label>
 			</div>
+		</section>
 
-			<div class="section-band">
-				<h3>GitHub2EdTechRAG</h3>
-				<div class="field-grid">
-					<label>
-						Bridge public base URL
-						<input name="github2_public_base_url" bind:value={publicBaseUrl}  />
-					</label>
-					<label>
-						Mounted repo path
-						<input
-							name="github2_webhook_path"
-							bind:value={webhookPath}
-							placeholder="optional; e.g. my-project"
-						/>
-					</label>
-				</div>
+		<section class="config-section" aria-labelledby="access-heading">
+			<div class="section-head">
+				<h2 id="access-heading">Access</h2>
+				<p class="muted">Public pages and embed API availability.</p>
+			</div>
+			<div class="checkbox-grid">
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeSimplePage" checked={config.access.activeSimplePage} />
+					<span>Simple page</span>
+				</label>
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeSinglePage" checked={config.access.activeSinglePage} />
+					<span>Single page</span>
+				</label>
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeParameterPage" checked={config.access.activeParameterPage} />
+					<span>Parameter page</span>
+				</label>
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeEmbedApi" checked={config.access.activeEmbedApi} />
+					<span>/api/embed widget API</span>
+				</label>
+			</div>
+			<label>
+				Allowed embed host regex
+				<input
+					name="embedAllowedHostRegex"
+					value={config.access.embedAllowedHostRegex}
+					placeholder="^moodle\\.example\\.org$"
+				/>
+			</label>
+			<p class="muted">The embed regex matches only the browser Origin hostname.</p>
+		</section>
+
+		<section class="config-section" aria-labelledby="bridge-heading">
+			<div class="section-head">
+				<h2 id="bridge-heading">GitHub2EdTechRAG</h2>
+				<p class="muted">Webhook bridge settings for repository updates.</p>
+			</div>
+			<div class="field-grid">
 				<label>
-					Github shared secret for Github2EdTechRAG
+					Bridge public base URL
+					<input name="github2_public_base_url" bind:value={publicBaseUrl} />
+				</label>
+				<label>
+					Mounted repo path
 					<input
-						type="password"
-						name="Github2EdTechRAG_SHARED_SECRET"
-						placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
-						
+						name="github2_webhook_path"
+						bind:value={webhookPath}
+						placeholder="optional; e.g. my-project"
 					/>
 				</label>
-				<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
 			</div>
-
-			<div class="section-band">
-				<h3>LLM</h3>
-				<div class="field-grid">
-					<label>
-						OpenAI-compatible API key
-						<input
-							type="password"
-							name="OPENAI_API_KEY"
-							placeholder={config.llm.hasOpenAiApiKey ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
-							autocomplete="new-password"
-						/>
-					</label>
-					<label>
-						Chat API base
-						<input name="OPENAI_API_BASE" value={config.llm.openAiApiBase} required />
-					</label>
-					<label>
-						Chat model
-						<input name="CHAT_MODEL" value={config.llm.chatModel} required />
-					</label>
-					<label>
-						API language
-						<select name="API_LANGUAGE">
-							<option value="chat/completions" selected={config.llm.apiLanguage === 'chat/completions'}>
-								chat/completions
-							</option>
-							<option value="responses" selected={config.llm.apiLanguage === 'responses'}>responses</option>
-						</select>
-					</label>
-					<label>
-						Reasoning effort
-						<select name="reasoning_effort">
-							{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
-								<option value={option} selected={config.llm.reasoningEffort === option}>{option}</option>
-							{/each}
-						</select>
-					</label>
-					<label>
-						Text verbosity
-						<select name="text_verbosity">
-							{#each ['low', 'medium', 'high'] as option}
-								<option value={option} selected={config.llm.textVerbosity === option}>{option}</option>
-							{/each}
-						</select>
-					</label>
-				</div>
-			</div>
-
-			<div class="section-band">
-				<h3>Embeddings</h3>
-				<div class="field-grid">
-					<label>
-						Embedding API key
-						<input
-							type="password"
-							name="OPENAI_API_KEY_EMBEDDING"
-							placeholder={config.llm.hasEmbeddingApiKey ? 'Already set; enter a new value to overwrite' : 'Optional; falls back to LLM API key'}
-							autocomplete="new-password"
-						/>
-					</label>
-					<label>
-						Embedding API base
-						<input name="OPENAI_API_BASE_EMBEDDING" value={config.llm.embeddingBase} required />
-					</label>
-					<label>
-						Embedding model
-						<input name="EMBEDDING_MODEL" value={config.llm.embeddingModel} required />
-					</label>
-				</div>
-			</div>
-
-		
-
-			<div class="section-band">
-				<h3>RAG</h3>
-				<div class="field-grid">
-					<label>
-						Chunk size
-						<input name="chunkSize" type="number" min="1" value={config.rag.chunkSize ?? ''} placeholder="4000" />
-					</label>
-					<label>
-						Chunk overlap
-						<input name="chunkOverlap" type="number" min="0" value={config.rag.chunkOverlap ?? ''} placeholder="150" />
-					</label>
-					<label>
-						Number of documents
-						<input name="numberDocuments" type="number" min="1" value={config.rag.numberDocuments} placeholder="4" />
-					</label>
-					<label>
-						Metadata tags
-						<input name="metaTags" value={config.rag.metaTags.join(', ')} placeholder="url, title, folder" />
-					</label>
-				</div>
-				<label>
-					System prompt
-					<textarea name="systemprompt" rows="6">{config.rag.systemprompt}</textarea>
-				</label>
-			</div>
-
-			<div class="actions">
-				<button type="submit" disabled={saving}>{saving ? 'Saving...' : repositoryExists ? 'Save config' : 'Create repository'}</button>
-			</div>
-		</form>
-	</section>
-
-	{#if repositoryExists}
-		<section class="panel">
-			<div class="panel-head">
-				<div>
-					<h2>Search</h2>
-					<p class="muted">Search chunks in this repository by vector similarity.</p>
-				</div>
-			</div>
-			<form method="POST" action="?/search" class="search-form" on:submit={() => (searching = true)}>
-				<label>
-					Query
-					<input type="text" name="query" placeholder="Ask a question or paste text" required />
-				</label>
-				<div class="actions">
-					<button type="submit" disabled={searching}>{searching ? 'Searching...' : 'Search'}</button>
-					{#if searching}
-						<span class="loader" aria-live="polite">Working...</span>
-					{/if}
-				</div>
-			</form>
-			{#if searchResults}
-				<div class="results">
-					{#if searchResults.length === 0}
-						<p class="muted">No results.</p>
-					{:else}
-						{#each searchResults as result}
-							<article class="result">
-								<div class="result-meta">
-									<strong>Chunk {result.chunkNr ?? '-'}</strong>
-									<span class="muted">DataFile: {result.dataFileId}</span>
-									<span class="muted">Similarity: {(result.similarity * 100).toFixed(1)}%</span>
-									{#if result.embeddingModel}
-										<span class="muted">Model: {result.embeddingModel}</span>
-									{/if}
-									{#if metaValue(result, 'url') || result.remoteUrl}
-										<span class="muted">
-											URL:
-											<a
-												class="link"
-												href={metaValue(result, 'url') ?? result.remoteUrl}
-												target="_blank"
-												rel="noreferrer"
-											>
-												{metaValue(result, 'url') ?? result.remoteUrl}
-											</a>
-										</span>
-									{/if}
-									{#if metaValue(result, 'folder')}
-										<span class="muted">Folder: {metaValue(result, 'folder')}</span>
-									{/if}
-								</div>
-								<pre>{result.content ?? '-'}</pre>
-							</article>
-						{/each}
-					{/if}
-				</div>
-			{/if}
+			<label>
+				Github shared secret for Github2EdTechRAG
+				<input
+					type="password"
+					name="Github2EdTechRAG_SHARED_SECRET"
+					placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
+				/>
+			</label>
+			<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
 		</section>
-	{/if}
+
+		<section class="config-section" aria-labelledby="llm-heading">
+			<div class="section-head">
+				<h2 id="llm-heading">LLM</h2>
+				<p class="muted">Chat model provider and generation settings.</p>
+			</div>
+			<div class="field-grid">
+				<label>
+					OpenAI-compatible API key
+					<input
+						type="password"
+						name="OPENAI_API_KEY"
+						placeholder={config.llm.hasOpenAiApiKey ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
+						autocomplete="new-password"
+					/>
+				</label>
+				<label>
+					Chat API base
+					<input name="OPENAI_API_BASE" value={config.llm.openAiApiBase} required />
+				</label>
+				<label>
+					Chat model
+					<input name="CHAT_MODEL" value={config.llm.chatModel} required />
+				</label>
+				<label>
+					API language
+					<select name="API_LANGUAGE">
+						<option value="chat/completions" selected={config.llm.apiLanguage === 'chat/completions'}>
+							chat/completions
+						</option>
+						<option value="responses" selected={config.llm.apiLanguage === 'responses'}>responses</option>
+					</select>
+				</label>
+				<label>
+					Reasoning effort
+					<select name="reasoning_effort">
+						{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
+							<option value={option} selected={config.llm.reasoningEffort === option}>{option}</option>
+						{/each}
+					</select>
+				</label>
+				<label>
+					Text verbosity
+					<select name="text_verbosity">
+						{#each ['low', 'medium', 'high'] as option}
+							<option value={option} selected={config.llm.textVerbosity === option}>{option}</option>
+						{/each}
+					</select>
+				</label>
+			</div>
+		</section>
+
+		<section class="config-section" aria-labelledby="embeddings-heading">
+			<div class="section-head">
+				<h2 id="embeddings-heading">Embeddings</h2>
+				<p class="muted">Embedding model provider used for vector search.</p>
+			</div>
+			<div class="field-grid">
+				<label>
+					Embedding API key
+					<input
+						type="password"
+						name="OPENAI_API_KEY_EMBEDDING"
+						placeholder={config.llm.hasEmbeddingApiKey ? 'Already set; enter a new value to overwrite' : 'Optional; falls back to LLM API key'}
+						autocomplete="new-password"
+					/>
+				</label>
+				<label>
+					Embedding API base
+					<input name="OPENAI_API_BASE_EMBEDDING" value={config.llm.embeddingBase} required />
+				</label>
+				<label>
+					Embedding model
+					<input name="EMBEDDING_MODEL" value={config.llm.embeddingModel} required />
+				</label>
+			</div>
+		</section>
+
+		<section class="config-section" aria-labelledby="rag-heading">
+			<div class="section-head">
+				<h2 id="rag-heading">RAG</h2>
+				<p class="muted">Retrieval chunking, document count, metadata, and prompt.</p>
+			</div>
+			<div class="field-grid">
+				<label>
+					Chunk size
+					<input name="chunkSize" type="number" min="1" value={config.rag.chunkSize ?? ''} placeholder="4000" />
+				</label>
+				<label>
+					Chunk overlap
+					<input name="chunkOverlap" type="number" min="0" value={config.rag.chunkOverlap ?? ''} placeholder="150" />
+				</label>
+				<label>
+					Number of documents
+					<input name="numberDocuments" type="number" min="1" value={config.rag.numberDocuments} placeholder="4" />
+				</label>
+				<label>
+					Metadata tags
+					<input name="metaTags" value={config.rag.metaTags.join(', ')} placeholder="url, title, folder" />
+				</label>
+			</div>
+			<label>
+				System prompt
+				<textarea name="systemprompt" rows="6">{config.rag.systemprompt}</textarea>
+			</label>
+		</section>
+
+		<div class="actions">
+			<button type="submit" disabled={saving}>{saving ? 'Saving...' : repositoryExists ? 'Save config' : 'Create repository'}</button>
+		</div>
+	</form>
 </section>
 
 <style>
@@ -317,23 +278,27 @@
 	}
 
 	.title-row,
-	.panel-head,
+	.section-head,
 	.actions,
-	.result-meta {
+	.header-actions {
 		display: flex;
 		gap: 0.75rem;
 		align-items: center;
 	}
 
+	.header-actions {
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+
 	.title-row,
-	.panel-head {
+	.section-head {
 		justify-content: space-between;
 		align-items: flex-start;
 	}
 
 	h1,
 	h2,
-	h3,
 	p {
 		margin: 0;
 	}
@@ -344,10 +309,6 @@
 
 	h2 {
 		font-size: 1.1rem;
-	}
-
-	h3 {
-		font-size: 1rem;
 	}
 
 	.eyebrow {
@@ -388,26 +349,27 @@
 		border: 1px solid #f2c7c7;
 	}
 
-	.panel {
+	.config-form {
 		display: grid;
-		gap: 0.9rem;
-		padding: 0.85rem;
-		border: 1px solid #e3e3e3;
-		border-radius: 8px;
-		background: #fafafa;
+		gap: 1rem;
 	}
 
-	.config-form,
-	.search-form {
+	.form-note {
+		padding: 0.75rem 0;
+		border-top: 1px solid #e3e3e3;
+		border-bottom: 1px solid #e3e3e3;
+		color: #666;
+	}
+
+	.config-section {
 		display: grid;
 		gap: 0.85rem;
+		padding: 1rem 0;
+		border-bottom: 1px solid #e3e3e3;
 	}
 
-	.section-band {
-		display: grid;
-		gap: 0.65rem;
-		padding-top: 0.85rem;
-		border-top: 1px solid #e3e3e3;
+	.section-head {
+		flex-wrap: wrap;
 	}
 
 	.field-grid {
@@ -416,10 +378,23 @@
 		gap: 0.75rem;
 	}
 
+	.checkbox-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+		gap: 0.5rem 0.75rem;
+	}
+
 	label {
 		display: grid;
 		gap: 0.35rem;
 		color: #333;
+		font-weight: 600;
+	}
+
+	.checkbox-label {
+		display: flex;
+		align-items: center;
+		gap: 0.45rem;
 		font-weight: 600;
 	}
 
@@ -433,6 +408,10 @@
 		font: inherit;
 		font-weight: 400;
 		background: white;
+	}
+
+	input[type='checkbox'] {
+		width: auto;
 	}
 
 	textarea {
@@ -469,37 +448,4 @@
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	}
 
-	.loader {
-		color: #1f7ae0;
-		font-size: 0.95rem;
-	}
-
-	.results {
-		display: grid;
-		gap: 0.75rem;
-	}
-
-	.result {
-		border: 1px solid #e3e3e3;
-		border-radius: 6px;
-		padding: 0.65rem;
-		background: white;
-		display: grid;
-		gap: 0.35rem;
-	}
-
-	.result-meta {
-		flex-wrap: wrap;
-		gap: 0.5rem 1rem;
-	}
-
-	pre {
-		margin: 0;
-		overflow: auto;
-		font-size: 0.95rem;
-		background: #f7f7f7;
-		border-radius: 6px;
-		padding: 0.65rem;
-		border: 1px solid #e3e3e3;
-	}
 </style>

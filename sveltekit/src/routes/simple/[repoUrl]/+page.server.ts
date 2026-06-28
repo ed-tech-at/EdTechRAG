@@ -1,20 +1,21 @@
+import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
-import { findRepositoryContext } from '$lib/server/rag';
+import { assertPublicPageActive } from '$lib/server/repositoryAccess';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const { repoUrl } = params;
 
 	const repository = await prisma.repository.findUnique({
-		where: { url: repoUrl }
+		where: { url: repoUrl },
+		select: { url: true, name: true, activeSimplePage: true }
 	});
 
 	if (!repository) {
-		return {
-			status: 404,
-			error: new Error('Repository not found')
-		};
+		throw error(404, 'Repository not found');
 	}
+
+	assertPublicPageActive(repository, 'simple');
 
 	return { repositoryUrl: repository.url, repositoryName: repository.name };
 };

@@ -438,10 +438,6 @@ export type DataFileUncheckedUpdateManyWithoutRepositoryNestedInput = {
   deleteMany?: Prisma.DataFileScalarWhereInput | Prisma.DataFileScalarWhereInput[]
 }
 
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }

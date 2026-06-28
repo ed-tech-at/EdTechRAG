@@ -86,7 +86,12 @@ export const actions: Actions = {
 					numberDocuments: 4,
 					metaTags: [],
 					systemprompt: ''
-				}
+				},
+				activeSimplePage: false,
+				activeSinglePage: false,
+				activeParameterPage: false,
+				activeEmbedApi: false,
+				embedAllowedHostRegex: null
 			}
 		});
 
