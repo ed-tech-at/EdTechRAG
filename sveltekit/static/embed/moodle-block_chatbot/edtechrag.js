@@ -4,17 +4,17 @@
   var P = 'at-ed-tech-edtechrag-emd-';
   var TEXT = {
     de: {
-      close: 'Schließen',
-      faqLabel: 'Häufig gestellte Fragen:',
+      close: 'Schlie\u00dfen',
+      faqLabel: 'M\u00f6gliche Fragen:',
       clearChat: 'Chat leeren',
       placeholder: 'Nachricht schreiben ...',
       send: 'Senden',
-      open: 'öffnen',
+      open: '\u00f6ffnen',
       errorPrefix: 'Fehler:'
     },
     en: {
       close: 'Close',
-      faqLabel: 'Frequently asked questions:',
+      faqLabel: 'Possible Questions:',
       clearChat: 'Clear chat',
       placeholder: 'Write a message ...',
       send: 'Send',
