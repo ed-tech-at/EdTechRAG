@@ -3,6 +3,15 @@
 
   var P = 'at-ed-tech-edtechrag-emd-';
   var TEXT = {
+    en: {
+      close: 'Close',
+      faqLabel: 'Possible Questions:',
+      clearChat: 'Clear chat',
+      placeholder: 'Write a message ...',
+      send: 'Send',
+      open: 'open',
+      errorPrefix: 'Error:'
+    },
     de: {
       close: 'Schlie\u00dfen',
       faqLabel: 'M\u00f6gliche Fragen:',
@@ -12,14 +21,230 @@
       open: '\u00f6ffnen',
       errorPrefix: 'Fehler:'
     },
-    en: {
-      close: 'Close',
-      faqLabel: 'Possible Questions:',
-      clearChat: 'Clear chat',
-      placeholder: 'Write a message ...',
-      send: 'Send',
-      open: 'open',
+    it: {
+      close: 'Chiudi',
+      faqLabel: 'Domande possibili:',
+      clearChat: 'Cancella chat',
+      placeholder: 'Scrivi un messaggio ...',
+      send: 'Invia',
+      open: 'apri',
+      errorPrefix: 'Errore:'
+    },
+    fr: {
+      close: 'Fermer',
+      faqLabel: 'Questions possibles :',
+      clearChat: 'Vider le chat',
+      placeholder: '\u00c9crire un message ...',
+      send: 'Envoyer',
+      open: 'ouvrir',
+      errorPrefix: 'Erreur :'
+    },
+    pt: {
+      close: 'Fechar',
+      faqLabel: 'Poss\u00edveis perguntas:',
+      clearChat: 'Limpar chat',
+      placeholder: 'Escrever uma mensagem ...',
+      send: 'Enviar',
+      open: 'abrir',
+      errorPrefix: 'Erro:'
+    },
+    fi: {
+      close: 'Sulje',
+      faqLabel: 'Mahdolliset kysymykset:',
+      clearChat: 'Tyhjenn\u00e4 chat',
+      placeholder: 'Kirjoita viesti ...',
+      send: 'L\u00e4het\u00e4',
+      open: 'avaa',
+      errorPrefix: 'Virhe:'
+    },
+    sv: {
+      close: 'St\u00e4ng',
+      faqLabel: 'M\u00f6jliga fr\u00e5gor:',
+      clearChat: 'Rensa chatten',
+      placeholder: 'Skriv ett meddelande ...',
+      send: 'Skicka',
+      open: '\u00f6ppna',
+      errorPrefix: 'Fel:'
+    },
+    id: {
+      close: 'Tutup',
+      faqLabel: 'Pertanyaan yang mungkin:',
+      clearChat: 'Hapus obrolan',
+      placeholder: 'Tulis pesan ...',
+      send: 'Kirim',
+      open: 'buka',
+      errorPrefix: 'Kesalahan:'
+    },
+    hu: {
+      close: 'Bez\u00e1r',
+      faqLabel: 'Lehets\u00e9ges k\u00e9rd\u00e9sek:',
+      clearChat: 'Chat t\u00f6rl\u00e9se',
+      placeholder: '\u00dczenet \u00edr\u00e1sa ...',
+      send: 'K\u00fcld\u00e9s',
+      open: 'megnyit',
+      errorPrefix: 'Hiba:'
+    },
+    bs: {
+      close: 'Zatvori',
+      faqLabel: 'Moguća pitanja:',
+      clearChat: 'Očisti chat',
+      placeholder: 'Napišite poruku ...',
+      send: 'Pošalji',
+      open: 'otvori',
+      errorPrefix: 'Greška:'
+    },
+    ca: {
+      close: 'Tanca',
+      faqLabel: 'Preguntes possibles:',
+      clearChat: 'Esborra el xat',
+      placeholder: 'Escriu un missatge ...',
+      send: 'Envia',
+      open: 'obre',
       errorPrefix: 'Error:'
+    },
+    cs: {
+      close: 'Zavřít',
+      faqLabel: 'Možné otázky:',
+      clearChat: 'Vymazat chat',
+      placeholder: 'Napište zprávu ...',
+      send: 'Odeslat',
+      open: 'otevřít',
+      errorPrefix: 'Chyba:'
+    },
+    et: {
+      close: 'Sulge',
+      faqLabel: 'Võimalikud küsimused:',
+      clearChat: 'Tühjenda vestlus',
+      placeholder: 'Kirjuta sõnum ...',
+      send: 'Saada',
+      open: 'ava',
+      errorPrefix: 'Viga:'
+    },
+    es: {
+      close: 'Cerrar',
+      faqLabel: 'Preguntas posibles:',
+      clearChat: 'Borrar chat',
+      placeholder: 'Escribe un mensaje ...',
+      send: 'Enviar',
+      open: 'abrir',
+      errorPrefix: 'Error:'
+    },
+    hr: {
+      close: 'Zatvori',
+      faqLabel: 'Moguća pitanja:',
+      clearChat: 'Očisti razgovor',
+      placeholder: 'Napišite poruku ...',
+      send: 'Pošalji',
+      open: 'otvori',
+      errorPrefix: 'Greška:'
+    },
+    nl: {
+      close: 'Sluiten',
+      faqLabel: 'Mogelijke vragen:',
+      clearChat: 'Chat wissen',
+      placeholder: 'Schrijf een bericht ...',
+      send: 'Versturen',
+      open: 'openen',
+      errorPrefix: 'Fout:'
+    },
+    no: {
+      close: 'Lukk',
+      faqLabel: 'Mulige spørsmål:',
+      clearChat: 'Tøm chat',
+      placeholder: 'Skriv en melding ...',
+      send: 'Send',
+      open: 'åpne',
+      errorPrefix: 'Feil:'
+    },
+    pl: {
+      close: 'Zamknij',
+      faqLabel: 'Możliwe pytania:',
+      clearChat: 'Wyczyść czat',
+      placeholder: 'Napisz wiadomość ...',
+      send: 'Wyślij',
+      open: 'otwórz',
+      errorPrefix: 'Błąd:'
+    },
+    sk: {
+      close: 'Zavrieť',
+      faqLabel: 'Možné otázky:',
+      clearChat: 'Vymazať chat',
+      placeholder: 'Napíšte správu ...',
+      send: 'Odoslať',
+      open: 'otvoriť',
+      errorPrefix: 'Chyba:'
+    },
+    sl: {
+      close: 'Zapri',
+      faqLabel: 'Možna vprašanja:',
+      clearChat: 'Počisti klepet',
+      placeholder: 'Napišite sporočilo ...',
+      send: 'Pošlji',
+      open: 'odpri',
+      errorPrefix: 'Napaka:'
+    },
+    tr: {
+      close: 'Kapat',
+      faqLabel: 'Olası sorular:',
+      clearChat: 'Sohbeti temizle',
+      placeholder: 'Mesaj yaz ...',
+      send: 'Gönder',
+      open: 'aç',
+      errorPrefix: 'Hata:'
+    },
+    el: {
+      close: 'Κλείσιμο',
+      faqLabel: 'Πιθανές ερωτήσεις:',
+      clearChat: 'Εκκαθάριση συνομιλίας',
+      placeholder: 'Γράψτε ένα μήνυμα ...',
+      send: 'Αποστολή',
+      open: 'άνοιγμα',
+      errorPrefix: 'Σφάλμα:'
+    },
+    mk: {
+      close: 'Затвори',
+      faqLabel: 'Можни прашања:',
+      clearChat: 'Исчисти разговор',
+      placeholder: 'Напишете порака ...',
+      send: 'Испрати',
+      open: 'отвори',
+      errorPrefix: 'Грешка:'
+    },
+    ru: {
+      close: 'Закрыть',
+      faqLabel: 'Возможные вопросы:',
+      clearChat: 'Очистить чат',
+      placeholder: 'Написать сообщение ...',
+      send: 'Отправить',
+      open: 'открыть',
+      errorPrefix: 'Ошибка:'
+    },
+    uk: {
+      close: 'Закрити',
+      faqLabel: 'Можливі запитання:',
+      clearChat: 'Очистити чат',
+      placeholder: 'Написати повідомлення ...',
+      send: 'Надіслати',
+      open: 'відкрити',
+      errorPrefix: 'Помилка:'
+    },
+    he: {
+      close: 'סגור',
+      faqLabel: 'שאלות אפשריות:',
+      clearChat: 'נקה שיחה',
+      placeholder: 'כתוב הודעה ...',
+      send: 'שלח',
+      open: 'פתח',
+      errorPrefix: 'שגיאה:'
+    },
+    ar: {
+      close: 'إغلاق',
+      faqLabel: 'أسئلة محتملة:',
+      clearChat: 'مسح المحادثة',
+      placeholder: 'اكتب رسالة ...',
+      send: 'إرسال',
+      open: 'فتح',
+      errorPrefix: 'خطأ:'
     }
   };
 
@@ -63,8 +288,8 @@
   }
 
   function resolveLang(raw) {
-    if (raw === 'en' || raw === 'other') return 'en';
-    return 'de';
+    if (raw && TEXT[raw]) return raw;
+    return 'en';
   }
 
   function initWidget(configDiv) {
