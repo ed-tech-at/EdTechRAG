@@ -1,4 +1,5 @@
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
+import { resolve } from '$app/paths';
 import type { Actions, PageServerLoad } from './$types';
 import type { Prisma } from '../../../../generated/prisma/client';
 import prisma from '$lib/server/db';
@@ -10,6 +11,7 @@ import {
 	validateRepositoryAccess
 } from '$lib/server/repositoryAccess';
 import { getNumberDocuments, parseRagConfig } from '$lib/ragContext';
+import { canManageUsers, SITE_ROLE } from '$lib/siteRole';
 
 const DEFAULT_CHAT_BASE = '';
 const DEFAULT_EMBEDDING_BASE = '';
@@ -25,20 +27,6 @@ const stringValue = (value: unknown, fallback = '') =>
 
 const optionalString = (value: FormDataEntryValue | null) =>
 	typeof value === 'string' && value.trim() ? value.trim() : undefined;
-
-const requiredString = (
-	formData: FormData,
-	name: string,
-	label: string,
-	errors: string[]
-) => {
-	const value = optionalString(formData.get(name));
-	if (!value) {
-		errors.push(`${label} is required.`);
-		return '';
-	}
-	return value;
-};
 
 const optionalNumber = (value: FormDataEntryValue | null) => {
 	if (typeof value !== 'string' || !value.trim()) return undefined;
@@ -246,34 +234,22 @@ export const actions: Actions = {
 		const hadEmbeddingApiKey = Boolean(stringValue(existingLLM.OPENAI_API_KEY_EMBEDDING));
 
 		const errors: string[] = [];
-		const name = requiredString(formData, 'name', 'Repository name', errors);
-		const repositoryPath = requiredString(formData, 'repository_path', 'GitHub repository path', errors);
+		const name = optionalString(formData.get('name')) ?? deriveName(repoUrl);
+		const repositoryPath = optionalString(formData.get('repository_path')) ?? '';
 		const sharedSecret = optionalString(formData.get('Github2EdTechRAG_SHARED_SECRET'));
 		const openAiApiKey = optionalString(formData.get('OPENAI_API_KEY'));
 		const embeddingApiKey = optionalString(formData.get('OPENAI_API_KEY_EMBEDDING'));
-
-		if (!existing && !sharedSecret) {
-			errors.push('EdTechRAG shared secret is required for new repositories.');
-		}
-		if (!existing && !openAiApiKey) {
-			errors.push('LLM API key is required for new repositories.');
-		}
 
 		const publicBaseUrl = optionalString(formData.get('github2_public_base_url')) ?? DEFAULT_GITHUB2_BASE;
 		const webhookPath = optionalString(formData.get('github2_webhook_path')) ?? '';
 		const webhookUrl = webhookPath
 			? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath)}`
 			: `${publicBaseUrl.replace(/\/$/, '')}/webhook`;
-		const chatBase = requiredString(formData, 'OPENAI_API_BASE', 'Chat API base', errors);
-		const chatModel = requiredString(formData, 'CHAT_MODEL', 'Chat model', errors);
-		const apiLanguage = requiredString(formData, 'API_LANGUAGE', 'API language', errors);
-		const embeddingBase = requiredString(
-			formData,
-			'OPENAI_API_BASE_EMBEDDING',
-			'Embedding API base',
-			errors
-		);
-		const embeddingModel = requiredString(formData, 'EMBEDDING_MODEL', 'Embedding model', errors);
+		const chatBase = optionalString(formData.get('OPENAI_API_BASE')) ?? DEFAULT_CHAT_BASE;
+		const chatModel = optionalString(formData.get('CHAT_MODEL')) ?? DEFAULT_CHAT_MODEL;
+		const apiLanguage = optionalString(formData.get('API_LANGUAGE')) ?? 'chat/completions';
+		const embeddingBase = optionalString(formData.get('OPENAI_API_BASE_EMBEDDING')) ?? DEFAULT_EMBEDDING_BASE;
+		const embeddingModel = optionalString(formData.get('EMBEDDING_MODEL')) ?? DEFAULT_EMBEDDING_MODEL;
 
 		const chunkSize = optionalNumber(formData.get('chunkSize'));
 		const chunkOverlap = optionalNumber(formData.get('chunkOverlap'));
@@ -397,5 +373,23 @@ export const actions: Actions = {
 				)
 			});
 		}
+	},
+
+	deleteRepository: async ({ cookies, params, url }) => {
+		const { repoUrl } = params;
+		const session = await requireAllowedRepository(cookies, url, repoUrl);
+
+		if (!canManageUsers(session.role ?? SITE_ROLE.GUEST)) {
+			return fail(403, { success: false, message: 'Manager access required to delete a repository.' });
+		}
+
+		try {
+			await prisma.repository.delete({ where: { url: repoUrl } });
+		} catch (err) {
+			console.error('Delete repository error', err);
+			return fail(500, { success: false, message: 'Delete failed. See server logs.' });
+		}
+
+		throw redirect(303, resolve('/admin/repositories'));
 	}
 };

@@ -15,7 +15,7 @@
 		<form method="POST" action="?/createRepository" class="create-form">
 			<input
 				name="repositoryUrl"
-				placeholder="Repository URL"
+				placeholder="Repository Name"
 				value={form && typeof form === 'object' && 'repositoryUrl' in form
 					? ((form as { repositoryUrl?: string }).repositoryUrl ?? '')
 					: ''}
