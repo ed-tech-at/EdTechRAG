@@ -8,6 +8,12 @@ import { filterAllowedRepositories, isRepositoryAllowed } from '$lib/server/repo
 const optionalString = (value: FormDataEntryValue | null) =>
 	typeof value === 'string' && value.trim() ? value.trim() : undefined;
 
+const sanitizeRepositoryUrl = (value: string) =>
+	value
+		.toLowerCase()
+		.replace(/\s+/g, '-')
+		.replace(/-{2,}/g, '-');
+
 const deriveName = (repoUrl: string) => {
 	const cleaned = repoUrl.replace(/\/$/, '');
 	const last = cleaned.split('/').filter(Boolean).pop();
@@ -46,7 +52,8 @@ export const actions: Actions = {
 	createRepository: async ({ cookies, request, url }) => {
 		const session = await requireValidJwt(cookies, url);
 		const formData = await request.formData();
-		const repositoryUrl = optionalString(formData.get('repositoryUrl'));
+		const rawRepositoryUrl = optionalString(formData.get('repositoryUrl'));
+		const repositoryUrl = rawRepositoryUrl ? sanitizeRepositoryUrl(rawRepositoryUrl) : undefined;
 
 		if (!repositoryUrl) {
 			return fail(400, {

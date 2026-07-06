@@ -28,14 +28,61 @@
 			? Boolean((form as { success?: boolean }).success)
 			: false;
 	let saving = false;
+	let confirmingDelete = false;
+	const handleDeleteClick = (event: MouseEvent) => {
+		if (!confirmingDelete) {
+			event.preventDefault();
+			confirmingDelete = true;
+		}
+	};
+
+	let repositoryName = data.config.repositoryName;
+	let repositoryPath = data.config.github.repositoryPath;
 	let publicBaseUrl = data.config.github.publicBaseUrl;
 	let webhookPath = data.config.github.webhookPath;
+	let embedAllowedHostRegexValue = data.config.access.embedAllowedHostRegex;
+	let activeSimplePageValue = data.config.access.activeSimplePage;
+	let activeSinglePageValue = data.config.access.activeSinglePage;
+	let activeParameterPageValue = data.config.access.activeParameterPage;
+	let activeEmbedApiValue = data.config.access.activeEmbedApi;
+	let openAiApiBaseValue = data.config.llm.openAiApiBase;
+	let chatModelValue = data.config.llm.chatModel;
+	let apiLanguageValue = data.config.llm.apiLanguage;
+	let reasoningEffortValue = data.config.llm.reasoningEffort;
+	let textVerbosityValue = data.config.llm.textVerbosity;
+	let embeddingBaseValue = data.config.llm.embeddingBase;
+	let embeddingModelValue = data.config.llm.embeddingModel;
+	let chunkSizeValue = data.config.rag.chunkSize ?? '';
+	let chunkOverlapValue = data.config.rag.chunkOverlap ?? '';
+	let numberDocumentsValue = data.config.rag.numberDocuments;
+	let metaTagsValue = data.config.rag.metaTags.join(', ');
+	let systempromptValue = data.config.rag.systemprompt;
+
 	$: if (form) {
 		saving = false;
 	}
 	$: if (config) {
+		repositoryName = config.repositoryName;
+		repositoryPath = config.github.repositoryPath;
 		publicBaseUrl = config.github.publicBaseUrl;
 		webhookPath = config.github.webhookPath;
+		embedAllowedHostRegexValue = config.access.embedAllowedHostRegex;
+		activeSimplePageValue = config.access.activeSimplePage;
+		activeSinglePageValue = config.access.activeSinglePage;
+		activeParameterPageValue = config.access.activeParameterPage;
+		activeEmbedApiValue = config.access.activeEmbedApi;
+		openAiApiBaseValue = config.llm.openAiApiBase;
+		chatModelValue = config.llm.chatModel;
+		apiLanguageValue = config.llm.apiLanguage;
+		reasoningEffortValue = config.llm.reasoningEffort;
+		textVerbosityValue = config.llm.textVerbosity;
+		embeddingBaseValue = config.llm.embeddingBase;
+		embeddingModelValue = config.llm.embeddingModel;
+		chunkSizeValue = config.rag.chunkSize ?? '';
+		chunkOverlapValue = config.rag.chunkOverlap ?? '';
+		numberDocumentsValue = config.rag.numberDocuments;
+		metaTagsValue = config.rag.metaTags.join(', ');
+		systempromptValue = config.rag.systemprompt;
 	}
 	$: webhookUrl = webhookPath.trim()
 		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
@@ -70,7 +117,13 @@
 		{/if}
 	</header>
 
-	<form method="POST" action="?/saveConfig" class="config-form" on:submit={() => (saving = true)}>
+	<form
+		method="POST"
+		action="?/saveConfig"
+		id="repository-config-form"
+		class="config-form"
+		on:submit={() => (saving = true)}
+	>
 		<p class="form-note">Secrets are write-only. Leave password fields empty to keep existing values.</p>
 
 		<section class="config-section" aria-labelledby="configuration-heading">
@@ -81,11 +134,11 @@
 			<div class="field-grid">
 				<label>
 					Repository name
-					<input name="name" value={config.repositoryName} required />
+					<input name="name" bind:value={repositoryName} />
 				</label>
 				<label>
 					GitHub repository path
-					<input name="repository_path" placeholder="owner/repository" value={config.github.repositoryPath} />
+					<input name="repository_path" placeholder="owner/repository" bind:value={repositoryPath} />
 				</label>
 			</div>
 		</section>
@@ -97,19 +150,19 @@
 			</div>
 			<div class="checkbox-grid">
 				<label class="checkbox-label">
-					<input type="checkbox" name="activeSimplePage" checked={config.access.activeSimplePage} />
+					<input type="checkbox" name="activeSimplePage" bind:checked={activeSimplePageValue} />
 					<span>Simple page</span>
 				</label>
 				<label class="checkbox-label">
-					<input type="checkbox" name="activeSinglePage" checked={config.access.activeSinglePage} />
+					<input type="checkbox" name="activeSinglePage" bind:checked={activeSinglePageValue} />
 					<span>Single page</span>
 				</label>
 				<label class="checkbox-label">
-					<input type="checkbox" name="activeParameterPage" checked={config.access.activeParameterPage} />
+					<input type="checkbox" name="activeParameterPage" bind:checked={activeParameterPageValue} />
 					<span>Parameter page</span>
 				</label>
 				<label class="checkbox-label">
-					<input type="checkbox" name="activeEmbedApi" checked={config.access.activeEmbedApi} />
+					<input type="checkbox" name="activeEmbedApi" bind:checked={activeEmbedApiValue} />
 					<span>/api/embed widget API</span>
 				</label>
 			</div>
@@ -117,7 +170,7 @@
 				Allowed embed host regex
 				<input
 					name="embedAllowedHostRegex"
-					value={config.access.embedAllowedHostRegex}
+					bind:value={embedAllowedHostRegexValue}
 					placeholder="^moodle\\.example\\.org$"
 				/>
 			</label>
@@ -148,7 +201,7 @@
 				<input
 					type="password"
 					name="Github2EdTechRAG_SHARED_SECRET"
-					placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
+					placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Optional'}
 				/>
 			</label>
 			<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
@@ -165,40 +218,38 @@
 					<input
 						type="password"
 						name="OPENAI_API_KEY"
-						placeholder={config.llm.hasOpenAiApiKey ? 'Already set; enter a new value to overwrite' : 'Required for new repositories'}
+						placeholder={config.llm.hasOpenAiApiKey ? 'Already set; enter a new value to overwrite' : 'Optional'}
 						autocomplete="new-password"
 					/>
 				</label>
 				<label>
 					Chat API base
-					<input name="OPENAI_API_BASE" value={config.llm.openAiApiBase} required />
+					<input name="OPENAI_API_BASE" bind:value={openAiApiBaseValue} />
 				</label>
 				<label>
 					Chat model
-					<input name="CHAT_MODEL" value={config.llm.chatModel} required />
+					<input name="CHAT_MODEL" bind:value={chatModelValue} />
 				</label>
 				<label>
 					API language
-					<select name="API_LANGUAGE">
-						<option value="chat/completions" selected={config.llm.apiLanguage === 'chat/completions'}>
-							chat/completions
-						</option>
-						<option value="responses" selected={config.llm.apiLanguage === 'responses'}>responses</option>
+					<select name="API_LANGUAGE" bind:value={apiLanguageValue}>
+						<option value="chat/completions">chat/completions</option>
+						<option value="responses">responses</option>
 					</select>
 				</label>
 				<label>
 					Reasoning effort
-					<select name="reasoning_effort">
+					<select name="reasoning_effort" bind:value={reasoningEffortValue}>
 						{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
-							<option value={option} selected={config.llm.reasoningEffort === option}>{option}</option>
+							<option value={option}>{option}</option>
 						{/each}
 					</select>
 				</label>
 				<label>
 					Text verbosity
-					<select name="text_verbosity">
+					<select name="text_verbosity" bind:value={textVerbosityValue}>
 						{#each ['low', 'medium', 'high'] as option}
-							<option value={option} selected={config.llm.textVerbosity === option}>{option}</option>
+							<option value={option}>{option}</option>
 						{/each}
 					</select>
 				</label>
@@ -222,11 +273,11 @@
 				</label>
 				<label>
 					Embedding API base
-					<input name="OPENAI_API_BASE_EMBEDDING" value={config.llm.embeddingBase} required />
+					<input name="OPENAI_API_BASE_EMBEDDING" bind:value={embeddingBaseValue} />
 				</label>
 				<label>
 					Embedding model
-					<input name="EMBEDDING_MODEL" value={config.llm.embeddingModel} required />
+					<input name="EMBEDDING_MODEL" bind:value={embeddingModelValue} />
 				</label>
 			</div>
 		</section>
@@ -239,31 +290,49 @@
 			<div class="field-grid">
 				<label>
 					Chunk size
-					<input name="chunkSize" type="number" min="1" value={config.rag.chunkSize ?? ''} placeholder="4000" />
+					<input name="chunkSize" type="number" min="1" bind:value={chunkSizeValue} placeholder="4000" />
 				</label>
 				<label>
 					Chunk overlap
-					<input name="chunkOverlap" type="number" min="0" value={config.rag.chunkOverlap ?? ''} placeholder="150" />
+					<input name="chunkOverlap" type="number" min="0" bind:value={chunkOverlapValue} placeholder="150" />
 				</label>
 				<label>
 					Number of documents
-					<input name="numberDocuments" type="number" min="1" value={config.rag.numberDocuments} placeholder="4" />
+					<input name="numberDocuments" type="number" min="1" bind:value={numberDocumentsValue} placeholder="4" />
 				</label>
 				<label>
 					Metadata tags
-					<input name="metaTags" value={config.rag.metaTags.join(', ')} placeholder="url, title, folder" />
+					<input name="metaTags" bind:value={metaTagsValue} placeholder="url, title, folder" />
 				</label>
 			</div>
 			<label>
 				System prompt
-				<textarea name="systemprompt" rows="6">{config.rag.systemprompt}</textarea>
+				<textarea name="systemprompt" rows="6" bind:value={systempromptValue}></textarea>
 			</label>
 		</section>
 
-		<div class="actions">
-			<button type="submit" disabled={saving}>{saving ? 'Saving...' : repositoryExists ? 'Save config' : 'Create repository'}</button>
-		</div>
 	</form>
+
+	{#if repositoryExists}
+		<form method="POST" action="?/deleteRepository" id="delete-repository-form" class="display-contents"></form>
+	{/if}
+
+	<div class="actions">
+		<button type="submit" form="repository-config-form" disabled={saving}>
+			{saving ? 'Saving...' : repositoryExists ? 'Save config' : 'Create repository'}
+		</button>
+		{#if repositoryExists && data.canManageUsers}
+			<button
+				type="submit"
+				form="delete-repository-form"
+				class="delete-button"
+				class:confirming={confirmingDelete}
+				on:click={handleDeleteClick}
+			>
+				{confirmingDelete ? 'Delete Repository Really!' : 'Delete Repository'}
+			</button>
+		{/if}
+	</div>
 </section>
 
 <style>
@@ -434,6 +503,21 @@
 	button:disabled {
 		opacity: 0.7;
 		cursor: wait;
+	}
+
+	.display-contents {
+		display: contents;
+	}
+
+	.delete-button {
+		border-color: #d0342c;
+		background: white;
+		color: #d0342c;
+	}
+
+	.delete-button.confirming {
+		background: #d0342c;
+		color: white;
 	}
 
 	.readonly {
