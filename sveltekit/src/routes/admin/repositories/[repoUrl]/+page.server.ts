@@ -71,10 +71,13 @@ const publicConfig = (repository: {
 			repositoryPath: stringValue(updateConfig.repository_path),
 			webhookPath: stringValue(updateConfig.github2_webhook_path),
 			publicBaseUrl: stringValue(updateConfig.github2_public_base_url, DEFAULT_GITHUB2_BASE),
-			hasSharedSecret: Boolean(
-				stringValue(updateConfig.Github2EdTechRAG_SHARED_SECRET) ||
-					stringValue(updateConfig.GitLab2EdTechRAG_SHARED_SECRET)
-			)
+			hasSharedSecret: Boolean(stringValue(updateConfig.Github2EdTechRAG_SHARED_SECRET))
+		},
+		gitlab: {
+			apiUrl: stringValue(updateConfig.gitlab_api_url),
+			ref: stringValue(updateConfig.ref),
+			hasPrivateToken: Boolean(stringValue(updateConfig['PRIVATE-TOKEN'])),
+			hasSharedSecret: Boolean(stringValue(updateConfig.GitLab2EdTechRAG_SHARED_SECRET))
 		},
 		llm: {
 			hasOpenAiApiKey: Boolean(stringValue(llm.OPENAI_API_KEY)),
@@ -110,7 +113,9 @@ const publicConfig = (repository: {
 const formState = (
 	repoUrl: string,
 	formData: FormData,
-	hasSharedSecret: boolean,
+	hasGithubSharedSecret: boolean,
+	hasGitlabSharedSecret: boolean,
+	hasGitlabPrivateToken: boolean,
 	hasOpenAiApiKey: boolean,
 	hasEmbeddingApiKey: boolean
 ) => {
@@ -124,7 +129,13 @@ const formState = (
 			repositoryPath: optionalString(formData.get('repository_path')) ?? '',
 			webhookPath,
 			publicBaseUrl: githubBase,
-			hasSharedSecret
+			hasSharedSecret: hasGithubSharedSecret
+		},
+		gitlab: {
+			apiUrl: optionalString(formData.get('gitlab_api_url')) ?? '',
+			ref: optionalString(formData.get('ref')) ?? '',
+			hasPrivateToken: hasGitlabPrivateToken,
+			hasSharedSecret: hasGitlabSharedSecret
 		},
 		llm: {
 			hasOpenAiApiKey,
@@ -178,6 +189,12 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					publicBaseUrl: DEFAULT_GITHUB2_BASE,
 					hasSharedSecret: false
 				},
+				gitlab: {
+					apiUrl: '',
+					ref: '',
+					hasPrivateToken: false,
+					hasSharedSecret: false
+				},
 				llm: {
 					hasOpenAiApiKey: false,
 					hasEmbeddingApiKey: false,
@@ -226,10 +243,9 @@ export const actions: Actions = {
 		const existingUpdateConfig = asRecord(existing?.updateConfig);
 		const existingLLM = asRecord(existing?.LLM_API);
 		const existingRag = asRecord(existing?.ragConfig);
-		const hadSharedSecret = Boolean(
-			stringValue(existingUpdateConfig.Github2EdTechRAG_SHARED_SECRET) ||
-				stringValue(existingUpdateConfig.GitLab2EdTechRAG_SHARED_SECRET)
-		);
+		const hadGithubSharedSecret = Boolean(stringValue(existingUpdateConfig.Github2EdTechRAG_SHARED_SECRET));
+		const hadGitlabSharedSecret = Boolean(stringValue(existingUpdateConfig.GitLab2EdTechRAG_SHARED_SECRET));
+		const hadGitlabPrivateToken = Boolean(stringValue(existingUpdateConfig['PRIVATE-TOKEN']));
 		const hadOpenAiApiKey = Boolean(stringValue(existingLLM.OPENAI_API_KEY));
 		const hadEmbeddingApiKey = Boolean(stringValue(existingLLM.OPENAI_API_KEY_EMBEDDING));
 
@@ -239,6 +255,11 @@ export const actions: Actions = {
 		const sharedSecret = optionalString(formData.get('Github2EdTechRAG_SHARED_SECRET'));
 		const openAiApiKey = optionalString(formData.get('OPENAI_API_KEY'));
 		const embeddingApiKey = optionalString(formData.get('OPENAI_API_KEY_EMBEDDING'));
+
+		const gitlabApiUrl = optionalString(formData.get('gitlab_api_url')) ?? '';
+		const gitlabRef = optionalString(formData.get('ref')) ?? '';
+		const gitlabPrivateToken = optionalString(formData.get('PRIVATE-TOKEN'));
+		const gitlabSharedSecret = optionalString(formData.get('GitLab2EdTechRAG_SHARED_SECRET'));
 
 		const publicBaseUrl = optionalString(formData.get('github2_public_base_url')) ?? DEFAULT_GITHUB2_BASE;
 		const webhookPath = optionalString(formData.get('github2_webhook_path')) ?? '';
@@ -274,7 +295,9 @@ export const actions: Actions = {
 				config: formState(
 					repoUrl,
 					formData,
-					Boolean(sharedSecret) || hadSharedSecret,
+					Boolean(sharedSecret) || hadGithubSharedSecret,
+					Boolean(gitlabSharedSecret) || hadGitlabSharedSecret,
+					Boolean(gitlabPrivateToken) || hadGitlabPrivateToken,
 					Boolean(openAiApiKey) || hadOpenAiApiKey,
 					Boolean(embeddingApiKey) || hadEmbeddingApiKey
 				)
@@ -287,11 +310,18 @@ export const actions: Actions = {
 			repository_path: repositoryPath,
 			github2_webhook_path: webhookPath,
 			github2_webhook_url: webhookUrl,
-			github2_public_base_url: publicBaseUrl
+			github2_public_base_url: publicBaseUrl,
+			gitlab_api_url: gitlabApiUrl,
+			ref: gitlabRef
 		};
 		if (sharedSecret) {
 			nextUpdateConfig.Github2EdTechRAG_SHARED_SECRET = sharedSecret;
-			nextUpdateConfig.GitLab2EdTechRAG_SHARED_SECRET = sharedSecret;
+		}
+		if (gitlabSharedSecret) {
+			nextUpdateConfig.GitLab2EdTechRAG_SHARED_SECRET = gitlabSharedSecret;
+		}
+		if (gitlabPrivateToken) {
+			nextUpdateConfig['PRIVATE-TOKEN'] = gitlabPrivateToken;
 		}
 
 		const nextLLM: Record<string, unknown> = {
@@ -354,7 +384,9 @@ export const actions: Actions = {
 				config: formState(
 					repoUrl,
 					formData,
-					Boolean(sharedSecret) || hadSharedSecret,
+					Boolean(sharedSecret) || hadGithubSharedSecret,
+					Boolean(gitlabSharedSecret) || hadGitlabSharedSecret,
+					Boolean(gitlabPrivateToken) || hadGitlabPrivateToken,
 					Boolean(openAiApiKey) || hadOpenAiApiKey,
 					Boolean(embeddingApiKey) || hadEmbeddingApiKey
 				)
@@ -367,7 +399,9 @@ export const actions: Actions = {
 				config: formState(
 					repoUrl,
 					formData,
-					Boolean(sharedSecret) || hadSharedSecret,
+					Boolean(sharedSecret) || hadGithubSharedSecret,
+					Boolean(gitlabSharedSecret) || hadGitlabSharedSecret,
+					Boolean(gitlabPrivateToken) || hadGitlabPrivateToken,
 					Boolean(openAiApiKey) || hadOpenAiApiKey,
 					Boolean(embeddingApiKey) || hadEmbeddingApiKey
 				)

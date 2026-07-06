@@ -40,6 +40,8 @@
 	let repositoryPath = data.config.github.repositoryPath;
 	let publicBaseUrl = data.config.github.publicBaseUrl;
 	let webhookPath = data.config.github.webhookPath;
+	let gitlabApiUrlValue = data.config.gitlab.apiUrl;
+	let gitlabRefValue = data.config.gitlab.ref;
 	let embedAllowedHostRegexValue = data.config.access.embedAllowedHostRegex;
 	let activeSimplePageValue = data.config.access.activeSimplePage;
 	let activeSinglePageValue = data.config.access.activeSinglePage;
@@ -66,6 +68,8 @@
 		repositoryPath = config.github.repositoryPath;
 		publicBaseUrl = config.github.publicBaseUrl;
 		webhookPath = config.github.webhookPath;
+		gitlabApiUrlValue = config.gitlab.apiUrl;
+		gitlabRefValue = config.gitlab.ref;
 		embedAllowedHostRegexValue = config.access.embedAllowedHostRegex;
 		activeSimplePageValue = config.access.activeSimplePage;
 		activeSinglePageValue = config.access.activeSinglePage;
@@ -205,6 +209,44 @@
 				/>
 			</label>
 			<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
+		</section>
+
+		<section class="config-section" aria-labelledby="gitlab-heading">
+			<div class="section-head">
+				<h2 id="gitlab-heading">GitLab2EdTechRAG</h2>
+				<p class="muted">GitLab API access and webhook bridge settings for repository updates.</p>
+			</div>
+			<div class="field-grid">
+				<label>
+					GitLab API URL
+					<input
+						name="gitlab_api_url"
+						bind:value={gitlabApiUrlValue}
+						placeholder="https://gitlab.example.org/api/v4/projects/123/repository/files/"
+					/>
+				</label>
+				<label>
+					Git ref / branch
+					<input name="ref" bind:value={gitlabRefValue} placeholder="main" />
+				</label>
+			</div>
+			<label>
+				GitLab private token
+				<input
+					type="password"
+					name="PRIVATE-TOKEN"
+					placeholder={config.gitlab.hasPrivateToken ? 'Already set; enter a new value to overwrite' : 'Optional'}
+					autocomplete="new-password"
+				/>
+			</label>
+			<label>
+				GitLab shared secret for GitLab2EdTechRAG
+				<input
+					type="password"
+					name="GitLab2EdTechRAG_SHARED_SECRET"
+					placeholder={config.gitlab.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Optional'}
+				/>
+			</label>
 		</section>
 
 		<section class="config-section" aria-labelledby="llm-heading">
