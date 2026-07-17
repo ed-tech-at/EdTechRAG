@@ -350,7 +350,7 @@
       avatar = el('img', cn('avatar'), { src: brandImageUrl, alt: assistantName });
     } else {
       avatar = el('div', cn('avatar'));
-      avatar.innerHTML = '<svg style="width:28px;height:28px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/><circle cx="7" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="12" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="17" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/></svg>';
+      avatar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.2 32.86"><path d="M36.2 0H0v22.93h23.38l-1.77 9.94 12-9.94h2.59zm-3.42 20.63-7.8 6.46 1.15-6.46H2.3V2.3h31.6v18.33zm-21.6-8.7c0 .89-.72 1.61-1.61 1.61s-1.61-.72-1.61-1.61.72-1.61 1.61-1.61 1.61.72 1.61 1.61m17.06 0c0 .89-.72 1.61-1.61 1.61s-1.61-.72-1.61-1.61.72-1.61 1.61-1.61 1.61.72 1.61 1.61M21.4 13c0 1.46-1.47 2.65-3.27 2.65s-3.27-1.19-3.27-2.65c0-.33.27-.6.6-.6s.6.27.6.6c0 .78.95 1.45 2.07 1.45s2.07-.66 2.07-1.45c0-.33.27-.6.6-.6s.6.27.6.6"/></svg>';
     }
 
     var titleEl = el('span', cn('title'));
@@ -426,7 +426,7 @@
       var fabImg = el('img', '', { src: assistantIcon, alt: assistantName });
       fab.appendChild(fabImg);
     } else {
-      fab.innerHTML = '<svg style="width:28px;height:28px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/><circle cx="7" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="12" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="17" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/></svg>';
+      fab.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.2 32.86"><path d="M36.2 0H0v22.93h23.38l-1.77 9.94 12-9.94h2.59zm-3.42 20.63-7.8 6.46 1.15-6.46H2.3V2.3h31.6v18.33zm-21.6-8.7c0 .89-.72 1.61-1.61 1.61s-1.61-.72-1.61-1.61.72-1.61 1.61-1.61 1.61.72 1.61 1.61m17.06 0c0 .89-.72 1.61-1.61 1.61s-1.61-.72-1.61-1.61.72-1.61 1.61-1.61 1.61.72 1.61 1.61M21.4 13c0 1.46-1.47 2.65-3.27 2.65s-3.27-1.19-3.27-2.65c0-.33.27-.6.6-.6s.6.27.6.6c0 .78.95 1.45 2.07 1.45s2.07-.66 2.07-1.45c0-.33.27-.6.6-.6s.6.27.6.6"/></svg>';
     }
 
     host.appendChild(panel);
