@@ -1,8 +1,8 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
-import { findRepositoryContext } from '$lib/server/rag';
-import { getNumberDocuments, parseRagConfig } from '$lib/ragContext';
+import { retrieveWithRewrite, type RewriteHistoryItem } from '$lib/server/queryRewrite';
+import { parseRagConfig } from '$lib/ragContext';
 
 export const POST: RequestHandler = async ({ request }) => {
 	let body: unknown;
@@ -20,6 +20,13 @@ export const POST: RequestHandler = async ({ request }) => {
 		body && typeof body === 'object' && 'query' in body && typeof (body as any).query === 'string'
 			? (body as any).query.trim()
 			: '';
+	const history: RewriteHistoryItem[] =
+		body && typeof body === 'object' && Array.isArray((body as any).history)
+			? ((body as any).history as RewriteHistoryItem[])
+			: [];
+	// Optional flag to force rewrite even when the repo has it disabled (diagnostic view).
+	const forceRewrite =
+		body && typeof body === 'object' && (body as any).rewrite === true ? true : false;
 
 	if (!repoUrl) {
 		throw error(400, 'Missing repoUrl');
@@ -37,13 +44,21 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(404, 'Repository not found');
 	}
 	const ragConfig = parseRagConfig(repository.ragConfig);
-	const result = await findRepositoryContext(repoUrl, prompt, getNumberDocuments(ragConfig));
+	const { results, queries, rewriteApplied } = await retrieveWithRewrite({
+		repoUrl,
+		prompt,
+		history,
+		ragConfig,
+		forceRewrite
+	});
 
 	return json({
 		success: true,
-		results: result.results,
+		results,
+		queries,
+		rewriteApplied,
 		query: prompt,
-		message: `Found ${result.results.length} similar chunk${result.results.length === 1 ? '' : 's'}.`
+		message: `Found ${results.length} similar chunk${results.length === 1 ? '' : 's'}.`
 	});
 	// const vector = await embedText(prompt, repoUrl);
 	// const vectorLiteral = `[${vector.join(',')}]`;

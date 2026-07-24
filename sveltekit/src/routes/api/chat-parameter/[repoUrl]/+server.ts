@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
 import { findRepositoryContext } from '$lib/server/rag';
+import { retrieveWithRewrite } from '$lib/server/queryRewrite';
 import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
 import { streamChatText } from '$lib/server/chatStream';
@@ -8,12 +9,15 @@ import {
 	formatRagContext,
 	getMetaTags,
 	getNumberDocuments,
+	getQueryRewriteConfig,
 	parseRagConfig
 } from '$lib/ragContext';
 
 const encoder = new TextEncoder();
 const CONTEXT_START = '__EDTECH_CONTEXT_START__\n';
 const CONTEXT_END = '\n__EDTECH_CONTEXT_END__\n';
+const SEARCH_START = '__EDTECH_SEARCH_START__\n';
+const SEARCH_END = '\n__EDTECH_SEARCH_END__\n';
 
 const corsHeaders = (_origin: string | null): Record<string, string> => ({
 	'Access-Control-Allow-Origin': '*',
@@ -65,12 +69,27 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	try {
 		const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
 		const ragConfig = parseRagConfig(repository.ragConfig);
-		const numberLimit = typeof payload.numItems === 'number' ? payload.numItems : undefined;
-		const { results } = await findRepositoryContext(
-			repoUrl,
-			prompt,
-			numberLimit ?? getNumberDocuments(ragConfig)
-		);
+		const rewriteConfig = getQueryRewriteConfig(ragConfig, getNumberDocuments(ragConfig));
+
+		let results;
+		let queries: string[] = [prompt];
+		let rewriteApplied = false;
+		if (rewriteConfig.enabled) {
+			({ results, queries, rewriteApplied } = await retrieveWithRewrite({
+				repoUrl,
+				prompt,
+				history,
+				ragConfig
+			}));
+		} else {
+			// No rewrite: honour the client's numItems override as before.
+			const numberLimit = typeof payload.numItems === 'number' ? payload.numItems : undefined;
+			({ results } = await findRepositoryContext(
+				repoUrl,
+				prompt,
+				numberLimit ?? getNumberDocuments(ragConfig)
+			));
+		}
 		const context = formatRagContext(results, getMetaTags(ragConfig));
 
 		// const systemprompt = repository.ragConfig?.systemprompt
@@ -110,6 +129,11 @@ export const POST: RequestHandler = async ({ request, params }) => {
 
 		const stream = new ReadableStream<Uint8Array>({
 			async start(controller) {
+				if (rewriteApplied) {
+					controller.enqueue(
+						encoder.encode(`${SEARCH_START}${JSON.stringify(queries)}${SEARCH_END}`)
+					);
+				}
 				controller.enqueue(encoder.encode(`${CONTEXT_START}${context}${CONTEXT_END}`));
 
 				const reader = answerStream.getReader();
