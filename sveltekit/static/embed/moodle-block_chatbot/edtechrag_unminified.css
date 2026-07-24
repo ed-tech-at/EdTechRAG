@@ -294,6 +294,24 @@
   font-size: 0.85em;
 }
 
+/* -- Query-rewrite search chips -- */
+.at-ed-tech-edtechrag-emd-bubble.at-ed-tech-edtechrag-emd-search {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.at-ed-tech-edtechrag-emd-search-chip {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #eaf2fd;
+  border: 1px solid #cdddfc;
+  color: #1f5fb0;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 /* -- Footer (sponsor + clear button) -- */
 .at-ed-tech-edtechrag-emd-footer {
   display: flex;

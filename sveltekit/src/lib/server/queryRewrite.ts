@@ -1,4 +1,9 @@
-import { getChatClient } from '$lib/server/openaiClient';
+import {
+	getChatClient,
+	type ApiLanguage,
+	type ReasoningEffort,
+	type TextVerbosity
+} from '$lib/server/openaiClient';
 import { findRepositoryContext, type RagResult } from '$lib/server/rag';
 import {
 	getNumberDocuments,
@@ -16,6 +21,10 @@ type RewriteQueriesParams = {
 	model?: string;
 	includeHistory: boolean;
 	context?: string;
+	// Optional overrides; when omitted the repo's chat defaults are used.
+	apiLanguage?: string;
+	reasoningEffort?: string;
+	textVerbosity?: string;
 };
 
 const REWRITE_SYSTEM_PROMPT = `You are a search query optimizer for a retrieval system.
@@ -84,13 +93,29 @@ export async function rewriteQueries({
 	count,
 	model,
 	includeHistory,
-	context
+	context,
+	apiLanguage,
+	reasoningEffort,
+	textVerbosity
 }: RewriteQueriesParams): Promise<string[]> {
 	const fallback = [prompt];
 
 	try {
-		const { client, model: defaultModel, apiLanguage } = await getChatClient(repoUrl);
+		const {
+			client,
+			model: defaultModel,
+			apiLanguage: defaultApiLanguage,
+			reasoningEffort: defaultReasoningEffort,
+			textVerbosity: defaultTextVerbosity
+		} = await getChatClient(repoUrl);
 		const rewriteModel = model && model.trim() ? model.trim() : defaultModel;
+
+		// Each override falls back to the repo's chat default when not set.
+		const effectiveApiLanguage = (apiLanguage as ApiLanguage) || defaultApiLanguage;
+		const effectiveReasoning =
+			(reasoningEffort as ReasoningEffort | undefined) ?? defaultReasoningEffort;
+		const effectiveVerbosity =
+			(textVerbosity as TextVerbosity | undefined) ?? defaultTextVerbosity;
 
 		const contextText = context && context.trim() ? context.trim() : '';
 		const historyText = includeHistory ? buildHistoryText(history) : '';
@@ -101,14 +126,16 @@ export async function rewriteQueries({
 			`\n\nUser Question:\n${prompt}`;
 
 		let raw = '';
-		if (apiLanguage === 'responses') {
+		if (effectiveApiLanguage === 'responses') {
 			const response = await client.responses.create({
 				model: rewriteModel,
 				input: [
 					{ role: 'system', content: REWRITE_SYSTEM_PROMPT },
 					{ role: 'user', content: userContent }
 				],
-				stream: false
+				stream: false,
+				...(effectiveReasoning ? { reasoning: { effort: effectiveReasoning } } : {}),
+				...(effectiveVerbosity ? { text: { verbosity: effectiveVerbosity } } : {})
 			});
 			raw = response.output_text ?? '';
 		} else {
@@ -174,7 +201,10 @@ export async function retrieveWithRewrite({
 		count: rewrite.count,
 		model: rewrite.model,
 		includeHistory: rewrite.includeHistory,
-		context: rewrite.context
+		context: rewrite.context,
+		apiLanguage: rewrite.apiLanguage,
+		reasoningEffort: rewrite.reasoningEffort,
+		textVerbosity: rewrite.textVerbosity
 	});
 
 	const merged = new Map<string, RagResult>();

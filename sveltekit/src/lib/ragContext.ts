@@ -10,6 +10,9 @@ export type RagConfig = {
 	queryRewriteDocsPerSearch?: number;
 	queryRewriteIncludeHistory?: boolean;
 	queryRewriteContext?: string;
+	queryRewriteApiLanguage?: string;
+	queryRewriteReasoningEffort?: string;
+	queryRewriteTextVerbosity?: string;
 };
 
 export type QueryRewriteConfig = {
@@ -19,7 +22,18 @@ export type QueryRewriteConfig = {
 	docsPerSearch: number;
 	includeHistory: boolean;
 	context?: string;
+	// Optional overrides; undefined means "inherit the repo's chat setting".
+	apiLanguage?: string;
+	reasoningEffort?: string;
+	textVerbosity?: string;
 };
+
+const QUERY_REWRITE_API_LANGUAGES = ['chat/completions', 'responses'];
+const QUERY_REWRITE_REASONING_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high'];
+const QUERY_REWRITE_TEXT_VERBOSITIES = ['low', 'medium', 'high'];
+
+const optionalEnum = (value: unknown, allowed: string[]): string | undefined =>
+	typeof value === 'string' && allowed.includes(value) ? value : undefined;
 
 export type RagContextResult = {
 	content?: string | null;
@@ -63,7 +77,16 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 		queryRewriteContext:
 			typeof raw.queryRewriteContext === 'string' && raw.queryRewriteContext.trim()
 				? raw.queryRewriteContext.trim()
-				: undefined
+				: undefined,
+		queryRewriteApiLanguage: optionalEnum(raw.queryRewriteApiLanguage, QUERY_REWRITE_API_LANGUAGES),
+		queryRewriteReasoningEffort: optionalEnum(
+			raw.queryRewriteReasoningEffort,
+			QUERY_REWRITE_REASONING_EFFORTS
+		),
+		queryRewriteTextVerbosity: optionalEnum(
+			raw.queryRewriteTextVerbosity,
+			QUERY_REWRITE_TEXT_VERBOSITIES
+		)
 	};
 }
 
@@ -93,7 +116,13 @@ export function getQueryRewriteConfig(
 		context:
 			typeof ragConfig?.queryRewriteContext === 'string' && ragConfig.queryRewriteContext.trim()
 				? ragConfig.queryRewriteContext.trim()
-				: undefined
+				: undefined,
+		apiLanguage: optionalEnum(ragConfig?.queryRewriteApiLanguage, QUERY_REWRITE_API_LANGUAGES),
+		reasoningEffort: optionalEnum(
+			ragConfig?.queryRewriteReasoningEffort,
+			QUERY_REWRITE_REASONING_EFFORTS
+		),
+		textVerbosity: optionalEnum(ragConfig?.queryRewriteTextVerbosity, QUERY_REWRITE_TEXT_VERBOSITIES)
 	};
 }
 

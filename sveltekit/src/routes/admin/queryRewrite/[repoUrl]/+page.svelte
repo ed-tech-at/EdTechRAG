@@ -181,6 +181,15 @@
 			<div>
 				<span class="label">Include history</span>{data.rewrite.includeHistory ? 'yes' : 'no'}
 			</div>
+			<div>
+				<span class="label">API language</span>{data.rewrite.apiLanguage || 'default (chat)'}
+			</div>
+			<div>
+				<span class="label">Reasoning effort</span>{data.rewrite.reasoningEffort || 'default (chat)'}
+			</div>
+			<div>
+				<span class="label">Text verbosity</span>{data.rewrite.textVerbosity || 'default (chat)'}
+			</div>
 		</div>
 		{#if data.rewrite.context}
 			<div class="context-line">

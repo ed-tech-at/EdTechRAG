@@ -104,7 +104,10 @@ const publicConfig = (repository: {
 			queryRewriteCount: rag?.queryRewriteCount,
 			queryRewriteDocsPerSearch: rag?.queryRewriteDocsPerSearch,
 			queryRewriteIncludeHistory: rag?.queryRewriteIncludeHistory === true,
-			queryRewriteContext: rag?.queryRewriteContext ?? ''
+			queryRewriteContext: rag?.queryRewriteContext ?? '',
+			queryRewriteApiLanguage: rag?.queryRewriteApiLanguage ?? '',
+			queryRewriteReasoningEffort: rag?.queryRewriteReasoningEffort ?? '',
+			queryRewriteTextVerbosity: rag?.queryRewriteTextVerbosity ?? ''
 		},
 		access: {
 			activeSimplePage: repository.activeSimplePage,
@@ -169,7 +172,10 @@ const formState = (
 			queryRewriteCount: optionalNumber(formData.get('queryRewriteCount')),
 			queryRewriteDocsPerSearch: optionalNumber(formData.get('queryRewriteDocsPerSearch')),
 			queryRewriteIncludeHistory: parseAccessCheckbox(formData, 'queryRewriteIncludeHistory'),
-			queryRewriteContext: optionalString(formData.get('queryRewriteContext')) ?? ''
+			queryRewriteContext: optionalString(formData.get('queryRewriteContext')) ?? '',
+			queryRewriteApiLanguage: optionalString(formData.get('queryRewriteApiLanguage')) ?? '',
+			queryRewriteReasoningEffort: optionalString(formData.get('queryRewriteReasoningEffort')) ?? '',
+			queryRewriteTextVerbosity: optionalString(formData.get('queryRewriteTextVerbosity')) ?? ''
 		},
 		access: {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
@@ -232,7 +238,10 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					queryRewriteCount: undefined,
 					queryRewriteDocsPerSearch: undefined,
 					queryRewriteIncludeHistory: false,
-					queryRewriteContext: ''
+					queryRewriteContext: '',
+					queryRewriteApiLanguage: '',
+					queryRewriteReasoningEffort: '',
+					queryRewriteTextVerbosity: ''
 				},
 				access: {
 					...defaultRepositoryAccess,
@@ -303,6 +312,9 @@ export const actions: Actions = {
 		const queryRewriteDocsPerSearch = optionalNumber(formData.get('queryRewriteDocsPerSearch'));
 		const queryRewriteIncludeHistory = parseAccessCheckbox(formData, 'queryRewriteIncludeHistory');
 		const queryRewriteContext = optionalString(formData.get('queryRewriteContext'));
+		const queryRewriteApiLanguage = optionalString(formData.get('queryRewriteApiLanguage'));
+		const queryRewriteReasoningEffort = optionalString(formData.get('queryRewriteReasoningEffort'));
+		const queryRewriteTextVerbosity = optionalString(formData.get('queryRewriteTextVerbosity'));
 		if (queryRewriteCount !== undefined && queryRewriteCount < 1) {
 			errors.push('Number of query-rewrite searches must be at least 1.');
 		}
@@ -397,6 +409,14 @@ export const actions: Actions = {
 		else delete nextRag.queryRewriteDocsPerSearch;
 		if (queryRewriteContext !== undefined) nextRag.queryRewriteContext = queryRewriteContext;
 		else delete nextRag.queryRewriteContext;
+		if (queryRewriteApiLanguage !== undefined) nextRag.queryRewriteApiLanguage = queryRewriteApiLanguage;
+		else delete nextRag.queryRewriteApiLanguage;
+		if (queryRewriteReasoningEffort !== undefined)
+			nextRag.queryRewriteReasoningEffort = queryRewriteReasoningEffort;
+		else delete nextRag.queryRewriteReasoningEffort;
+		if (queryRewriteTextVerbosity !== undefined)
+			nextRag.queryRewriteTextVerbosity = queryRewriteTextVerbosity;
+		else delete nextRag.queryRewriteTextVerbosity;
 
 		try {
 			await prisma.repository.upsert({

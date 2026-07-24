@@ -65,6 +65,9 @@
 	let queryRewriteDocsPerSearchValue = data.config.rag.queryRewriteDocsPerSearch ?? '';
 	let queryRewriteIncludeHistoryValue = data.config.rag.queryRewriteIncludeHistory;
 	let queryRewriteContextValue = data.config.rag.queryRewriteContext;
+	let queryRewriteApiLanguageValue = data.config.rag.queryRewriteApiLanguage;
+	let queryRewriteReasoningEffortValue = data.config.rag.queryRewriteReasoningEffort;
+	let queryRewriteTextVerbosityValue = data.config.rag.queryRewriteTextVerbosity;
 
 	$: if (form) {
 		saving = false;
@@ -99,6 +102,9 @@
 		queryRewriteDocsPerSearchValue = config.rag.queryRewriteDocsPerSearch ?? '';
 		queryRewriteIncludeHistoryValue = config.rag.queryRewriteIncludeHistory;
 		queryRewriteContextValue = config.rag.queryRewriteContext;
+		queryRewriteApiLanguageValue = config.rag.queryRewriteApiLanguage;
+		queryRewriteReasoningEffortValue = config.rag.queryRewriteReasoningEffort;
+		queryRewriteTextVerbosityValue = config.rag.queryRewriteTextVerbosity;
 	}
 	$: webhookUrl = webhookPath.trim()
 		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
@@ -413,6 +419,34 @@
 						bind:value={queryRewriteDocsPerSearchValue}
 						placeholder={String(numberDocumentsValue ?? 4)}
 					/>
+				</label>
+			</div>
+			<div class="field-grid">
+				<label>
+					API language
+					<select name="queryRewriteApiLanguage" bind:value={queryRewriteApiLanguageValue}>
+						<option value="">Default (chat setting)</option>
+						<option value="chat/completions">chat/completions</option>
+						<option value="responses">responses</option>
+					</select>
+				</label>
+				<label>
+					Reasoning effort
+					<select name="queryRewriteReasoningEffort" bind:value={queryRewriteReasoningEffortValue}>
+						<option value="">Default (chat setting)</option>
+						{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
+							<option value={option}>{option}</option>
+						{/each}
+					</select>
+				</label>
+				<label>
+					Text verbosity
+					<select name="queryRewriteTextVerbosity" bind:value={queryRewriteTextVerbosityValue}>
+						<option value="">Default (chat setting)</option>
+						{#each ['low', 'medium', 'high'] as option}
+							<option value={option}>{option}</option>
+						{/each}
+					</select>
 				</label>
 			</div>
 			<label>
