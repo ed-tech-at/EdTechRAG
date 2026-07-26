@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
-import { findRepositoryContext } from '$lib/server/rag';
+import { retrieveWithRewrite } from '$lib/server/queryRewrite';
 import { embedCorsHeaders, getAllowedEmbedOrigin } from '$lib/server/repositoryAccess';
 import { getChatClient } from '$lib/server/openaiClient';
 import { buildChatMessages } from '$lib/server/chatPrompt';
@@ -8,10 +8,13 @@ import { streamChatText } from '$lib/server/chatStream';
 import {
 	formatRagContext,
 	getMetaTags,
-	getNumberDocuments,
 	getSystemPrompt,
 	parseRagConfig
 } from '$lib/ragContext';
+
+const encoder = new TextEncoder();
+const SEARCH_START = '__EDTECH_SEARCH_START__\n';
+const SEARCH_END = '\n__EDTECH_SEARCH_END__\n';
 
 export const OPTIONS: RequestHandler = async ({ request, params }) => {
 	const { repoUrl } = params;
@@ -84,11 +87,12 @@ export const POST: RequestHandler = async ({ request, params }) => {
 
 	try {
 		const ragConfig = parseRagConfig(repository.ragConfig);
-		const { results } = await findRepositoryContext(
+		const { results, queries, rewriteApplied } = await retrieveWithRewrite({
 			repoUrl,
 			prompt,
-			getNumberDocuments(ragConfig)
-		);
+			history,
+			ragConfig
+		});
 		const context = formatRagContext(results, getMetaTags(ragConfig));
 		const systemprompt = getSystemPrompt(ragConfig);
 
@@ -100,7 +104,7 @@ export const POST: RequestHandler = async ({ request, params }) => {
 		});
 
 		const { client, model, apiLanguage, reasoningEffort, textVerbosity } = await getChatClient(repoUrl);
-		const stream = streamChatText({
+		const answerStream = streamChatText({
 			model,
 			client,
 			apiLanguage,
@@ -126,6 +130,29 @@ export const POST: RequestHandler = async ({ request, params }) => {
 				}
 			}
 		});
+
+		// When query rewrite is active, prepend the generated search queries as a
+		// delimited block so the widget can render search chips before the answer.
+		const stream = rewriteApplied
+			? new ReadableStream<Uint8Array>({
+					async start(controller) {
+						controller.enqueue(
+							encoder.encode(`${SEARCH_START}${JSON.stringify(queries)}${SEARCH_END}`)
+						);
+						const reader = answerStream.getReader();
+						try {
+							while (true) {
+								const { done, value } = await reader.read();
+								if (done) break;
+								if (value) controller.enqueue(value);
+							}
+						} finally {
+							reader.releaseLock();
+							controller.close();
+						}
+					}
+			  })
+			: answerStream;
 
 		return new Response(stream, {
 			status: 200,

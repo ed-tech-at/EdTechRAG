@@ -4,7 +4,36 @@ export type RagConfig = {
 	chunkOverlap?: number;
 	numberDocuments?: number;
 	metaTags?: string[];
+	queryRewriteEnabled?: boolean;
+	queryRewriteModel?: string;
+	queryRewriteCount?: number;
+	queryRewriteDocsPerSearch?: number;
+	queryRewriteIncludeHistory?: boolean;
+	queryRewriteContext?: string;
+	queryRewriteApiLanguage?: string;
+	queryRewriteReasoningEffort?: string;
+	queryRewriteTextVerbosity?: string;
 };
+
+export type QueryRewriteConfig = {
+	enabled: boolean;
+	model?: string;
+	count: number;
+	docsPerSearch: number;
+	includeHistory: boolean;
+	context?: string;
+	// Optional overrides; undefined means "inherit the repo's chat setting".
+	apiLanguage?: string;
+	reasoningEffort?: string;
+	textVerbosity?: string;
+};
+
+const QUERY_REWRITE_API_LANGUAGES = ['chat/completions', 'responses'];
+const QUERY_REWRITE_REASONING_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high'];
+const QUERY_REWRITE_TEXT_VERBOSITIES = ['low', 'medium', 'high'];
+
+const optionalEnum = (value: unknown, allowed: string[]): string | undefined =>
+	typeof value === 'string' && allowed.includes(value) ? value : undefined;
 
 export type RagContextResult = {
 	content?: string | null;
@@ -30,7 +59,70 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 		chunkSize: typeof raw.chunkSize === 'number' ? raw.chunkSize : undefined,
 		chunkOverlap: typeof raw.chunkOverlap === 'number' ? raw.chunkOverlap : undefined,
 		numberDocuments: typeof raw.numberDocuments === 'number' ? raw.numberDocuments : undefined,
-		metaTags
+		metaTags,
+		queryRewriteEnabled:
+			typeof raw.queryRewriteEnabled === 'boolean' ? raw.queryRewriteEnabled : undefined,
+		queryRewriteModel:
+			typeof raw.queryRewriteModel === 'string' && raw.queryRewriteModel.trim()
+				? raw.queryRewriteModel.trim()
+				: undefined,
+		queryRewriteCount:
+			typeof raw.queryRewriteCount === 'number' ? raw.queryRewriteCount : undefined,
+		queryRewriteDocsPerSearch:
+			typeof raw.queryRewriteDocsPerSearch === 'number' ? raw.queryRewriteDocsPerSearch : undefined,
+		queryRewriteIncludeHistory:
+			typeof raw.queryRewriteIncludeHistory === 'boolean'
+				? raw.queryRewriteIncludeHistory
+				: undefined,
+		queryRewriteContext:
+			typeof raw.queryRewriteContext === 'string' && raw.queryRewriteContext.trim()
+				? raw.queryRewriteContext.trim()
+				: undefined,
+		queryRewriteApiLanguage: optionalEnum(raw.queryRewriteApiLanguage, QUERY_REWRITE_API_LANGUAGES),
+		queryRewriteReasoningEffort: optionalEnum(
+			raw.queryRewriteReasoningEffort,
+			QUERY_REWRITE_REASONING_EFFORTS
+		),
+		queryRewriteTextVerbosity: optionalEnum(
+			raw.queryRewriteTextVerbosity,
+			QUERY_REWRITE_TEXT_VERBOSITIES
+		)
+	};
+}
+
+export function getQueryRewriteConfig(
+	ragConfig: RagConfig | undefined,
+	fallbackDocs: number = 4
+): QueryRewriteConfig {
+	const count =
+		typeof ragConfig?.queryRewriteCount === 'number' && ragConfig.queryRewriteCount > 0
+			? Math.floor(ragConfig.queryRewriteCount)
+			: 3;
+	const docsPerSearch =
+		typeof ragConfig?.queryRewriteDocsPerSearch === 'number' &&
+		ragConfig.queryRewriteDocsPerSearch > 0
+			? Math.floor(ragConfig.queryRewriteDocsPerSearch)
+			: fallbackDocs;
+
+	return {
+		enabled: ragConfig?.queryRewriteEnabled === true,
+		model:
+			typeof ragConfig?.queryRewriteModel === 'string' && ragConfig.queryRewriteModel.trim()
+				? ragConfig.queryRewriteModel.trim()
+				: undefined,
+		count,
+		docsPerSearch,
+		includeHistory: ragConfig?.queryRewriteIncludeHistory === true,
+		context:
+			typeof ragConfig?.queryRewriteContext === 'string' && ragConfig.queryRewriteContext.trim()
+				? ragConfig.queryRewriteContext.trim()
+				: undefined,
+		apiLanguage: optionalEnum(ragConfig?.queryRewriteApiLanguage, QUERY_REWRITE_API_LANGUAGES),
+		reasoningEffort: optionalEnum(
+			ragConfig?.queryRewriteReasoningEffort,
+			QUERY_REWRITE_REASONING_EFFORTS
+		),
+		textVerbosity: optionalEnum(ragConfig?.queryRewriteTextVerbosity, QUERY_REWRITE_TEXT_VERBOSITIES)
 	};
 }
 

@@ -38,6 +38,7 @@
 		prompt: string;
 		contextText: string;
 		results: SearchResult[];
+		queries: string[];
 		answer: string;
 		status: 'searching' | 'answering' | 'done' | 'error';
 	};
@@ -60,6 +61,7 @@
 			? (form as { results?: SearchResult[] }).results
 			: [];
 	let currentResults: SearchResult[] = initialResults ?? [];
+	let currentQueries: string[] = [];
 	let lastQuery =
 		form && typeof form === 'object' && 'query' in form
 			? (form as { query?: string }).query
@@ -126,6 +128,7 @@
 			prompt,
 			contextText: '',
 			results: [],
+			queries: [],
 			answer: '',
 			status: 'searching'
 		};
@@ -135,12 +138,17 @@
 		const currentIdx = interactions.length - 1;
 
 		try {
+			const priorHistory = interactions.slice(0, currentIdx).flatMap((item) => [
+				{ role: 'user', content: item.prompt },
+				{ role: 'assistant', content: item.answer }
+			]);
 			const res = await fetch(resolve('/api/rag/search'), {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					repoUrl: data.repository.url,
-					query: prompt
+					query: prompt,
+					history: priorHistory
 				})
 			});
 			const payload = await res.json();
@@ -149,6 +157,7 @@
 				throw new Error(payload?.message ?? 'Search failed');
 			}
 			currentResults = payload?.results ?? [];
+			currentQueries = Array.isArray(payload?.queries) ? payload.queries : [];
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : 'Search failed';
 			interactions = interactions.map((item, idx) =>
@@ -164,6 +173,7 @@
 						...item,
 						contextText: contextString(currentResults),
 						results: currentResults,
+						queries: currentQueries,
 						status: 'answering'
 				  }
 				: item
@@ -334,6 +344,13 @@
 					<article class="conversation-row">
 						<div class="column context">
 							<p class="label">CONTEXT</p>
+							{#if item.queries.length > 1}
+								<div class="search-bubbles">
+									{#each item.queries as q}
+										<span class="search-chip">🔍 Suche: {q}</span>
+									{/each}
+								</div>
+							{/if}
 							<div class="bubble">
 								{#if item.status === 'searching'}
 									<span class="muted">Searching for context…</span>
@@ -578,6 +595,24 @@
 	.bubble.user {
 		background: #eef4ff;
 		border-color: #cdddfc;
+	}
+
+	.search-bubbles {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.search-chip {
+		display: inline-block;
+		padding: 0.2rem 0.55rem;
+		border-radius: 999px;
+		background: #eaf2fd;
+		border: 1px solid #cdddfc;
+		color: #1f5fb0;
+		font-size: 0.78rem;
+		font-weight: 600;
 	}
 
 	.bubble.loading {

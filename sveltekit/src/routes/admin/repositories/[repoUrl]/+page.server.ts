@@ -98,7 +98,16 @@ const publicConfig = (repository: {
 			chunkOverlap: rag?.chunkOverlap,
 			numberDocuments: getNumberDocuments(rag),
 			metaTags: rag?.metaTags ?? [],
-			systemprompt: rag?.systemprompt ?? ''
+			systemprompt: rag?.systemprompt ?? '',
+			queryRewriteEnabled: rag?.queryRewriteEnabled === true,
+			queryRewriteModel: rag?.queryRewriteModel ?? '',
+			queryRewriteCount: rag?.queryRewriteCount,
+			queryRewriteDocsPerSearch: rag?.queryRewriteDocsPerSearch,
+			queryRewriteIncludeHistory: rag?.queryRewriteIncludeHistory === true,
+			queryRewriteContext: rag?.queryRewriteContext ?? '',
+			queryRewriteApiLanguage: rag?.queryRewriteApiLanguage ?? '',
+			queryRewriteReasoningEffort: rag?.queryRewriteReasoningEffort ?? '',
+			queryRewriteTextVerbosity: rag?.queryRewriteTextVerbosity ?? ''
 		},
 		access: {
 			activeSimplePage: repository.activeSimplePage,
@@ -157,7 +166,16 @@ const formState = (
 			chunkOverlap: optionalNumber(formData.get('chunkOverlap')),
 			numberDocuments: optionalNumber(formData.get('numberDocuments')) ?? 4,
 			metaTags: metaTagsFromForm(formData.get('metaTags')),
-			systemprompt: typeof formData.get('systemprompt') === 'string' ? String(formData.get('systemprompt')) : ''
+			systemprompt: typeof formData.get('systemprompt') === 'string' ? String(formData.get('systemprompt')) : '',
+			queryRewriteEnabled: parseAccessCheckbox(formData, 'queryRewriteEnabled'),
+			queryRewriteModel: optionalString(formData.get('queryRewriteModel')) ?? '',
+			queryRewriteCount: optionalNumber(formData.get('queryRewriteCount')),
+			queryRewriteDocsPerSearch: optionalNumber(formData.get('queryRewriteDocsPerSearch')),
+			queryRewriteIncludeHistory: parseAccessCheckbox(formData, 'queryRewriteIncludeHistory'),
+			queryRewriteContext: optionalString(formData.get('queryRewriteContext')) ?? '',
+			queryRewriteApiLanguage: optionalString(formData.get('queryRewriteApiLanguage')) ?? '',
+			queryRewriteReasoningEffort: optionalString(formData.get('queryRewriteReasoningEffort')) ?? '',
+			queryRewriteTextVerbosity: optionalString(formData.get('queryRewriteTextVerbosity')) ?? ''
 		},
 		access: {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
@@ -214,7 +232,16 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					chunkOverlap: undefined,
 					numberDocuments: 4,
 					metaTags: [],
-					systemprompt: ''
+					systemprompt: '',
+					queryRewriteEnabled: false,
+					queryRewriteModel: '',
+					queryRewriteCount: undefined,
+					queryRewriteDocsPerSearch: undefined,
+					queryRewriteIncludeHistory: false,
+					queryRewriteContext: '',
+					queryRewriteApiLanguage: '',
+					queryRewriteReasoningEffort: '',
+					queryRewriteTextVerbosity: ''
 				},
 				access: {
 					...defaultRepositoryAccess,
@@ -277,6 +304,22 @@ export const actions: Actions = {
 		const numberDocuments = optionalNumber(formData.get('numberDocuments'));
 		if (numberDocuments !== undefined && numberDocuments < 1) {
 			errors.push('Number of documents must be at least 1.');
+		}
+
+		const queryRewriteEnabled = parseAccessCheckbox(formData, 'queryRewriteEnabled');
+		const queryRewriteModel = optionalString(formData.get('queryRewriteModel'));
+		const queryRewriteCount = optionalNumber(formData.get('queryRewriteCount'));
+		const queryRewriteDocsPerSearch = optionalNumber(formData.get('queryRewriteDocsPerSearch'));
+		const queryRewriteIncludeHistory = parseAccessCheckbox(formData, 'queryRewriteIncludeHistory');
+		const queryRewriteContext = optionalString(formData.get('queryRewriteContext'));
+		const queryRewriteApiLanguage = optionalString(formData.get('queryRewriteApiLanguage'));
+		const queryRewriteReasoningEffort = optionalString(formData.get('queryRewriteReasoningEffort'));
+		const queryRewriteTextVerbosity = optionalString(formData.get('queryRewriteTextVerbosity'));
+		if (queryRewriteCount !== undefined && queryRewriteCount < 1) {
+			errors.push('Number of query-rewrite searches must be at least 1.');
+		}
+		if (queryRewriteDocsPerSearch !== undefined && queryRewriteDocsPerSearch < 1) {
+			errors.push('Documents per query-rewrite search must be at least 1.');
 		}
 
 		const nextAccess = {
@@ -349,12 +392,31 @@ export const actions: Actions = {
 			systemprompt:
 				typeof formData.get('systemprompt') === 'string' ? String(formData.get('systemprompt')) : '',
 			numberDocuments: numberDocuments ?? 4,
-			metaTags: metaTagsFromForm(formData.get('metaTags'))
+			metaTags: metaTagsFromForm(formData.get('metaTags')),
+			queryRewriteEnabled,
+			queryRewriteIncludeHistory
 		};
 		if (chunkSize !== undefined) nextRag.chunkSize = chunkSize;
 		else delete nextRag.chunkSize;
 		if (chunkOverlap !== undefined) nextRag.chunkOverlap = chunkOverlap;
 		else delete nextRag.chunkOverlap;
+		if (queryRewriteModel !== undefined) nextRag.queryRewriteModel = queryRewriteModel;
+		else delete nextRag.queryRewriteModel;
+		if (queryRewriteCount !== undefined) nextRag.queryRewriteCount = queryRewriteCount;
+		else delete nextRag.queryRewriteCount;
+		if (queryRewriteDocsPerSearch !== undefined)
+			nextRag.queryRewriteDocsPerSearch = queryRewriteDocsPerSearch;
+		else delete nextRag.queryRewriteDocsPerSearch;
+		if (queryRewriteContext !== undefined) nextRag.queryRewriteContext = queryRewriteContext;
+		else delete nextRag.queryRewriteContext;
+		if (queryRewriteApiLanguage !== undefined) nextRag.queryRewriteApiLanguage = queryRewriteApiLanguage;
+		else delete nextRag.queryRewriteApiLanguage;
+		if (queryRewriteReasoningEffort !== undefined)
+			nextRag.queryRewriteReasoningEffort = queryRewriteReasoningEffort;
+		else delete nextRag.queryRewriteReasoningEffort;
+		if (queryRewriteTextVerbosity !== undefined)
+			nextRag.queryRewriteTextVerbosity = queryRewriteTextVerbosity;
+		else delete nextRag.queryRewriteTextVerbosity;
 
 		try {
 			await prisma.repository.upsert({
