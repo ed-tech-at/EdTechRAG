@@ -13,6 +13,8 @@ export type RagConfig = {
 	queryRewriteApiLanguage?: string;
 	queryRewriteReasoningEffort?: string;
 	queryRewriteTextVerbosity?: string;
+	requireUserterms?: boolean;
+	usertermsDurationMonths?: number;
 };
 
 export type QueryRewriteConfig = {
@@ -86,8 +88,67 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 		queryRewriteTextVerbosity: optionalEnum(
 			raw.queryRewriteTextVerbosity,
 			QUERY_REWRITE_TEXT_VERBOSITIES
-		)
+		),
+		requireUserterms: typeof raw.requireUserterms === 'boolean' ? raw.requireUserterms : undefined,
+		usertermsDurationMonths:
+			typeof raw.usertermsDurationMonths === 'number' ? raw.usertermsDurationMonths : undefined
 	};
+}
+
+/*
+ * User-terms consent.
+ *
+ * The acceptance timestamp is produced by the embed widget in the visitor's browser, so it is an
+ * attestation and not a proof: a hand-crafted request from an allowed origin can invent a value.
+ * `requireUserterms` therefore enforces the consent flow for real users; the origin regex
+ * (embedAllowedHostRegex) stays the outer gate.
+ */
+
+export const USERTERMS_DEFAULT_MONTHS = 12;
+export const USERTERMS_MIN_MONTHS = 1;
+export const USERTERMS_MAX_MONTHS = 60;
+
+// A "month" is a fixed 30 days here. Calendar math (setMonth(+12)) is timezone/DST dependent and
+// clamps Feb 29, which would make the client and the server disagree at the expiry boundary.
+const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+
+// The server accepts acceptances that are slightly older than the configured window, so the widget
+// (which uses the plain window) always re-prompts before the server would answer 403.
+export const USERTERMS_GRACE_MS = 6 * 24 * 60 * 60 * 1000;
+
+// Consumer clocks are routinely minutes to hours off; a strict "no future timestamps" rule would
+// produce an unrecoverable 403 for those visitors.
+export const USERTERMS_FUTURE_SKEW_MS = 24 * 60 * 60 * 1000;
+
+export function getUsertermsDurationMonths(ragConfig: RagConfig | undefined): number {
+	const months = ragConfig?.usertermsDurationMonths;
+	if (typeof months !== 'number' || !Number.isFinite(months)) return USERTERMS_DEFAULT_MONTHS;
+	return Math.min(Math.max(Math.floor(months), USERTERMS_MIN_MONTHS), USERTERMS_MAX_MONTHS);
+}
+
+export function getUsertermsMaxAgeMs(ragConfig: RagConfig | undefined): number {
+	return getUsertermsDurationMonths(ragConfig) * MONTH_MS + USERTERMS_GRACE_MS;
+}
+
+/**
+ * Validates a client-supplied acceptance timestamp and returns it in canonical ISO form,
+ * or null when it is missing, malformed, too far in the future or expired.
+ */
+export function validateTermsAcceptedAt(
+	value: unknown,
+	maxAgeMs: number,
+	now: number = Date.now()
+): string | null {
+	if (typeof value !== 'string') return null;
+	// Keep junk out of the database before parsing; a valid ISO timestamp is well under 40 chars.
+	if (!value || value.length > 40) return null;
+
+	const parsed = Date.parse(value);
+	if (!Number.isFinite(parsed)) return null;
+	if (parsed > now + USERTERMS_FUTURE_SKEW_MS) return null;
+	if (now - parsed > maxAgeMs) return null;
+
+	return new Date(parsed).toISOString();
 }
 
 export function getQueryRewriteConfig(

@@ -10,7 +10,12 @@ import {
 	parseEmbedAllowedHostRegex,
 	validateRepositoryAccess
 } from '$lib/server/repositoryAccess';
-import { getNumberDocuments, parseRagConfig } from '$lib/ragContext';
+import {
+	getNumberDocuments,
+	parseRagConfig,
+	USERTERMS_MAX_MONTHS,
+	USERTERMS_MIN_MONTHS
+} from '$lib/ragContext';
 import { canManageUsers, SITE_ROLE } from '$lib/siteRole';
 
 const DEFAULT_CHAT_BASE = '';
@@ -107,7 +112,9 @@ const publicConfig = (repository: {
 			queryRewriteContext: rag?.queryRewriteContext ?? '',
 			queryRewriteApiLanguage: rag?.queryRewriteApiLanguage ?? '',
 			queryRewriteReasoningEffort: rag?.queryRewriteReasoningEffort ?? '',
-			queryRewriteTextVerbosity: rag?.queryRewriteTextVerbosity ?? ''
+			queryRewriteTextVerbosity: rag?.queryRewriteTextVerbosity ?? '',
+			requireUserterms: rag?.requireUserterms === true,
+			usertermsDurationMonths: rag?.usertermsDurationMonths
 		},
 		access: {
 			activeSimplePage: repository.activeSimplePage,
@@ -175,7 +182,9 @@ const formState = (
 			queryRewriteContext: optionalString(formData.get('queryRewriteContext')) ?? '',
 			queryRewriteApiLanguage: optionalString(formData.get('queryRewriteApiLanguage')) ?? '',
 			queryRewriteReasoningEffort: optionalString(formData.get('queryRewriteReasoningEffort')) ?? '',
-			queryRewriteTextVerbosity: optionalString(formData.get('queryRewriteTextVerbosity')) ?? ''
+			queryRewriteTextVerbosity: optionalString(formData.get('queryRewriteTextVerbosity')) ?? '',
+			requireUserterms: parseAccessCheckbox(formData, 'requireUserterms'),
+			usertermsDurationMonths: optionalNumber(formData.get('usertermsDurationMonths'))
 		},
 		access: {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
@@ -241,7 +250,9 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					queryRewriteContext: '',
 					queryRewriteApiLanguage: '',
 					queryRewriteReasoningEffort: '',
-					queryRewriteTextVerbosity: ''
+					queryRewriteTextVerbosity: '',
+					requireUserterms: false,
+					usertermsDurationMonths: undefined
 				},
 				access: {
 					...defaultRepositoryAccess,
@@ -322,6 +333,18 @@ export const actions: Actions = {
 			errors.push('Documents per query-rewrite search must be at least 1.');
 		}
 
+		const requireUserterms = parseAccessCheckbox(formData, 'requireUserterms');
+		const usertermsDurationMonths = optionalNumber(formData.get('usertermsDurationMonths'));
+		if (
+			usertermsDurationMonths !== undefined &&
+			(usertermsDurationMonths < USERTERMS_MIN_MONTHS ||
+				usertermsDurationMonths > USERTERMS_MAX_MONTHS)
+		) {
+			errors.push(
+				`User-terms validity must be between ${USERTERMS_MIN_MONTHS} and ${USERTERMS_MAX_MONTHS} months.`
+			);
+		}
+
 		const nextAccess = {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
 			activeSinglePage: parseAccessCheckbox(formData, 'activeSinglePage'),
@@ -394,8 +417,12 @@ export const actions: Actions = {
 			numberDocuments: numberDocuments ?? 4,
 			metaTags: metaTagsFromForm(formData.get('metaTags')),
 			queryRewriteEnabled,
-			queryRewriteIncludeHistory
+			queryRewriteIncludeHistory,
+			requireUserterms
 		};
+		if (usertermsDurationMonths !== undefined)
+			nextRag.usertermsDurationMonths = usertermsDurationMonths;
+		else delete nextRag.usertermsDurationMonths;
 		if (chunkSize !== undefined) nextRag.chunkSize = chunkSize;
 		else delete nextRag.chunkSize;
 		if (chunkOverlap !== undefined) nextRag.chunkOverlap = chunkOverlap;
