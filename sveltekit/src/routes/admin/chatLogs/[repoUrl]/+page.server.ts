@@ -47,6 +47,8 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 			createdAt: log.createdAt ? log.createdAt.toISOString() : null,
 			endpoint: log.endpoint,
 			username: log.username,
+			termsAcceptedAt: log.termsAcceptedAt ? log.termsAcceptedAt.toISOString() : null,
+			usertermsUrl: log.usertermsUrl,
 			source: log.source,
 			question: log.question,
 			context: log.context,

@@ -30,6 +30,9 @@
 							{formatDate(item.createdAt)}
 							{#if item.endpoint}<span class="tag">{item.endpoint}</span>{/if}
 							{#if item.username}<span class="tag">{item.username}</span>{/if}
+							{#if item.termsAcceptedAt}<span class="tag" title={item.usertermsUrl ?? ''}
+									>terms: {formatDate(item.termsAcceptedAt)}</span
+								>{/if}
 							{#if item.source}<span class="tag">{item.source}</span>{/if}
 						</span>
 					</div>

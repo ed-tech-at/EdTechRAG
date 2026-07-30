@@ -68,6 +68,8 @@
 	let queryRewriteApiLanguageValue = data.config.rag.queryRewriteApiLanguage;
 	let queryRewriteReasoningEffortValue = data.config.rag.queryRewriteReasoningEffort;
 	let queryRewriteTextVerbosityValue = data.config.rag.queryRewriteTextVerbosity;
+	let requireUsertermsValue = data.config.rag.requireUserterms;
+	let usertermsDurationMonthsValue = data.config.rag.usertermsDurationMonths ?? '';
 
 	$: if (form) {
 		saving = false;
@@ -105,6 +107,8 @@
 		queryRewriteApiLanguageValue = config.rag.queryRewriteApiLanguage;
 		queryRewriteReasoningEffortValue = config.rag.queryRewriteReasoningEffort;
 		queryRewriteTextVerbosityValue = config.rag.queryRewriteTextVerbosity;
+		requireUsertermsValue = config.rag.requireUserterms;
+		usertermsDurationMonthsValue = config.rag.usertermsDurationMonths ?? '';
 	}
 	$: webhookUrl = webhookPath.trim()
 		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
@@ -461,6 +465,37 @@
 					Optional background given to the rewrite model to steer the generated searches.
 				</span>
 			</label>
+
+			<div class="section-head" style="margin-top: 0.5rem;">
+				<h3 id="userterms-heading" style="margin: 0;">User terms</h3>
+				<p class="muted">
+					Rejects /api/embed chat requests that carry no accepted user-terms timestamp.
+					Requires the <code>block_chatbot</code> widget with <code>data-userterms-url</code>;
+					the older <code>moodle-block_chatbot</code> embed sends no timestamp and will receive
+					403 for every request.
+				</p>
+			</div>
+			<div class="field-grid">
+				<label class="checkbox-label">
+					<input type="checkbox" name="requireUserterms" bind:checked={requireUsertermsValue} />
+					<span>Require accepted user terms</span>
+				</label>
+				<label>
+					Validity in months
+					<input
+						name="usertermsDurationMonths"
+						type="number"
+						min="1"
+						max="60"
+						bind:value={usertermsDurationMonthsValue}
+						placeholder="12"
+					/>
+				</label>
+			</div>
+			<p class="muted">
+				The timestamp comes from the visitor's browser, so it is an attestation and not a proof
+				&mdash; the allowed embed host regex stays the outer gate.
+			</p>
 		</section>
 
 	</form>
