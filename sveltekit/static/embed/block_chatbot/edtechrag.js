@@ -29,7 +29,11 @@
       errorPrefix: 'Error:',
       termsIntro: 'Please read and accept the terms of use before using the chat.',
       termsLinkLabel: 'Terms of use',
-      termsAccept: 'Accept'
+      termsAccept: 'Accept',
+      menu: 'More options',
+      revokeQuestion: 'Revoke your consent to the terms of use? The chat will be locked again.',
+      revoke: 'Revoke',
+      cancel: 'Cancel'
     },
     de: {
       close: 'Schlie\u00dfen',
@@ -41,7 +45,11 @@
       errorPrefix: 'Fehler:',
       termsIntro: 'Bitte lesen und akzeptieren Sie die Benutzerbedingungen, um den Chat zu nutzen.',
       termsLinkLabel: 'Benutzerbedingungen',
-      termsAccept: 'Akzeptieren'
+      termsAccept: 'Akzeptieren',
+      menu: 'Weitere Optionen',
+      revokeQuestion: 'Zustimmung zu den Benutzerbedingungen widerrufen? Der Chat wird danach wieder gesperrt.',
+      revoke: 'Widerrufen',
+      cancel: 'Abbrechen'
     },
     it: {
       close: 'Chiudi',
@@ -53,7 +61,11 @@
       errorPrefix: 'Errore:',
       termsIntro: 'Leggi e accetta le condizioni d\'uso per utilizzare la chat.',
       termsLinkLabel: 'Condizioni d\'uso',
-      termsAccept: 'Accetta'
+      termsAccept: 'Accetta',
+      menu: 'Altre opzioni',
+      revokeQuestion: 'Revocare il consenso alle condizioni d\'uso? La chat verr\u00e0 bloccata di nuovo.',
+      revoke: 'Revoca',
+      cancel: 'Annulla'
     },
     fr: {
       close: 'Fermer',
@@ -65,7 +77,11 @@
       errorPrefix: 'Erreur :',
       termsIntro: 'Veuillez lire et accepter les conditions d\'utilisation pour utiliser le chat.',
       termsLinkLabel: 'Conditions d\'utilisation',
-      termsAccept: 'Accepter'
+      termsAccept: 'Accepter',
+      menu: 'Plus d\'options',
+      revokeQuestion: 'R\u00e9voquer votre accord aux conditions d\'utilisation ? Le chat sera de nouveau bloqu\u00e9.',
+      revoke: 'R\u00e9voquer',
+      cancel: 'Annuler'
     },
     pt: {
       close: 'Fechar',
@@ -77,7 +93,11 @@
       errorPrefix: 'Erro:',
       termsIntro: 'Leia e aceite os termos de uso para utilizar o chat.',
       termsLinkLabel: 'Termos de uso',
-      termsAccept: 'Aceitar'
+      termsAccept: 'Aceitar',
+      menu: 'Mais op\u00e7\u00f5es',
+      revokeQuestion: 'Revogar o consentimento aos termos de uso? O chat ser\u00e1 bloqueado novamente.',
+      revoke: 'Revogar',
+      cancel: 'Cancelar'
     },
     fi: {
       close: 'Sulje',
@@ -89,7 +109,11 @@
       errorPrefix: 'Virhe:',
       termsIntro: 'Lue ja hyv\u00e4ksy k\u00e4ytt\u00f6ehdot, jotta voit k\u00e4ytt\u00e4\u00e4 chattia.',
       termsLinkLabel: 'K\u00e4ytt\u00f6ehdot',
-      termsAccept: 'Hyv\u00e4ksy'
+      termsAccept: 'Hyv\u00e4ksy',
+      menu: 'Lis\u00e4\u00e4 valintoja',
+      revokeQuestion: 'Perutaanko k\u00e4ytt\u00f6ehtojen hyv\u00e4ksynt\u00e4? Chat lukitaan uudelleen.',
+      revoke: 'Peru hyv\u00e4ksynt\u00e4',
+      cancel: 'Peruuta'
     },
     sv: {
       close: 'St\u00e4ng',
@@ -101,7 +125,11 @@
       errorPrefix: 'Fel:',
       termsIntro: 'L\u00e4s och godk\u00e4nn anv\u00e4ndarvillkoren f\u00f6r att anv\u00e4nda chatten.',
       termsLinkLabel: 'Anv\u00e4ndarvillkor',
-      termsAccept: 'Godk\u00e4nn'
+      termsAccept: 'Godk\u00e4nn',
+      menu: 'Fler alternativ',
+      revokeQuestion: '\u00c5terkalla ditt godk\u00e4nnande av anv\u00e4ndarvillkoren? Chatten l\u00e5ses igen.',
+      revoke: '\u00c5terkalla',
+      cancel: 'Avbryt'
     },
     id: {
       close: 'Tutup',
@@ -113,7 +141,11 @@
       errorPrefix: 'Kesalahan:',
       termsIntro: 'Silakan baca dan setujui ketentuan penggunaan untuk menggunakan obrolan.',
       termsLinkLabel: 'Ketentuan penggunaan',
-      termsAccept: 'Setuju'
+      termsAccept: 'Setuju',
+      menu: 'Opsi lainnya',
+      revokeQuestion: 'Cabut persetujuan Anda atas ketentuan penggunaan? Obrolan akan diblokir kembali.',
+      revoke: 'Cabut',
+      cancel: 'Batal'
     },
     hu: {
       close: 'Bez\u00e1r',
@@ -125,7 +157,11 @@
       errorPrefix: 'Hiba:',
       termsIntro: 'K\u00e9rj\u00fck, olvassa el \u00e9s fogadja el a haszn\u00e1lati felt\u00e9teleket a chat haszn\u00e1lat\u00e1hoz.',
       termsLinkLabel: 'Haszn\u00e1lati felt\u00e9telek',
-      termsAccept: 'Elfogadom'
+      termsAccept: 'Elfogadom',
+      menu: 'Tov\u00e1bbi lehet\u0151s\u00e9gek',
+      revokeQuestion: 'Visszavonja a haszn\u00e1lati felt\u00e9telek elfogad\u00e1s\u00e1t? A chat ism\u00e9t z\u00e1rolva lesz.',
+      revoke: 'Visszavon\u00e1s',
+      cancel: 'M\u00e9gse'
     },
     bs: {
       close: 'Zatvori',
@@ -137,7 +173,11 @@
       errorPrefix: 'Gre\u0161ka:',
       termsIntro: 'Pro\u010ditajte i prihvatite uslove kori\u0161tenja da biste koristili chat.',
       termsLinkLabel: 'Uslovi kori\u0161tenja',
-      termsAccept: 'Prihvatam'
+      termsAccept: 'Prihvatam',
+      menu: 'Vi\u0161e opcija',
+      revokeQuestion: 'Povu\u0107i pristanak na uslove kori\u0161tenja? Chat \u0107e ponovo biti blokiran.',
+      revoke: 'Povuci',
+      cancel: 'Otka\u017ei'
     },
     ca: {
       close: 'Tanca',
@@ -149,7 +189,11 @@
       errorPrefix: 'Error:',
       termsIntro: 'Llegiu i accepteu les condicions d\'\u00fas per utilitzar el xat.',
       termsLinkLabel: 'Condicions d\'\u00fas',
-      termsAccept: 'Accepto'
+      termsAccept: 'Accepto',
+      menu: 'M\u00e9s opcions',
+      revokeQuestion: 'Voleu revocar el consentiment de les condicions d\'\u00fas? El xat es tornar\u00e0 a blocar.',
+      revoke: 'Revoca',
+      cancel: 'Cancel\u00b7la'
     },
     cs: {
       close: 'Zav\u0159\u00edt',
@@ -161,7 +205,11 @@
       errorPrefix: 'Chyba:',
       termsIntro: 'P\u0159e\u010dt\u011bte si a p\u0159ijm\u011bte podm\u00ednky pou\u017eit\u00ed, abyste mohli chat pou\u017e\u00edvat.',
       termsLinkLabel: 'Podm\u00ednky pou\u017eit\u00ed',
-      termsAccept: 'P\u0159ij\u00edm\u00e1m'
+      termsAccept: 'P\u0159ij\u00edm\u00e1m',
+      menu: 'Dal\u0161\u00ed mo\u017enosti',
+      revokeQuestion: 'Odvolat souhlas s podm\u00ednkami pou\u017eit\u00ed? Chat bude znovu uzam\u010den.',
+      revoke: 'Odvolat',
+      cancel: 'Zru\u0161it'
     },
     et: {
       close: 'Sulge',
@@ -173,7 +221,11 @@
       errorPrefix: 'Viga:',
       termsIntro: 'Palun lugege ja n\u00f5ustuge kasutustingimustega, et vestlust kasutada.',
       termsLinkLabel: 'Kasutustingimused',
-      termsAccept: 'N\u00f5ustun'
+      termsAccept: 'N\u00f5ustun',
+      menu: 'Rohkem valikuid',
+      revokeQuestion: 'Kas v\u00f5tta kasutustingimustega n\u00f5ustumine tagasi? Vestlus lukustatakse uuesti.',
+      revoke: 'V\u00f5ta tagasi',
+      cancel: 'Loobu'
     },
     es: {
       close: 'Cerrar',
@@ -185,7 +237,11 @@
       errorPrefix: 'Error:',
       termsIntro: 'Lea y acepte las condiciones de uso para utilizar el chat.',
       termsLinkLabel: 'Condiciones de uso',
-      termsAccept: 'Acepto'
+      termsAccept: 'Acepto',
+      menu: 'M\u00e1s opciones',
+      revokeQuestion: '\u00bfRevocar su consentimiento a las condiciones de uso? El chat se bloquear\u00e1 de nuevo.',
+      revoke: 'Revocar',
+      cancel: 'Cancelar'
     },
     hr: {
       close: 'Zatvori',
@@ -197,7 +253,11 @@
       errorPrefix: 'Gre\u0161ka:',
       termsIntro: 'Pro\u010ditajte i prihvatite uvjete kori\u0161tenja kako biste koristili razgovor.',
       termsLinkLabel: 'Uvjeti kori\u0161tenja',
-      termsAccept: 'Prihva\u0107am'
+      termsAccept: 'Prihva\u0107am',
+      menu: 'Vi\u0161e opcija',
+      revokeQuestion: 'Povu\u0107i pristanak na uvjete kori\u0161tenja? Razgovor \u0107e ponovno biti blokiran.',
+      revoke: 'Povuci',
+      cancel: 'Odustani'
     },
     nl: {
       close: 'Sluiten',
@@ -209,7 +269,11 @@
       errorPrefix: 'Fout:',
       termsIntro: 'Lees en accepteer de gebruiksvoorwaarden om de chat te gebruiken.',
       termsLinkLabel: 'Gebruiksvoorwaarden',
-      termsAccept: 'Accepteren'
+      termsAccept: 'Accepteren',
+      menu: 'Meer opties',
+      revokeQuestion: 'Uw toestemming voor de gebruiksvoorwaarden intrekken? De chat wordt weer vergrendeld.',
+      revoke: 'Intrekken',
+      cancel: 'Annuleren'
     },
     no: {
       close: 'Lukk',
@@ -221,7 +285,11 @@
       errorPrefix: 'Feil:',
       termsIntro: 'Les og godta bruksvilk\u00e5rene for \u00e5 bruke chatten.',
       termsLinkLabel: 'Bruksvilk\u00e5r',
-      termsAccept: 'Godta'
+      termsAccept: 'Godta',
+      menu: 'Flere valg',
+      revokeQuestion: 'Trekke tilbake samtykket til bruksvilk\u00e5rene? Chatten blir l\u00e5st igjen.',
+      revoke: 'Trekk tilbake',
+      cancel: 'Avbryt'
     },
     pl: {
       close: 'Zamknij',
@@ -233,7 +301,11 @@
       errorPrefix: 'B\u0142\u0105d:',
       termsIntro: 'Przeczytaj i zaakceptuj warunki korzystania, aby korzysta\u0107 z czatu.',
       termsLinkLabel: 'Warunki korzystania',
-      termsAccept: 'Akceptuj\u0119'
+      termsAccept: 'Akceptuj\u0119',
+      menu: 'Wi\u0119cej opcji',
+      revokeQuestion: 'Wycofa\u0107 zgod\u0119 na warunki korzystania? Czat zostanie ponownie zablokowany.',
+      revoke: 'Wycofaj',
+      cancel: 'Anuluj'
     },
     sk: {
       close: 'Zavrie\u0165',
@@ -245,7 +317,11 @@
       errorPrefix: 'Chyba:',
       termsIntro: 'Pre\u010d\u00edtajte si a prijmite podmienky pou\u017e\u00edvania, aby ste mohli chat pou\u017e\u00edva\u0165.',
       termsLinkLabel: 'Podmienky pou\u017e\u00edvania',
-      termsAccept: 'Prij\u00edmam'
+      termsAccept: 'Prij\u00edmam',
+      menu: '\u010eal\u0161ie mo\u017enosti',
+      revokeQuestion: 'Odvola\u0165 s\u00fahlas s podmienkami pou\u017e\u00edvania? Chat bude znova uzamknut\u00fd.',
+      revoke: 'Odvola\u0165',
+      cancel: 'Zru\u0161i\u0165'
     },
     sl: {
       close: 'Zapri',
@@ -257,7 +333,11 @@
       errorPrefix: 'Napaka:',
       termsIntro: 'Preberite in sprejmite pogoje uporabe, da lahko uporabljate klepet.',
       termsLinkLabel: 'Pogoji uporabe',
-      termsAccept: 'Sprejemam'
+      termsAccept: 'Sprejemam',
+      menu: 'Ve\u010d mo\u017enosti',
+      revokeQuestion: 'Ali \u017eelite umakniti soglasje s pogoji uporabe? Klepet bo znova zaklenjen.',
+      revoke: 'Umakni soglasje',
+      cancel: 'Prekli\u010di'
     },
     tr: {
       close: 'Kapat',
@@ -269,7 +349,11 @@
       errorPrefix: 'Hata:',
       termsIntro: 'Sohbeti kullanmak i\u00e7in kullan\u0131m ko\u015fullar\u0131n\u0131 okuyup kabul edin.',
       termsLinkLabel: 'Kullan\u0131m ko\u015fullar\u0131',
-      termsAccept: 'Kabul ediyorum'
+      termsAccept: 'Kabul ediyorum',
+      menu: 'Di\u011fer se\u00e7enekler',
+      revokeQuestion: 'Kullan\u0131m ko\u015fullar\u0131na verdi\u011finiz onay\u0131 geri almak istiyor musunuz? Sohbet yeniden kilitlenecek.',
+      revoke: 'Geri al',
+      cancel: '\u0130ptal'
     },
     el: {
       close: '\u039a\u03bb\u03b5\u03af\u03c3\u03b9\u03bc\u03bf',
@@ -281,7 +365,11 @@
       errorPrefix: '\u03a3\u03c6\u03ac\u03bb\u03bc\u03b1:',
       termsIntro: '\u0394\u03b9\u03b1\u03b2\u03ac\u03c3\u03c4\u03b5 \u03ba\u03b1\u03b9 \u03b1\u03c0\u03bf\u03b4\u03b5\u03c7\u03c4\u03b5\u03af\u03c4\u03b5 \u03c4\u03bf\u03c5\u03c2 \u03cc\u03c1\u03bf\u03c5\u03c2 \u03c7\u03c1\u03ae\u03c3\u03b7\u03c2 \u03b3\u03b9\u03b1 \u03bd\u03b1 \u03c7\u03c1\u03b7\u03c3\u03b9\u03bc\u03bf\u03c0\u03bf\u03b9\u03ae\u03c3\u03b5\u03c4\u03b5 \u03c4\u03b7 \u03c3\u03c5\u03bd\u03bf\u03bc\u03b9\u03bb\u03af\u03b1.',
       termsLinkLabel: '\u038c\u03c1\u03bf\u03b9 \u03c7\u03c1\u03ae\u03c3\u03b7\u03c2',
-      termsAccept: '\u0391\u03c0\u03bf\u03b4\u03ad\u03c7\u03bf\u03bc\u03b1\u03b9'
+      termsAccept: '\u0391\u03c0\u03bf\u03b4\u03ad\u03c7\u03bf\u03bc\u03b1\u03b9',
+      menu: '\u03a0\u03b5\u03c1\u03b9\u03c3\u03c3\u03cc\u03c4\u03b5\u03c1\u03b5\u03c2 \u03b5\u03c0\u03b9\u03bb\u03bf\u03b3\u03ad\u03c2',
+      revokeQuestion: '\u039d\u03b1 \u03b1\u03bd\u03b1\u03ba\u03bb\u03b7\u03b8\u03b5\u03af \u03b7 \u03c3\u03c5\u03b3\u03ba\u03b1\u03c4\u03ac\u03b8\u03b5\u03c3\u03ae \u03c3\u03b1\u03c2 \u03c3\u03c4\u03bf\u03c5\u03c2 \u03cc\u03c1\u03bf\u03c5\u03c2 \u03c7\u03c1\u03ae\u03c3\u03b7\u03c2; \u0397 \u03c3\u03c5\u03bd\u03bf\u03bc\u03b9\u03bb\u03af\u03b1 \u03b8\u03b1 \u03ba\u03bb\u03b5\u03b9\u03b4\u03c9\u03b8\u03b5\u03af \u03be\u03b1\u03bd\u03ac.',
+      revoke: '\u0391\u03bd\u03ac\u03ba\u03bb\u03b7\u03c3\u03b7',
+      cancel: '\u0386\u03ba\u03c5\u03c1\u03bf'
     },
     mk: {
       close: '\u0417\u0430\u0442\u0432\u043e\u0440\u0438',
@@ -293,7 +381,11 @@
       errorPrefix: '\u0413\u0440\u0435\u0448\u043a\u0430:',
       termsIntro: '\u041f\u0440\u043e\u0447\u0438\u0442\u0430\u0458\u0442\u0435 \u0438 \u043f\u0440\u0438\u0444\u0430\u0442\u0435\u0442\u0435 \u0433\u0438 \u0443\u0441\u043b\u043e\u0432\u0438\u0442\u0435 \u0437\u0430 \u043a\u043e\u0440\u0438\u0441\u0442\u0435\u045a\u0435 \u0437\u0430 \u0434\u0430 \u0433\u043e \u043a\u043e\u0440\u0438\u0441\u0442\u0438\u0442\u0435 \u0440\u0430\u0437\u0433\u043e\u0432\u043e\u0440\u043e\u0442.',
       termsLinkLabel: '\u0423\u0441\u043b\u043e\u0432\u0438 \u0437\u0430 \u043a\u043e\u0440\u0438\u0441\u0442\u0435\u045a\u0435',
-      termsAccept: '\u041f\u0440\u0438\u0444\u0430\u045c\u0430\u043c'
+      termsAccept: '\u041f\u0440\u0438\u0444\u0430\u045c\u0430\u043c',
+      menu: '\u041f\u043e\u0432\u0435\u045c\u0435 \u043e\u043f\u0446\u0438\u0438',
+      revokeQuestion: '\u0414\u0430 \u0441\u0435 \u043e\u0434\u0437\u0435\u043c\u0435 \u0441\u043e\u0433\u043b\u0430\u0441\u043d\u043e\u0441\u0442\u0430 \u0437\u0430 \u0443\u0441\u043b\u043e\u0432\u0438\u0442\u0435 \u0437\u0430 \u043a\u043e\u0440\u0438\u0441\u0442\u0435\u045a\u0435? \u0420\u0430\u0437\u0433\u043e\u0432\u043e\u0440\u043e\u0442 \u043f\u043e\u0432\u0442\u043e\u0440\u043d\u043e \u045c\u0435 \u0431\u0438\u0434\u0435 \u0431\u043b\u043e\u043a\u0438\u0440\u0430\u043d.',
+      revoke: '\u041e\u0434\u0437\u0435\u043c\u0438',
+      cancel: '\u041e\u0442\u043a\u0430\u0436\u0438'
     },
     ru: {
       close: '\u0417\u0430\u043a\u0440\u044b\u0442\u044c',
@@ -305,7 +397,11 @@
       errorPrefix: '\u041e\u0448\u0438\u0431\u043a\u0430:',
       termsIntro: '\u041f\u043e\u0436\u0430\u043b\u0443\u0439\u0441\u0442\u0430, \u043f\u0440\u043e\u0447\u0438\u0442\u0430\u0439\u0442\u0435 \u0438 \u043f\u0440\u0438\u043c\u0438\u0442\u0435 \u0443\u0441\u043b\u043e\u0432\u0438\u044f \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f, \u0447\u0442\u043e\u0431\u044b \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u044c\u0441\u044f \u0447\u0430\u0442\u043e\u043c.',
       termsLinkLabel: '\u0423\u0441\u043b\u043e\u0432\u0438\u044f \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f',
-      termsAccept: '\u041f\u0440\u0438\u043d\u0438\u043c\u0430\u044e'
+      termsAccept: '\u041f\u0440\u0438\u043d\u0438\u043c\u0430\u044e',
+      menu: '\u0414\u0440\u0443\u0433\u0438\u0435 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u044b',
+      revokeQuestion: '\u041e\u0442\u043e\u0437\u0432\u0430\u0442\u044c \u0441\u043e\u0433\u043b\u0430\u0441\u0438\u0435 \u0441 \u0443\u0441\u043b\u043e\u0432\u0438\u044f\u043c\u0438 \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043d\u0438\u044f? \u0427\u0430\u0442 \u0441\u043d\u043e\u0432\u0430 \u0431\u0443\u0434\u0435\u0442 \u0437\u0430\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d.',
+      revoke: '\u041e\u0442\u043e\u0437\u0432\u0430\u0442\u044c',
+      cancel: '\u041e\u0442\u043c\u0435\u043d\u0430'
     },
     uk: {
       close: '\u0417\u0430\u043a\u0440\u0438\u0442\u0438',
@@ -317,7 +413,11 @@
       errorPrefix: '\u041f\u043e\u043c\u0438\u043b\u043a\u0430:',
       termsIntro: '\u041f\u0440\u043e\u0447\u0438\u0442\u0430\u0439\u0442\u0435 \u0442\u0430 \u043f\u0440\u0438\u0439\u043c\u0456\u0442\u044c \u0443\u043c\u043e\u0432\u0438 \u043a\u043e\u0440\u0438\u0441\u0442\u0443\u0432\u0430\u043d\u043d\u044f, \u0449\u043e\u0431 \u043a\u043e\u0440\u0438\u0441\u0442\u0443\u0432\u0430\u0442\u0438\u0441\u044f \u0447\u0430\u0442\u043e\u043c.',
       termsLinkLabel: '\u0423\u043c\u043e\u0432\u0438 \u043a\u043e\u0440\u0438\u0441\u0442\u0443\u0432\u0430\u043d\u043d\u044f',
-      termsAccept: '\u041f\u0440\u0438\u0439\u043c\u0430\u044e'
+      termsAccept: '\u041f\u0440\u0438\u0439\u043c\u0430\u044e',
+      menu: '\u0406\u043d\u0448\u0456 \u043f\u0430\u0440\u0430\u043c\u0435\u0442\u0440\u0438',
+      revokeQuestion: '\u0412\u0456\u0434\u043a\u043b\u0438\u043a\u0430\u0442\u0438 \u0437\u0433\u043e\u0434\u0443 \u0437 \u0443\u043c\u043e\u0432\u0430\u043c\u0438 \u043a\u043e\u0440\u0438\u0441\u0442\u0443\u0432\u0430\u043d\u043d\u044f? \u0427\u0430\u0442 \u0437\u043d\u043e\u0432\u0443 \u0431\u0443\u0434\u0435 \u0437\u0430\u0431\u043b\u043e\u043a\u043e\u0432\u0430\u043d\u043e.',
+      revoke: '\u0412\u0456\u0434\u043a\u043b\u0438\u043a\u0430\u0442\u0438',
+      cancel: '\u0421\u043a\u0430\u0441\u0443\u0432\u0430\u0442\u0438'
     },
     he: {
       close: '\u05e1\u05d2\u05d5\u05e8',
@@ -329,7 +429,11 @@
       errorPrefix: '\u05e9\u05d2\u05d9\u05d0\u05d4:',
       termsIntro: '\u05d0\u05e0\u05d0 \u05e7\u05e8\u05d0\u05d5 \u05d5\u05d0\u05e9\u05e8\u05d5 \u05d0\u05ea \u05ea\u05e0\u05d0\u05d9 \u05d4\u05e9\u05d9\u05de\u05d5\u05e9 \u05db\u05d3\u05d9 \u05dc\u05d4\u05e9\u05ea\u05de\u05e9 \u05d1\u05e6\'\u05d0\u05d8.',
       termsLinkLabel: '\u05ea\u05e0\u05d0\u05d9 \u05e9\u05d9\u05de\u05d5\u05e9',
-      termsAccept: '\u05d0\u05e0\u05d9 \u05de\u05d0\u05e9\u05e8'
+      termsAccept: '\u05d0\u05e0\u05d9 \u05de\u05d0\u05e9\u05e8',
+      menu: '\u05d0\u05e4\u05e9\u05e8\u05d5\u05d9\u05d5\u05ea \u05e0\u05d5\u05e1\u05e4\u05d5\u05ea',
+      revokeQuestion: '\u05dc\u05d1\u05d8\u05dc \u05d0\u05ea \u05d4\u05d4\u05e1\u05db\u05de\u05d4 \u05dc\u05ea\u05e0\u05d0\u05d9 \u05d4\u05e9\u05d9\u05de\u05d5\u05e9? \u05d4\u05e6\'\u05d0\u05d8 \u05d9\u05d9\u05d7\u05e1\u05dd \u05e9\u05d5\u05d1.',
+      revoke: '\u05d1\u05d8\u05dc \u05d4\u05e1\u05db\u05de\u05d4',
+      cancel: '\u05e1\u05d2\u05d5\u05e8'
     },
     ar: {
       close: '\u0625\u063a\u0644\u0627\u0642',
@@ -341,7 +445,11 @@
       errorPrefix: '\u062e\u0637\u0623:',
       termsIntro: '\u064a\u0631\u062c\u0649 \u0642\u0631\u0627\u0621\u0629 \u0634\u0631\u0648\u0637 \u0627\u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0648\u0627\u0644\u0645\u0648\u0627\u0641\u0642\u0629 \u0639\u0644\u064a\u0647\u0627 \u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0627\u0644\u0645\u062d\u0627\u062f\u062b\u0629.',
       termsLinkLabel: '\u0634\u0631\u0648\u0637 \u0627\u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645',
-      termsAccept: '\u0623\u0648\u0627\u0641\u0642'
+      termsAccept: '\u0623\u0648\u0627\u0641\u0642',
+      menu: '\u062e\u064a\u0627\u0631\u0627\u062a \u0623\u062e\u0631\u0649',
+      revokeQuestion: '\u0647\u0644 \u062a\u0631\u064a\u062f \u0633\u062d\u0628 \u0645\u0648\u0627\u0641\u0642\u062a\u0643 \u0639\u0644\u0649 \u0634\u0631\u0648\u0637 \u0627\u0644\u0627\u0633\u062a\u062e\u062f\u0627\u0645\u061f \u0633\u064a\u062a\u0645 \u0642\u0641\u0644 \u0627\u0644\u0645\u062d\u0627\u062f\u062b\u0629 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.',
+      revoke: '\u0633\u062d\u0628 \u0627\u0644\u0645\u0648\u0627\u0641\u0642\u0629',
+      cancel: '\u0625\u0644\u063a\u0627\u0621'
     }
   };
 
@@ -609,13 +717,36 @@
       gateAcceptBtn.addEventListener('click', function () { acceptTerms(); });
     }
 
-    /* Footer: sponsor + clear button */
+    /* Footer: sponsor, terms link and the three-dots menu on the left, clear button on the right */
     var footerEl = el('div', cn('footer'));
+    var footerLeft = el('div', cn('footer-left'));
+    footerEl.appendChild(footerLeft);
 
     if (sponsorLink && sponsorText) {
       var sponsorA = el('a', cn('sponsor-link'), { href: sponsorLink, target: '_blank', rel: 'noopener noreferrer' });
       sponsorA.textContent = sponsorText;
-      footerEl.appendChild(sponsorA);
+      footerLeft.appendChild(sponsorA);
+      footerEl.classList.add(cn('has-sponsor'));
+    }
+
+    /* Terms link plus the three-dots menu that opens the revoke dialog */
+    var menuBtn = null;
+    if (usertermsUrl) {
+      var footerTermsLink = el('a', cn('sponsor-link'), {
+        href: usertermsUrl,
+        target: '_blank',
+        rel: 'noopener noreferrer'
+      });
+      footerTermsLink.textContent = T.termsLinkLabel;
+      footerLeft.appendChild(footerTermsLink);
+
+      menuBtn = el('button', cn('menu-btn'), {
+        'aria-label': T.menu,
+        'aria-haspopup': 'dialog',
+        title: T.menu
+      });
+      menuBtn.innerHTML = '&#x22EE;';
+      footerLeft.appendChild(menuBtn);
       footerEl.classList.add(cn('has-sponsor'));
     }
 
@@ -637,6 +768,45 @@
     panel.appendChild(messagesEl);
     panel.appendChild(footerEl);
     panel.appendChild(composer);
+
+    /* Revoke-consent modal, layered over the whole panel */
+    var modalEl = null;
+    var modalCancelBtn = null;
+    if (usertermsUrl) {
+      modalEl = el('div', cn('modal'), { role: 'dialog', 'aria-modal': 'true' });
+      modalEl.setAttribute('hidden', 'hidden');
+
+      var modalBox = el('div', cn('modal-box'));
+
+      var modalTextEl = el('div', cn('modal-text'));
+      modalTextEl.textContent = T.revokeQuestion;
+
+      var modalActions = el('div', cn('modal-actions'));
+      modalCancelBtn = el('button', cn('gate-btn'));
+      modalCancelBtn.textContent = T.cancel;
+      var modalRevokeBtn = el('button', cn('gate-btn') + ' ' + cn('gate-btn-danger'));
+      modalRevokeBtn.textContent = T.revoke;
+      modalActions.appendChild(modalCancelBtn);
+      modalActions.appendChild(modalRevokeBtn);
+
+      modalBox.appendChild(modalTextEl);
+      modalBox.appendChild(modalActions);
+      modalEl.appendChild(modalBox);
+      panel.appendChild(modalEl);
+
+      modalCancelBtn.addEventListener('click', function () { setModalOpen(false); });
+      modalRevokeBtn.addEventListener('click', function () { revokeTerms(); });
+      // Clicking the backdrop (but not the dialog box) closes without revoking.
+      modalEl.addEventListener('click', function (e) {
+        if (e.target === modalEl) setModalOpen(false);
+      });
+      modalEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setModalOpen(false);
+        }
+      });
+    }
 
     /* FAB */
     var fab = el('button', cn('fab'));
@@ -722,6 +892,26 @@
       setHidden(faqSection, hasConversation);
     }
 
+    function setModalOpen(open) {
+      if (!modalEl) return;
+      if (open) {
+        modalEl.removeAttribute('hidden');
+        // Focus the harmless option, not the destructive one.
+        modalCancelBtn.focus();
+      } else {
+        modalEl.setAttribute('hidden', 'hidden');
+        if (menuBtn) menuBtn.focus();
+      }
+    }
+
+    function revokeTerms() {
+      clearAcceptance();
+      setModalOpen(false);
+      // The transcript stays; it is hidden again on the next page load until the terms are
+      // accepted anew (same rule as a first visit).
+      showGate();
+    }
+
     function setOpen(open) {
       if (open) {
         panel.removeAttribute('hidden');
@@ -731,6 +921,8 @@
         else textarea.focus();
         scrollBottom();
       } else {
+        // Don't leave the dialog open behind a closed panel.
+        if (modalEl) modalEl.setAttribute('hidden', 'hidden');
         panel.setAttribute('hidden', 'hidden');
         panel.classList.remove(cn('open'));
       }
@@ -918,6 +1110,7 @@
     closeBtn.addEventListener('click', function () { setOpen(false); });
     sendBtn.addEventListener('click', function () { send(); });
     clearBtn.addEventListener('click', function () { clearHistory(); });
+    if (menuBtn) menuBtn.addEventListener('click', function () { setModalOpen(true); });
 
     textarea.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
