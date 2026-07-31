@@ -10,6 +10,8 @@
 		{ href: resolve('/admin/DataFile'), label: 'All data files' },
 		{ href: resolve('/admin/embeddings'), label: 'All Embeddings' },
 		{ href: resolve('/admin/ragView'), label: 'RAG VIEW' },
+		{ href: resolve('/admin/queryRewrite'), label: 'Query Rewrite' },
+		{ href: resolve('/admin/chatLogs'), label: 'Gesendete Chats' },
 		...(data.canManageUsers ? [{ href: resolve('/admin/users'), label: 'User management' }] : [])
 	];
 </script>

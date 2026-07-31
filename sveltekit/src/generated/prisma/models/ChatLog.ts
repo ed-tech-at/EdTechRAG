@@ -43,6 +43,8 @@ export type ChatLogMinAggregateOutputType = {
   answer: string | null
   username: string | null
   source: string | null
+  termsAcceptedAt: Date | null
+  usertermsUrl: string | null
   createdAt: Date | null
 }
 
@@ -55,6 +57,8 @@ export type ChatLogMaxAggregateOutputType = {
   answer: string | null
   username: string | null
   source: string | null
+  termsAcceptedAt: Date | null
+  usertermsUrl: string | null
   createdAt: Date | null
 }
 
@@ -68,6 +72,8 @@ export type ChatLogCountAggregateOutputType = {
   username: number
   history: number
   source: number
+  termsAcceptedAt: number
+  usertermsUrl: number
   createdAt: number
   _all: number
 }
@@ -90,6 +96,8 @@ export type ChatLogMinAggregateInputType = {
   answer?: true
   username?: true
   source?: true
+  termsAcceptedAt?: true
+  usertermsUrl?: true
   createdAt?: true
 }
 
@@ -102,6 +110,8 @@ export type ChatLogMaxAggregateInputType = {
   answer?: true
   username?: true
   source?: true
+  termsAcceptedAt?: true
+  usertermsUrl?: true
   createdAt?: true
 }
 
@@ -115,6 +125,8 @@ export type ChatLogCountAggregateInputType = {
   username?: true
   history?: true
   source?: true
+  termsAcceptedAt?: true
+  usertermsUrl?: true
   createdAt?: true
   _all?: true
 }
@@ -215,6 +227,8 @@ export type ChatLogGroupByOutputType = {
   username: string | null
   history: runtime.JsonValue | null
   source: string | null
+  termsAcceptedAt: Date | null
+  usertermsUrl: string | null
   createdAt: Date
   _count: ChatLogCountAggregateOutputType | null
   _avg: ChatLogAvgAggregateOutputType | null
@@ -251,6 +265,8 @@ export type ChatLogWhereInput = {
   username?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   history?: Prisma.JsonNullableFilter<"ChatLog">
   source?: Prisma.StringNullableFilter<"ChatLog"> | string | null
+  termsAcceptedAt?: Prisma.DateTimeNullableFilter<"ChatLog"> | Date | string | null
+  usertermsUrl?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ChatLog"> | Date | string
 }
 
@@ -264,6 +280,8 @@ export type ChatLogOrderByWithRelationInput = {
   username?: Prisma.SortOrderInput | Prisma.SortOrder
   history?: Prisma.SortOrderInput | Prisma.SortOrder
   source?: Prisma.SortOrderInput | Prisma.SortOrder
+  termsAcceptedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  usertermsUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -280,6 +298,8 @@ export type ChatLogWhereUniqueInput = Prisma.AtLeast<{
   username?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   history?: Prisma.JsonNullableFilter<"ChatLog">
   source?: Prisma.StringNullableFilter<"ChatLog"> | string | null
+  termsAcceptedAt?: Prisma.DateTimeNullableFilter<"ChatLog"> | Date | string | null
+  usertermsUrl?: Prisma.StringNullableFilter<"ChatLog"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ChatLog"> | Date | string
 }, "id">
 
@@ -293,6 +313,8 @@ export type ChatLogOrderByWithAggregationInput = {
   username?: Prisma.SortOrderInput | Prisma.SortOrder
   history?: Prisma.SortOrderInput | Prisma.SortOrder
   source?: Prisma.SortOrderInput | Prisma.SortOrder
+  termsAcceptedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  usertermsUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.ChatLogCountOrderByAggregateInput
   _avg?: Prisma.ChatLogAvgOrderByAggregateInput
@@ -314,6 +336,8 @@ export type ChatLogScalarWhereWithAggregatesInput = {
   username?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
   history?: Prisma.JsonNullableWithAggregatesFilter<"ChatLog">
   source?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
+  termsAcceptedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ChatLog"> | Date | string | null
+  usertermsUrl?: Prisma.StringNullableWithAggregatesFilter<"ChatLog"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ChatLog"> | Date | string
 }
 
@@ -326,6 +350,8 @@ export type ChatLogCreateInput = {
   username?: string | null
   history?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   source?: string | null
+  termsAcceptedAt?: Date | string | null
+  usertermsUrl?: string | null
   createdAt?: Date | string
 }
 
@@ -339,6 +365,8 @@ export type ChatLogUncheckedCreateInput = {
   username?: string | null
   history?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   source?: string | null
+  termsAcceptedAt?: Date | string | null
+  usertermsUrl?: string | null
   createdAt?: Date | string
 }
 
@@ -351,6 +379,8 @@ export type ChatLogUpdateInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   history?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  termsAcceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  usertermsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -364,6 +394,8 @@ export type ChatLogUncheckedUpdateInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   history?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  termsAcceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  usertermsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -377,6 +409,8 @@ export type ChatLogCreateManyInput = {
   username?: string | null
   history?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   source?: string | null
+  termsAcceptedAt?: Date | string | null
+  usertermsUrl?: string | null
   createdAt?: Date | string
 }
 
@@ -389,6 +423,8 @@ export type ChatLogUpdateManyMutationInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   history?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  termsAcceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  usertermsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -402,6 +438,8 @@ export type ChatLogUncheckedUpdateManyInput = {
   username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   history?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   source?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  termsAcceptedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  usertermsUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -415,6 +453,8 @@ export type ChatLogCountOrderByAggregateInput = {
   username?: Prisma.SortOrder
   history?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  termsAcceptedAt?: Prisma.SortOrder
+  usertermsUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -431,6 +471,8 @@ export type ChatLogMaxOrderByAggregateInput = {
   answer?: Prisma.SortOrder
   username?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  termsAcceptedAt?: Prisma.SortOrder
+  usertermsUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -443,6 +485,8 @@ export type ChatLogMinOrderByAggregateInput = {
   answer?: Prisma.SortOrder
   username?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  termsAcceptedAt?: Prisma.SortOrder
+  usertermsUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -466,6 +510,8 @@ export type ChatLogSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   username?: boolean
   history?: boolean
   source?: boolean
+  termsAcceptedAt?: boolean
+  usertermsUrl?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["chatLog"]>
 
@@ -479,6 +525,8 @@ export type ChatLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   username?: boolean
   history?: boolean
   source?: boolean
+  termsAcceptedAt?: boolean
+  usertermsUrl?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["chatLog"]>
 
@@ -492,6 +540,8 @@ export type ChatLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   username?: boolean
   history?: boolean
   source?: boolean
+  termsAcceptedAt?: boolean
+  usertermsUrl?: boolean
   createdAt?: boolean
 }, ExtArgs["result"]["chatLog"]>
 
@@ -505,10 +555,12 @@ export type ChatLogSelectScalar = {
   username?: boolean
   history?: boolean
   source?: boolean
+  termsAcceptedAt?: boolean
+  usertermsUrl?: boolean
   createdAt?: boolean
 }
 
-export type ChatLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repositoryUrl" | "endpoint" | "question" | "context" | "answer" | "username" | "history" | "source" | "createdAt", ExtArgs["result"]["chatLog"]>
+export type ChatLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "repositoryUrl" | "endpoint" | "question" | "context" | "answer" | "username" | "history" | "source" | "termsAcceptedAt" | "usertermsUrl" | "createdAt", ExtArgs["result"]["chatLog"]>
 
 export type $ChatLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ChatLog"
@@ -523,6 +575,8 @@ export type $ChatLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     username: string | null
     history: runtime.JsonValue | null
     source: string | null
+    termsAcceptedAt: Date | null
+    usertermsUrl: string | null
     createdAt: Date
   }, ExtArgs["result"]["chatLog"]>
   composites: {}
@@ -956,6 +1010,8 @@ export interface ChatLogFieldRefs {
   readonly username: Prisma.FieldRef<"ChatLog", 'String'>
   readonly history: Prisma.FieldRef<"ChatLog", 'Json'>
   readonly source: Prisma.FieldRef<"ChatLog", 'String'>
+  readonly termsAcceptedAt: Prisma.FieldRef<"ChatLog", 'DateTime'>
+  readonly usertermsUrl: Prisma.FieldRef<"ChatLog", 'String'>
   readonly createdAt: Prisma.FieldRef<"ChatLog", 'DateTime'>
 }
     

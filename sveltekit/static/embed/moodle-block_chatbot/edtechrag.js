@@ -315,6 +315,10 @@
     var decoder  = new TextDecoder();
     var storageKey = 'edtechrag-chat-' + embedId;
 
+    var SEARCH_START = '__EDTECH_SEARCH_START__\n';
+    var SEARCH_END = '\n__EDTECH_SEARCH_END__\n';
+    var SEARCH_ICON = String.fromCodePoint(0x1F50D); // magnifier emoji, built at runtime to keep this file ASCII-only
+
     function saveHistory() {
       try {
         localStorage.setItem(storageKey, JSON.stringify(messages));
@@ -442,6 +446,10 @@
       var faqLabelEl = messagesEl.querySelector('.' + cn('faq-label'));
       if (faqLabelEl) faqLabelEl.style.display = 'none';
       messages.forEach(function (m) {
+        if (m.role === 'search') {
+          messagesEl.appendChild(buildSearchBubble(m.queries));
+          return;
+        }
         var wrap = el('div', cn('bubble') + ' ' + cn(m.role));
         var content = el('div', cn('bubble-content'));
         if (m.role === 'user') {
@@ -497,6 +505,17 @@
       return content;
     }
 
+    function buildSearchBubble(queries) {
+      var wrap = el('div', cn('bubble') + ' ' + cn('search'));
+      (queries || []).forEach(function (q) {
+        if (typeof q !== 'string' || !q) return;
+        var chip = el('span', cn('search-chip'));
+        chip.textContent = SEARCH_ICON + ' ' + q;
+        wrap.appendChild(chip);
+      });
+      return wrap;
+    }
+
     /* -- Send -- */
     function send(text) {
       text = typeof text === 'string' ? text.trim() : textarea.value.trim();
@@ -514,7 +533,9 @@
       loading = true;
       sendBtn.disabled = true;
 
-      var history = messages.map(function (m) { return { role: m.role, content: m.content }; });
+      var history = messages
+        .filter(function (m) { return m.role === 'user' || m.role === 'assistant'; })
+        .map(function (m) { return { role: m.role, content: m.content }; });
       messages.push({ role: 'user', content: text });
       addBubble('user', text);
 
@@ -522,6 +543,39 @@
       messages.push({ role: 'assistant', content: '' });
       var assistantIndex = messages.length - 1;
       var assistantContentEl = addBubble('assistant', '<span class="' + cn('muted') + '">...</span>');
+
+      var buffer = '';
+      var searchDone = false;
+
+      function handleSearchBlock() {
+        // Returns true if it consumed/awaited the search block, false if none present.
+        if (searchDone) return false;
+        if (buffer.indexOf(SEARCH_START) === 0) {
+          var endIdx = buffer.indexOf(SEARCH_END);
+          if (endIdx === -1) return true; // wait for more data
+          var payload = buffer.slice(SEARCH_START.length, endIdx);
+          var queries = [];
+          try {
+            var parsed = JSON.parse(payload);
+            if (Array.isArray(parsed)) {
+              queries = parsed.filter(function (q) { return typeof q === 'string'; });
+            }
+          } catch (e) { /* ignore malformed payload */ }
+          // Insert the chip bubble just before the assistant bubble and persist it.
+          var assistantWrap = assistantContentEl.parentNode;
+          messagesEl.insertBefore(buildSearchBubble(queries), assistantWrap);
+          messages.splice(assistantIndex, 0, { role: 'search', queries: queries });
+          assistantIndex += 1;
+          buffer = buffer.slice(endIdx + SEARCH_END.length);
+          searchDone = true;
+          return false;
+        }
+        if (buffer.length > 0 && SEARCH_START.indexOf(buffer) === 0) {
+          return true; // buffer is still a prefix of the marker; wait for more
+        }
+        searchDone = true; // no search block present
+        return false;
+      }
 
       var url = baseUrl + 'api/embed/' + encodeURIComponent(embedId);
       fetch(url, {
@@ -541,7 +595,10 @@
               return;
             }
             var piece = decoder.decode(chunk.value || new Uint8Array(), { stream: true });
-            assistantRaw += piece;
+            buffer += piece;
+            // Peel off the optional search-query block before treating bytes as tokens.
+            if (handleSearchBlock()) return read();
+            if (buffer) { assistantRaw += buffer; buffer = ''; }
             messages[assistantIndex].content = assistantRaw;
             assistantContentEl.innerHTML = renderMarkdown(assistantRaw);
             scrollBottom();
