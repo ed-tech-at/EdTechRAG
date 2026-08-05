@@ -14,10 +14,17 @@
 	let systemprompt = data.systemprompt ?? '';
 	let loading = false;
 	let errorMessage = '';
-	let messages: Array<{ role: 'user' | 'assistant' | 'context'; content: string; html?: string }> = [];
+	let messages: Array<{
+		role: 'user' | 'assistant' | 'context' | 'search';
+		content: string;
+		html?: string;
+		queries?: string[];
+	}> = [];
 	const decoder = new TextDecoder();
 	const contextStart = '__EDTECH_CONTEXT_START__\n';
 	const contextEnd = '\n__EDTECH_CONTEXT_END__\n';
+	const searchStart = '__EDTECH_SEARCH_START__\n';
+	const searchEnd = '\n__EDTECH_SEARCH_END__\n';
 
 	// const logInteraction = async (payload: {
 	// 	question: string;
@@ -70,42 +77,71 @@
 			let buffer = '';
 			let rawAnswer = '';
 			let done = false;
-			let contextLoaded = false;
+			let searchDone = false;
+			let contextDone = false;
 			let assistantIndex = -1;
 
 			while (!done) {
 				const chunk = await reader.read();
 				done = chunk.done;
 				const text = decoder.decode(chunk.value || new Uint8Array(), { stream: !done });
-				if (!text) continue;
+				if (!text && !done) continue;
+				buffer += text;
 
-				if (!contextLoaded) {
-					buffer += text;
-					const endIndex = buffer.indexOf(contextEnd);
-					if (endIndex === -1) continue;
+				// 1) Optional "search" block (query-rewrite bubbles), only present when enabled.
+				if (!searchDone) {
+					if (buffer.startsWith(searchStart)) {
+						const endIndex = buffer.indexOf(searchEnd);
+						if (endIndex === -1) continue;
+						const payload = buffer.slice(searchStart.length, endIndex);
+						let queries: string[] = [];
+						try {
+							const parsed = JSON.parse(payload);
+							if (Array.isArray(parsed)) queries = parsed.filter((q) => typeof q === 'string');
+						} catch {
+							/* ignore malformed payload */
+						}
+						messages = [...messages, { role: 'search', content: '', queries }];
+						buffer = buffer.slice(endIndex + searchEnd.length);
+						searchDone = true;
+					} else if (buffer.length > 0 && searchStart.startsWith(buffer)) {
+						continue; // buffer is still a prefix of the marker; wait for more
+					} else {
+						searchDone = true; // no search block present
+					}
+				}
 
-					const contextPayload = buffer.startsWith(contextStart)
-						? buffer.slice(contextStart.length, endIndex)
-						: '';
-					const remainder = buffer.slice(endIndex + contextEnd.length);
+				// 2) Context block (always emitted by this endpoint).
+				if (!contextDone) {
+					if (buffer.startsWith(contextStart)) {
+						const endIndex = buffer.indexOf(contextEnd);
+						if (endIndex === -1) continue;
+						const contextPayload = buffer.slice(contextStart.length, endIndex);
+						messages = [
+							...messages,
+							{
+								role: 'context',
+								content: contextPayload,
+								html: renderMarkdownWithBlankTargets(contextPayload)
+							}
+						];
+						buffer = buffer.slice(endIndex + contextEnd.length);
+						contextDone = true;
+					} else if (buffer.length > 0 && contextStart.startsWith(buffer)) {
+						continue;
+					} else {
+						contextDone = true; // no context block present
+					}
+				}
 
-					assistantIndex = messages.length + 1;
-					messages = [
-						...messages,
-						{
-							role: 'context',
-							content: contextPayload,
-							html: renderMarkdownWithBlankTargets(contextPayload)
-						},
-						{ role: 'assistant', content: '', html: '' }
-					];
-					contextLoaded = true;
+				// 3) Remaining bytes are answer tokens.
+				if (assistantIndex === -1) {
+					assistantIndex = messages.length;
+					messages = [...messages, { role: 'assistant', content: '', html: '' }];
+				}
+				if (buffer) {
+					rawAnswer += buffer;
 					buffer = '';
-
-					if (!remainder) continue;
-					rawAnswer += remainder;
-				} else {
-					rawAnswer += text;
 				}
 
 				messages = messages.map((message, index) =>
@@ -186,7 +222,13 @@
 			{/if}
 			{#each messages as message}
 				<div class="bubble {message.role}">
-					{#if message.role === 'assistant'}
+					{#if message.role === 'search'}
+						<div class="search-bubbles">
+							{#each message.queries ?? [] as q}
+								<span class="search-chip">🔍 Suche: {q}</span>
+							{/each}
+						</div>
+					{:else if message.role === 'assistant'}
 						<div class="bubble-content">
 							{#if loading && !message.content}
 								<span class="muted">Loading...</span>
@@ -326,6 +368,27 @@
 
 	.bubble.assistant {
 		justify-content: flex-start;
+	}
+
+	.bubble.search {
+		justify-content: flex-start;
+	}
+
+	.search-bubbles {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+
+	.search-chip {
+		display: inline-block;
+		padding: 0.25rem 0.6rem;
+		border-radius: 999px;
+		background: #eaf2fd;
+		border: 1px solid #cdddfc;
+		color: #1f5fb0;
+		font-size: 0.8rem;
+		font-weight: 600;
 	}
 
 	.bubble-content {

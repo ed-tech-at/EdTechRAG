@@ -857,6 +857,8 @@ export const ChatLogScalarFieldEnum = {
   username: 'username',
   history: 'history',
   source: 'source',
+  termsAcceptedAt: 'termsAcceptedAt',
+  usertermsUrl: 'usertermsUrl',
   createdAt: 'createdAt'
 } as const
 

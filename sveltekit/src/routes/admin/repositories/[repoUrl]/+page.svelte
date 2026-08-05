@@ -59,6 +59,17 @@
 	let numberDocumentsValue = data.config.rag.numberDocuments;
 	let metaTagsValue = data.config.rag.metaTags.join(', ');
 	let systempromptValue = data.config.rag.systemprompt;
+	let queryRewriteEnabledValue = data.config.rag.queryRewriteEnabled;
+	let queryRewriteModelValue = data.config.rag.queryRewriteModel;
+	let queryRewriteCountValue = data.config.rag.queryRewriteCount ?? '';
+	let queryRewriteDocsPerSearchValue = data.config.rag.queryRewriteDocsPerSearch ?? '';
+	let queryRewriteIncludeHistoryValue = data.config.rag.queryRewriteIncludeHistory;
+	let queryRewriteContextValue = data.config.rag.queryRewriteContext;
+	let queryRewriteApiLanguageValue = data.config.rag.queryRewriteApiLanguage;
+	let queryRewriteReasoningEffortValue = data.config.rag.queryRewriteReasoningEffort;
+	let queryRewriteTextVerbosityValue = data.config.rag.queryRewriteTextVerbosity;
+	let requireUsertermsValue = data.config.rag.requireUserterms;
+	let usertermsDurationMonthsValue = data.config.rag.usertermsDurationMonths ?? '';
 
 	$: if (form) {
 		saving = false;
@@ -87,6 +98,17 @@
 		numberDocumentsValue = config.rag.numberDocuments;
 		metaTagsValue = config.rag.metaTags.join(', ');
 		systempromptValue = config.rag.systemprompt;
+		queryRewriteEnabledValue = config.rag.queryRewriteEnabled;
+		queryRewriteModelValue = config.rag.queryRewriteModel;
+		queryRewriteCountValue = config.rag.queryRewriteCount ?? '';
+		queryRewriteDocsPerSearchValue = config.rag.queryRewriteDocsPerSearch ?? '';
+		queryRewriteIncludeHistoryValue = config.rag.queryRewriteIncludeHistory;
+		queryRewriteContextValue = config.rag.queryRewriteContext;
+		queryRewriteApiLanguageValue = config.rag.queryRewriteApiLanguage;
+		queryRewriteReasoningEffortValue = config.rag.queryRewriteReasoningEffort;
+		queryRewriteTextVerbosityValue = config.rag.queryRewriteTextVerbosity;
+		requireUsertermsValue = config.rag.requireUserterms;
+		usertermsDurationMonthsValue = config.rag.usertermsDurationMonths ?? '';
 	}
 	$: webhookUrl = webhookPath.trim()
 		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
@@ -351,6 +373,129 @@
 				System prompt
 				<textarea name="systemprompt" rows="6" bind:value={systempromptValue}></textarea>
 			</label>
+
+			<div class="section-head" style="margin-top: 0.5rem;">
+				<h3 id="query-rewrite-heading" style="margin: 0;">Query rewrite</h3>
+				<p class="muted">
+					Rewrite the user question into several optimized search queries before retrieval.
+					Each query is searched separately and results are merged (deduplicated by chunk).
+				</p>
+			</div>
+			<div class="field-grid">
+				<label class="checkbox-label">
+					<input type="checkbox" name="queryRewriteEnabled" bind:checked={queryRewriteEnabledValue} />
+					<span>Enable query rewrite</span>
+				</label>
+				<label class="checkbox-label">
+					<input
+						type="checkbox"
+						name="queryRewriteIncludeHistory"
+						bind:checked={queryRewriteIncludeHistoryValue}
+					/>
+					<span>Include chat history in rewrite prompt</span>
+				</label>
+			</div>
+			<div class="field-grid">
+				<label>
+					Rewrite model
+					<input
+						name="queryRewriteModel"
+						bind:value={queryRewriteModelValue}
+						placeholder={chatModelValue || 'chat model'}
+					/>
+				</label>
+				<label>
+					Number of searches
+					<input
+						name="queryRewriteCount"
+						type="number"
+						min="1"
+						bind:value={queryRewriteCountValue}
+						placeholder="3"
+					/>
+				</label>
+				<label>
+					Documents per search
+					<input
+						name="queryRewriteDocsPerSearch"
+						type="number"
+						min="1"
+						bind:value={queryRewriteDocsPerSearchValue}
+						placeholder={String(numberDocumentsValue ?? 4)}
+					/>
+				</label>
+			</div>
+			<div class="field-grid">
+				<label>
+					API language
+					<select name="queryRewriteApiLanguage" bind:value={queryRewriteApiLanguageValue}>
+						<option value="">Default (chat setting)</option>
+						<option value="chat/completions">chat/completions</option>
+						<option value="responses">responses</option>
+					</select>
+				</label>
+				<label>
+					Reasoning effort
+					<select name="queryRewriteReasoningEffort" bind:value={queryRewriteReasoningEffortValue}>
+						<option value="">Default (chat setting)</option>
+						{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
+							<option value={option}>{option}</option>
+						{/each}
+					</select>
+				</label>
+				<label>
+					Text verbosity
+					<select name="queryRewriteTextVerbosity" bind:value={queryRewriteTextVerbosityValue}>
+						<option value="">Default (chat setting)</option>
+						{#each ['low', 'medium', 'high'] as option}
+							<option value={option}>{option}</option>
+						{/each}
+					</select>
+				</label>
+			</div>
+			<label>
+				Rewrite context
+				<textarea
+					name="queryRewriteContext"
+					rows="2"
+					bind:value={queryRewriteContextValue}
+					placeholder="e.g. You are at TU Graz."
+				></textarea>
+				<span class="muted" style="font-weight: 400;">
+					Optional background given to the rewrite model to steer the generated searches.
+				</span>
+			</label>
+
+			<div class="section-head" style="margin-top: 0.5rem;">
+				<h3 id="userterms-heading" style="margin: 0;">User terms</h3>
+				<p class="muted">
+					Rejects /api/embed chat requests that carry no accepted user-terms timestamp.
+					Requires the <code>block_chatbot</code> widget with <code>data-userterms-url</code>;
+					the older <code>moodle-block_chatbot</code> embed sends no timestamp and will receive
+					403 for every request.
+				</p>
+			</div>
+			<div class="field-grid">
+				<label class="checkbox-label">
+					<input type="checkbox" name="requireUserterms" bind:checked={requireUsertermsValue} />
+					<span>Require accepted user terms</span>
+				</label>
+				<label>
+					Validity in months
+					<input
+						name="usertermsDurationMonths"
+						type="number"
+						min="1"
+						max="60"
+						bind:value={usertermsDurationMonthsValue}
+						placeholder="12"
+					/>
+				</label>
+			</div>
+			<p class="muted">
+				The timestamp comes from the visitor's browser, so it is an attestation and not a proof
+				&mdash; the allowed embed host regex stays the outer gate.
+			</p>
 		</section>
 
 	</form>

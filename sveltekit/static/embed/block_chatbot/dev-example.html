@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EdTechRAG Embed – block_chatbot Beispiel</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f0f0f0; }
+    h1 { color: #2d5b7f; }
+    pre {
+      padding: 15px;
+      border-radius: 10px;
+      background-color: #bbb;
+      overflow-x: auto;
+    }
+    code { background: #ddd; padding: 0 3px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>EdTechRAG Chatbot – block_chatbot</h1>
+  <p>The floating chat button should appear at the bottom right.</p>
+
+  <p>
+    Code needed:
+  </p>
+  <pre>
+&lt;div
+  id="at-ed-tech-edtechrag-id-sosmooc"
+  class="at-ed-tech-edtechrag"
+  hidden="hidden"
+  data-embed-id="MOOC_SOS_2026"
+  data-greeting="Hallo! Ich bin Mooxi ein Chatbot. Wie kann ich Ihnen helfen?"
+  data-assistant-name="Chatbot Mooxi"
+  data-brand-image-url="sos_mooc.png"
+  data-assistant-icon="sos_mooc.png"
+  data-username=""
+  data-lang="de"
+  data-sponsor-link="#"
+  data-sponsor-text="Datenschutz"
+  data-userterms-url="https://e-flaait.tugraz.at/edtechrag/benutzerbedingungen"
+  data-userterms-duration="12"
+  data-default-messages='["Wie schließe ich den Kurs ab?","Was sind Badges?","Wie bekomme ich mein Zertifikat?"]'
+  data-edtechrag-base-url="https://e-flaait.tugraz.at/edtechrag/"
+&gt;&lt;/div&gt;
+
+&lt;link rel="stylesheet" href="https://e-flaait.tugraz.at/edtechrag/embed/block_chatbot/edtechrag.css"&gt;
+&lt;script src="https://e-flaait.tugraz.at/edtechrag/embed/block_chatbot/edtechrag.js"&gt;&lt;/script&gt;
+  </pre>
+
+  <h2>data-userterms-url</h2>
+  <p>
+    Ist <code>data-userterms-url</code> gesetzt, erscheint der Chat-Button wie gewohnt, das Panel
+    zeigt aber statt des Eingabefelds die Zustimmung zu den Benutzerbedingungen: Link, „Schließen"
+    und „Akzeptieren". Erst nach dem Akzeptieren ist der Chat nutzbar. Die Zustimmung wird im
+    Browser gespeichert (localStorage <code>edtechrag-userterms-&lt;embedId&gt;</code>), bei jeder
+    Anfrage mitgeschickt und pro Chat-Log in der Datenbank protokolliert.
+  </p>
+  <p>
+    <code>data-userterms-duration</code> ist die Gültigkeit in Monaten (Standard 12). Ändert sich
+    die Terms-URL, muss ebenfalls neu zugestimmt werden. Im Footer steht der Link zu den
+    Benutzerbedingungen; über die drei Punkte daneben kann die Zustimmung widerrufen werden.
+  </p>
+  <p>
+    Ohne <code>data-userterms-url</code> verhält sich das Widget wie der Moodle-Block: kein Gate,
+    keine drei Punkte.
+  </p>
+  <p>
+    Zwei Abweichungen der Live-Demo unten gegenüber dem Snippet, damit diese Seite auch lokal
+    funktioniert: die Assets werden relativ geladen und <code>data-edtechrag-base-url</code> zeigt
+    auf denselben Host, und die Bild-Attribute sind leer, weil <code>sos_mooc.png</code> hier nicht
+    liegt. <code>marked.umd.js</code> braucht es nicht als eigenes <code>&lt;script&gt;</code> — das
+    Widget lädt es selbst aus <code>&lt;base-url&gt;cdn/marked.umd.js</code>.
+  </p>
+
+  <div
+    id="at-ed-tech-edtechrag-id-sosmooc"
+    class="at-ed-tech-edtechrag"
+    hidden="hidden"
+    data-embed-id="MOOC_SOS_2026"
+    data-greeting="Hallo! Ich bin Mooxi ein Chatbot. Wie kann ich Ihnen helfen?"
+    data-assistant-name="Chatbot Mooxi"
+    data-brand-image-url=""
+    data-assistant-icon=""
+    data-username=""
+    data-lang="de"
+    data-sponsor-link="#"
+    data-sponsor-text="Datenschutz"
+    data-userterms-url="https://e-flaait.tugraz.at/edtechrag/benutzerbedingungen"
+    data-userterms-duration="12"
+    data-default-messages='["Wie schließe ich den Kurs ab?","Was sind Badges?","Wie bekomme ich mein Zertifikat?"]'
+    data-edtechrag-base-url="/edtechrag/"
+  ></div>
+
+  <link rel="stylesheet" href="edtechrag.css">
+  <script src="edtechrag.js"></script>
+</body>
+</html>

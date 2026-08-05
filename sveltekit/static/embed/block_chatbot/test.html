@@ -11,8 +11,12 @@
   <link rel="stylesheet" href="edtechrag.css">
 </head>
 <body>
-  <h1>EdTechRAG Moodle Block Chatbot – Test</h1>
+  <h1>EdTechRAG Block Chatbot – Test</h1>
   <p>The floating chat button should appear at the bottom right.</p>
+  <p>
+    With <code>data-userterms-url</code> set, the panel shows the consent gate instead of the
+    composer until the terms are accepted. Remove the attribute to test the plain chat.
+  </p>
 
   <div
     id="at-ed-tech-edtechrag-test"
@@ -28,6 +32,8 @@
     data-sponsor-link=""
     data-sponsor-text=""
     data-default-messages='["Wie schließe ich den Kurs ab?","Was sind Badges?","Wie bekomme ich mein Zertifikat?"]'
+    data-userterms-url="https://www.tugraz.at/en/about-this-page/legal-notice"
+    data-userterms-duration="12"
     data-edtechrag-base-url="http://localhost:5173/edtechrag/"
   ></div>
 

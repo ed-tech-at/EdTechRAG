@@ -55,6 +55,9 @@ model ChatLog {
   history       Json?
   source        String?
 
+  termsAcceptedAt DateTime?
+  usertermsUrl    String?
+
   createdAt     DateTime @default(now())
 }
 

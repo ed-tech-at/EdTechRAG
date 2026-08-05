@@ -315,6 +315,10 @@
     var decoder  = new TextDecoder();
     var storageKey = 'edtechrag-chat-' + embedId;
 
+    var SEARCH_START = '__EDTECH_SEARCH_START__\n';
+    var SEARCH_END = '\n__EDTECH_SEARCH_END__\n';
+    var SEARCH_ICON = String.fromCodePoint(0x1F50D); // magnifier emoji, built at runtime to keep this file ASCII-only
+
     function saveHistory() {
       try {
         localStorage.setItem(storageKey, JSON.stringify(messages));
@@ -350,7 +354,7 @@
       avatar = el('img', cn('avatar'), { src: brandImageUrl, alt: assistantName });
     } else {
       avatar = el('div', cn('avatar'));
-      avatar.innerHTML = '<svg style="width:28px;height:28px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/><circle cx="7" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="12" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="17" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/></svg>';
+      avatar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.2 32.86"><path d="M36.2 0H0v22.93h23.38l-1.77 9.94 12-9.94h2.59zm-3.42 20.63-7.8 6.46 1.15-6.46H2.3V2.3h31.6v18.33zm-21.6-8.7c0 .89-.72 1.61-1.61 1.61s-1.61-.72-1.61-1.61.72-1.61 1.61-1.61 1.61.72 1.61 1.61m17.06 0c0 .89-.72 1.61-1.61 1.61s-1.61-.72-1.61-1.61.72-1.61 1.61-1.61 1.61.72 1.61 1.61M21.4 13c0 1.46-1.47 2.65-3.27 2.65s-3.27-1.19-3.27-2.65c0-.33.27-.6.6-.6s.6.27.6.6c0 .78.95 1.45 2.07 1.45s2.07-.66 2.07-1.45c0-.33.27-.6.6-.6s.6.27.6.6"/></svg>';
     }
 
     var titleEl = el('span', cn('title'));
@@ -426,7 +430,7 @@
       var fabImg = el('img', '', { src: assistantIcon, alt: assistantName });
       fab.appendChild(fabImg);
     } else {
-      fab.innerHTML = '<svg style="width:28px;height:28px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="white" d="M20 2H4C2.9 2 2 2.9 2 4v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/><circle cx="7" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="12" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/><circle cx="17" cy="11" r="1.5" style="fill:var(--at-ed-tech-edtechrag-emd-primary)"/></svg>';
+      fab.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36.2 32.86"><path d="M36.2 0H0v22.93h23.38l-1.77 9.94 12-9.94h2.59zm-3.42 20.63-7.8 6.46 1.15-6.46H2.3V2.3h31.6v18.33zm-21.6-8.7c0 .89-.72 1.61-1.61 1.61s-1.61-.72-1.61-1.61.72-1.61 1.61-1.61 1.61.72 1.61 1.61m17.06 0c0 .89-.72 1.61-1.61 1.61s-1.61-.72-1.61-1.61.72-1.61 1.61-1.61 1.61.72 1.61 1.61M21.4 13c0 1.46-1.47 2.65-3.27 2.65s-3.27-1.19-3.27-2.65c0-.33.27-.6.6-.6s.6.27.6.6c0 .78.95 1.45 2.07 1.45s2.07-.66 2.07-1.45c0-.33.27-.6.6-.6s.6.27.6.6"/></svg>';
     }
 
     host.appendChild(panel);
@@ -442,6 +446,10 @@
       var faqLabelEl = messagesEl.querySelector('.' + cn('faq-label'));
       if (faqLabelEl) faqLabelEl.style.display = 'none';
       messages.forEach(function (m) {
+        if (m.role === 'search') {
+          messagesEl.appendChild(buildSearchBubble(m.queries));
+          return;
+        }
         var wrap = el('div', cn('bubble') + ' ' + cn(m.role));
         var content = el('div', cn('bubble-content'));
         if (m.role === 'user') {
@@ -497,6 +505,17 @@
       return content;
     }
 
+    function buildSearchBubble(queries) {
+      var wrap = el('div', cn('bubble') + ' ' + cn('search'));
+      (queries || []).forEach(function (q) {
+        if (typeof q !== 'string' || !q) return;
+        var chip = el('span', cn('search-chip'));
+        chip.textContent = SEARCH_ICON + ' ' + q;
+        wrap.appendChild(chip);
+      });
+      return wrap;
+    }
+
     /* -- Send -- */
     function send(text) {
       text = typeof text === 'string' ? text.trim() : textarea.value.trim();
@@ -514,7 +533,9 @@
       loading = true;
       sendBtn.disabled = true;
 
-      var history = messages.map(function (m) { return { role: m.role, content: m.content }; });
+      var history = messages
+        .filter(function (m) { return m.role === 'user' || m.role === 'assistant'; })
+        .map(function (m) { return { role: m.role, content: m.content }; });
       messages.push({ role: 'user', content: text });
       addBubble('user', text);
 
@@ -522,6 +543,39 @@
       messages.push({ role: 'assistant', content: '' });
       var assistantIndex = messages.length - 1;
       var assistantContentEl = addBubble('assistant', '<span class="' + cn('muted') + '">...</span>');
+
+      var buffer = '';
+      var searchDone = false;
+
+      function handleSearchBlock() {
+        // Returns true if it consumed/awaited the search block, false if none present.
+        if (searchDone) return false;
+        if (buffer.indexOf(SEARCH_START) === 0) {
+          var endIdx = buffer.indexOf(SEARCH_END);
+          if (endIdx === -1) return true; // wait for more data
+          var payload = buffer.slice(SEARCH_START.length, endIdx);
+          var queries = [];
+          try {
+            var parsed = JSON.parse(payload);
+            if (Array.isArray(parsed)) {
+              queries = parsed.filter(function (q) { return typeof q === 'string'; });
+            }
+          } catch (e) { /* ignore malformed payload */ }
+          // Insert the chip bubble just before the assistant bubble and persist it.
+          var assistantWrap = assistantContentEl.parentNode;
+          messagesEl.insertBefore(buildSearchBubble(queries), assistantWrap);
+          messages.splice(assistantIndex, 0, { role: 'search', queries: queries });
+          assistantIndex += 1;
+          buffer = buffer.slice(endIdx + SEARCH_END.length);
+          searchDone = true;
+          return false;
+        }
+        if (buffer.length > 0 && SEARCH_START.indexOf(buffer) === 0) {
+          return true; // buffer is still a prefix of the marker; wait for more
+        }
+        searchDone = true; // no search block present
+        return false;
+      }
 
       var url = baseUrl + 'api/embed/' + encodeURIComponent(embedId);
       fetch(url, {
@@ -541,7 +595,10 @@
               return;
             }
             var piece = decoder.decode(chunk.value || new Uint8Array(), { stream: true });
-            assistantRaw += piece;
+            buffer += piece;
+            // Peel off the optional search-query block before treating bytes as tokens.
+            if (handleSearchBlock()) return read();
+            if (buffer) { assistantRaw += buffer; buffer = ''; }
             messages[assistantIndex].content = assistantRaw;
             assistantContentEl.innerHTML = renderMarkdown(assistantRaw);
             scrollBottom();
