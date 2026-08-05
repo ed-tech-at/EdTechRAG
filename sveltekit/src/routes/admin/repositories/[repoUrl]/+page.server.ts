@@ -63,6 +63,7 @@ const publicConfig = (repository: {
 	activeSinglePage: boolean;
 	activeParameterPage: boolean;
 	activeEmbedApi: boolean;
+	activeSearchApi: boolean;
 	embedAllowedHostRegex: string | null;
 }) => {
 	const updateConfig = asRecord(repository.updateConfig);
@@ -114,13 +115,27 @@ const publicConfig = (repository: {
 			queryRewriteReasoningEffort: rag?.queryRewriteReasoningEffort ?? '',
 			queryRewriteTextVerbosity: rag?.queryRewriteTextVerbosity ?? '',
 			requireUserterms: rag?.requireUserterms === true,
-			usertermsDurationMonths: rag?.usertermsDurationMonths
+			usertermsDurationMonths: rag?.usertermsDurationMonths,
+			searchResultLimit: rag?.searchResultLimit,
+			searchSnippetLength: rag?.searchSnippetLength,
+			aiOverviewEnabled: rag?.aiOverviewEnabled === true,
+			aiOverviewModel: rag?.aiOverviewModel ?? '',
+			aiOverviewSystemprompt: rag?.aiOverviewSystemprompt ?? '',
+			aiOverviewContext: rag?.aiOverviewContext ?? '',
+			aiOverviewDocuments: rag?.aiOverviewDocuments,
+			aiOverviewApiLanguage: rag?.aiOverviewApiLanguage ?? '',
+			aiOverviewReasoningEffort: rag?.aiOverviewReasoningEffort ?? '',
+			aiOverviewTextVerbosity: rag?.aiOverviewTextVerbosity ?? '',
+			// Not stored yet means "required" - see getAiOverviewConfig.
+			aiOverviewRequireUserterms: rag?.aiOverviewRequireUserterms !== false,
+			aiOverviewUsertermsDurationMonths: rag?.aiOverviewUsertermsDurationMonths
 		},
 		access: {
 			activeSimplePage: repository.activeSimplePage,
 			activeSinglePage: repository.activeSinglePage,
 			activeParameterPage: repository.activeParameterPage,
 			activeEmbedApi: repository.activeEmbedApi,
+			activeSearchApi: repository.activeSearchApi,
 			embedAllowedHostRegex: repository.embedAllowedHostRegex ?? ''
 		}
 	};
@@ -184,13 +199,28 @@ const formState = (
 			queryRewriteReasoningEffort: optionalString(formData.get('queryRewriteReasoningEffort')) ?? '',
 			queryRewriteTextVerbosity: optionalString(formData.get('queryRewriteTextVerbosity')) ?? '',
 			requireUserterms: parseAccessCheckbox(formData, 'requireUserterms'),
-			usertermsDurationMonths: optionalNumber(formData.get('usertermsDurationMonths'))
+			usertermsDurationMonths: optionalNumber(formData.get('usertermsDurationMonths')),
+			searchResultLimit: optionalNumber(formData.get('searchResultLimit')),
+			searchSnippetLength: optionalNumber(formData.get('searchSnippetLength')),
+			aiOverviewEnabled: parseAccessCheckbox(formData, 'aiOverviewEnabled'),
+			aiOverviewModel: optionalString(formData.get('aiOverviewModel')) ?? '',
+			aiOverviewSystemprompt: optionalString(formData.get('aiOverviewSystemprompt')) ?? '',
+			aiOverviewContext: optionalString(formData.get('aiOverviewContext')) ?? '',
+			aiOverviewDocuments: optionalNumber(formData.get('aiOverviewDocuments')),
+			aiOverviewApiLanguage: optionalString(formData.get('aiOverviewApiLanguage')) ?? '',
+			aiOverviewReasoningEffort: optionalString(formData.get('aiOverviewReasoningEffort')) ?? '',
+			aiOverviewTextVerbosity: optionalString(formData.get('aiOverviewTextVerbosity')) ?? '',
+			aiOverviewRequireUserterms: parseAccessCheckbox(formData, 'aiOverviewRequireUserterms'),
+			aiOverviewUsertermsDurationMonths: optionalNumber(
+				formData.get('aiOverviewUsertermsDurationMonths')
+			)
 		},
 		access: {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
 			activeSinglePage: parseAccessCheckbox(formData, 'activeSinglePage'),
 			activeParameterPage: parseAccessCheckbox(formData, 'activeParameterPage'),
 			activeEmbedApi: parseAccessCheckbox(formData, 'activeEmbedApi'),
+			activeSearchApi: parseAccessCheckbox(formData, 'activeSearchApi'),
 			embedAllowedHostRegex: parseEmbedAllowedHostRegex(formData) ?? ''
 		}
 	};
@@ -252,7 +282,20 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					queryRewriteReasoningEffort: '',
 					queryRewriteTextVerbosity: '',
 					requireUserterms: false,
-					usertermsDurationMonths: undefined
+					usertermsDurationMonths: undefined,
+					searchResultLimit: undefined,
+					searchSnippetLength: undefined,
+					aiOverviewEnabled: false,
+					aiOverviewModel: '',
+					aiOverviewSystemprompt: '',
+					aiOverviewContext: '',
+					aiOverviewDocuments: undefined,
+					aiOverviewApiLanguage: '',
+					aiOverviewReasoningEffort: '',
+					aiOverviewTextVerbosity: '',
+					// A new repository gets the safe default: consent required.
+					aiOverviewRequireUserterms: true,
+					aiOverviewUsertermsDurationMonths: undefined
 				},
 				access: {
 					...defaultRepositoryAccess,
@@ -345,11 +388,49 @@ export const actions: Actions = {
 			);
 		}
 
+		/* -- Search results and the AI overview above them -- */
+		const searchResultLimit = optionalNumber(formData.get('searchResultLimit'));
+		const searchSnippetLength = optionalNumber(formData.get('searchSnippetLength'));
+		if (searchResultLimit !== undefined && searchResultLimit < 1) {
+			errors.push('Number of search results must be at least 1.');
+		}
+		// 40 characters is not a snippet, it is a fragment - and a snippet longer
+		// than the chunk itself just pads the result list.
+		if (searchSnippetLength !== undefined && searchSnippetLength < 40) {
+			errors.push('Snippet length must be at least 40 characters.');
+		}
+
+		const aiOverviewEnabled = parseAccessCheckbox(formData, 'aiOverviewEnabled');
+		const aiOverviewModel = optionalString(formData.get('aiOverviewModel'));
+		const aiOverviewSystemprompt = optionalString(formData.get('aiOverviewSystemprompt'));
+		const aiOverviewContext = optionalString(formData.get('aiOverviewContext'));
+		const aiOverviewDocuments = optionalNumber(formData.get('aiOverviewDocuments'));
+		const aiOverviewApiLanguage = optionalString(formData.get('aiOverviewApiLanguage'));
+		const aiOverviewReasoningEffort = optionalString(formData.get('aiOverviewReasoningEffort'));
+		const aiOverviewTextVerbosity = optionalString(formData.get('aiOverviewTextVerbosity'));
+		const aiOverviewRequireUserterms = parseAccessCheckbox(formData, 'aiOverviewRequireUserterms');
+		const aiOverviewUsertermsDurationMonths = optionalNumber(
+			formData.get('aiOverviewUsertermsDurationMonths')
+		);
+		if (aiOverviewDocuments !== undefined && aiOverviewDocuments < 1) {
+			errors.push('Documents for the AI overview must be at least 1.');
+		}
+		if (
+			aiOverviewUsertermsDurationMonths !== undefined &&
+			(aiOverviewUsertermsDurationMonths < USERTERMS_MIN_MONTHS ||
+				aiOverviewUsertermsDurationMonths > USERTERMS_MAX_MONTHS)
+		) {
+			errors.push(
+				`AI-overview consent validity must be between ${USERTERMS_MIN_MONTHS} and ${USERTERMS_MAX_MONTHS} months.`
+			);
+		}
+
 		const nextAccess = {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
 			activeSinglePage: parseAccessCheckbox(formData, 'activeSinglePage'),
 			activeParameterPage: parseAccessCheckbox(formData, 'activeParameterPage'),
 			activeEmbedApi: parseAccessCheckbox(formData, 'activeEmbedApi'),
+			activeSearchApi: parseAccessCheckbox(formData, 'activeSearchApi'),
 			embedAllowedHostRegex: parseEmbedAllowedHostRegex(formData)
 		};
 		validateRepositoryAccess(nextAccess, errors);
@@ -418,7 +499,9 @@ export const actions: Actions = {
 			metaTags: metaTagsFromForm(formData.get('metaTags')),
 			queryRewriteEnabled,
 			queryRewriteIncludeHistory,
-			requireUserterms
+			requireUserterms,
+			aiOverviewEnabled,
+			aiOverviewRequireUserterms
 		};
 		if (usertermsDurationMonths !== undefined)
 			nextRag.usertermsDurationMonths = usertermsDurationMonths;
@@ -444,6 +527,36 @@ export const actions: Actions = {
 		if (queryRewriteTextVerbosity !== undefined)
 			nextRag.queryRewriteTextVerbosity = queryRewriteTextVerbosity;
 		else delete nextRag.queryRewriteTextVerbosity;
+		/*
+		 * Same "set or delete" as above, and for the same reason: an empty field must
+		 * REMOVE the key, not store an empty string. getAiOverviewConfig falls back to
+		 * the repo's chat setting when the key is absent - an empty string would be a
+		 * value and would win over that fallback.
+		 */
+		if (searchResultLimit !== undefined) nextRag.searchResultLimit = searchResultLimit;
+		else delete nextRag.searchResultLimit;
+		if (searchSnippetLength !== undefined) nextRag.searchSnippetLength = searchSnippetLength;
+		else delete nextRag.searchSnippetLength;
+		if (aiOverviewModel !== undefined) nextRag.aiOverviewModel = aiOverviewModel;
+		else delete nextRag.aiOverviewModel;
+		if (aiOverviewSystemprompt !== undefined)
+			nextRag.aiOverviewSystemprompt = aiOverviewSystemprompt;
+		else delete nextRag.aiOverviewSystemprompt;
+		if (aiOverviewContext !== undefined) nextRag.aiOverviewContext = aiOverviewContext;
+		else delete nextRag.aiOverviewContext;
+		if (aiOverviewDocuments !== undefined) nextRag.aiOverviewDocuments = aiOverviewDocuments;
+		else delete nextRag.aiOverviewDocuments;
+		if (aiOverviewApiLanguage !== undefined) nextRag.aiOverviewApiLanguage = aiOverviewApiLanguage;
+		else delete nextRag.aiOverviewApiLanguage;
+		if (aiOverviewReasoningEffort !== undefined)
+			nextRag.aiOverviewReasoningEffort = aiOverviewReasoningEffort;
+		else delete nextRag.aiOverviewReasoningEffort;
+		if (aiOverviewTextVerbosity !== undefined)
+			nextRag.aiOverviewTextVerbosity = aiOverviewTextVerbosity;
+		else delete nextRag.aiOverviewTextVerbosity;
+		if (aiOverviewUsertermsDurationMonths !== undefined)
+			nextRag.aiOverviewUsertermsDurationMonths = aiOverviewUsertermsDurationMonths;
+		else delete nextRag.aiOverviewUsertermsDurationMonths;
 
 		try {
 			await prisma.repository.upsert({

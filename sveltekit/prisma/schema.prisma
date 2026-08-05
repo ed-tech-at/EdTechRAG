@@ -21,6 +21,7 @@ model Repository {
   activeSinglePage    Boolean @default(false)
   activeParameterPage Boolean @default(false)
   activeEmbedApi      Boolean @default(false)
+  activeSearchApi     Boolean @default(false)
   embedAllowedHostRegex String?
 
   dataFiles    DataFile[]

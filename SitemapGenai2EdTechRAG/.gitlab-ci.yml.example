@@ -1,0 +1,112 @@
+# Pipeline of the MIRROR repository - the one that holds the .md files.
+#
+# Copy this file to that repository as .gitlab-ci.yml. It does not belong in
+# EdTechRAG: a pipeline here would run on every EdTechRAG commit, and what should
+# trigger it is a schedule, not a code change.
+#
+# Three stages, matching the three modes of the tool:
+#
+#   build  fetch every sitemap-genai.xml and write the .md files
+#   push   stage, commit and push - git's job, not the tool's
+#   embed  POST /pull -> /chunk -> /embed, once per site
+#
+# The split is not cosmetic: a failed push must not leave EdTechRAG indexing
+# content that never arrived in the repository.
+
+stages:
+  - build
+  - push
+  - embed
+
+variables:
+  GIT_DEPTH: '0'
+  # Where the tool comes from. It is one main.go with no dependencies, so the job
+  # clones it instead of installing anything. Alternative: copy main.go and go.mod
+  # into tools/ of this repository and drop the clone - fewer moving parts, but the
+  # copy has to be kept in sync by hand.
+  TOOL_REPO: 'https://gitlab.tugraz.at/flaait/2026/edtechrag/edtechrag.git'
+  TOOL_DIR: '/tmp/tool'
+
+# Only a schedule, the web UI or the API may start this pipeline.
+#
+# Without this rule the push in stage 2 would start the next pipeline, which would
+# push again: an endless loop that also re-embeds everything each round. The
+# "[skip ci]" in the commit message is the second latch; a rule is the first,
+# because a commit message can be changed by anyone.
+.only_triggered: &only_triggered
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_PIPELINE_SOURCE == "api"'
+
+.go_job:
+  image: golang:1.24-alpine
+  before_script:
+    - apk add --no-cache git
+    - git clone --depth 1 "$TOOL_REPO" "$TOOL_DIR"
+    - cd "$TOOL_DIR/SitemapGenai2EdTechRAG"
+  <<: *only_triggered
+
+build:
+  extends: .go_job
+  stage: build
+  script:
+    # WORKDIR is the checkout of THIS repository: the tool writes the site
+    # directories straight into the working tree, so stage 2 can diff them.
+    - WORKDIR="$CI_PROJECT_DIR" go run . -mode=build
+  artifacts:
+    expire_in: 1 day
+    paths:
+      # One entry per key in SITEMAP_GENAI_SITES. A key that is missing here is
+      # built and then thrown away between the stages.
+      - telucation/
+      - flaait/
+
+push:
+  extends: .go_job
+  stage: push
+  script:
+    - WORKDIR="$CI_PROJECT_DIR" go run . -mode=diff
+    - cd "$CI_PROJECT_DIR"
+    - git config user.email "$GIT_AUTHOR_EMAIL"
+    - git config user.name "$GIT_AUTHOR_NAME"
+    # Nothing changed: no empty commit, and stage 3 will skip every site by itself.
+    - |
+      if git diff --cached --quiet; then
+        echo "Nothing changed - no commit."
+        echo "GENAI_HEAD_SHA=$(git rev-parse HEAD)" > head.env
+        exit 0
+      fi
+    - git commit -m "genai sync $(date -u +%Y-%m-%dT%H:%M:%SZ) [skip ci]"
+    - git push "https://oauth2:${GENAI_PUSH_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "HEAD:${CI_DEFAULT_BRANCH}"
+    # The commit that CONTAINS the new content - stage 3 has a checkout of the
+    # commit the pipeline started from and cannot know it otherwise.
+    - echo "GENAI_HEAD_SHA=$(git rev-parse HEAD)" > head.env
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - changes.json
+    reports:
+      dotenv: head.env
+
+embed:
+  extends: .go_job
+  stage: embed
+  script:
+    - WORKDIR="$CI_PROJECT_DIR" go run . -mode=notify
+
+# ---------------------------------------------------------------------------
+# CI/CD variables to set in this repository (Settings > CI/CD > Variables).
+# Mark the last two as MASKED and PROTECTED.
+#
+#   SITEMAP_GENAI_SITES              JSON array, see .env.example
+#   GIT_AUTHOR_NAME                  e.g. "GenAI Sync"
+#   GIT_AUTHOR_EMAIL                 e.g. "noreply@tugraz.at"
+#   SitemapGenai2EdTechRAG_ENDPOINT  https://.../edtechrag/api/gitlab
+#   SitemapGenai2EdTechRAG_SHARED_SECRET   masked, protected
+#   GENAI_PUSH_TOKEN                 project access token, scope write_repository,
+#                                    masked, protected
+#
+# Then add a schedule under Build > Pipeline schedules. Daily is plenty: the
+# websites are rebuilt by hand, and every run that finds nothing skips the whole
+# embed stage on its own.

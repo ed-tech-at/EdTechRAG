@@ -166,6 +166,18 @@ type RetrieveWithRewriteParams = {
 	ragConfig: RagConfig | undefined;
 	/** Force the rewrite step even when the repo config has it disabled (diagnostic view). */
 	forceRewrite?: boolean;
+	/**
+	 * How many chunks to retrieve, overriding ragConfig.numberDocuments.
+	 *
+	 * The search endpoint needs it: its result list shows DOCUMENTS, and several
+	 * chunks of one page collapse into one entry - so it has to ask for more chunks
+	 * than it wants results. An explicit parameter and not a doctored ragConfig, so
+	 * the call site says what it does.
+	 *
+	 * Only the FALLBACK is overridden: an explicitly configured
+	 * queryRewriteDocsPerSearch still wins, because that is a deliberate setting.
+	 */
+	documents?: number;
 };
 
 export type RetrieveWithRewriteResult = {
@@ -184,9 +196,11 @@ export async function retrieveWithRewrite({
 	prompt,
 	history = [],
 	ragConfig,
-	forceRewrite = false
+	forceRewrite = false,
+	documents
 }: RetrieveWithRewriteParams): Promise<RetrieveWithRewriteResult> {
-	const fallbackDocs = getNumberDocuments(ragConfig);
+	const fallbackDocs =
+		documents && documents > 0 ? Math.floor(documents) : getNumberDocuments(ragConfig);
 	const rewrite = getQueryRewriteConfig(ragConfig, fallbackDocs);
 
 	if (!rewrite.enabled && !forceRewrite) {

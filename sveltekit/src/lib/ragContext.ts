@@ -15,6 +15,20 @@ export type RagConfig = {
 	queryRewriteTextVerbosity?: string;
 	requireUserterms?: boolean;
 	usertermsDurationMonths?: number;
+	/* -- Search embed (static/embed/search) -- */
+	searchResultLimit?: number;
+	searchSnippetLength?: number;
+	/* -- AI overview above the search results -- */
+	aiOverviewEnabled?: boolean;
+	aiOverviewModel?: string;
+	aiOverviewSystemprompt?: string;
+	aiOverviewContext?: string;
+	aiOverviewDocuments?: number;
+	aiOverviewApiLanguage?: string;
+	aiOverviewReasoningEffort?: string;
+	aiOverviewTextVerbosity?: string;
+	aiOverviewRequireUserterms?: boolean;
+	aiOverviewUsertermsDurationMonths?: number;
 };
 
 export type QueryRewriteConfig = {
@@ -30,12 +44,57 @@ export type QueryRewriteConfig = {
 	textVerbosity?: string;
 };
 
+/**
+ * Search results and the AI overview above them (static/embed/search).
+ *
+ * Deliberately a separate config from queryRewrite even though both drive an LLM
+ * call: query rewrite makes retrieval better and stays invisible, the overview is
+ * a visible answer the visitor has to consent to. Sharing a model or a verbosity
+ * setting between the two would mean one of them cannot be tuned without moving
+ * the other.
+ */
+export type AiOverviewConfig = {
+	enabled: boolean;
+	model?: string;
+	systemprompt?: string;
+	/** Extra instruction prepended to the user message - the counterpart of queryRewriteContext. */
+	context?: string;
+	/** How many retrieved documents the overview is allowed to summarise. */
+	documents: number;
+	// Optional overrides; undefined means "inherit the repo's chat setting".
+	apiLanguage?: string;
+	reasoningEffort?: string;
+	textVerbosity?: string;
+	/**
+	 * Consent gate. Separate from `requireUserterms` (the chatbot): a site may run
+	 * the search without a chatbot, and the visitor consents to the overview, not
+	 * to a conversation.
+	 */
+	requireUserterms: boolean;
+	usertermsDurationMonths: number;
+};
+
+export type SearchConfig = {
+	/** How many documents (not chunks) the result list shows at most. */
+	resultLimit: number;
+	/** Characters per snippet. Long enough to judge a hit, short enough to scan. */
+	snippetLength: number;
+};
+
+// The three enums are the same values the chat client accepts; the constants stay
+// named after query rewrite because that is where they were first needed.
 const QUERY_REWRITE_API_LANGUAGES = ['chat/completions', 'responses'];
 const QUERY_REWRITE_REASONING_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high'];
 const QUERY_REWRITE_TEXT_VERBOSITIES = ['low', 'medium', 'high'];
 
 const optionalEnum = (value: unknown, allowed: string[]): string | undefined =>
 	typeof value === 'string' && allowed.includes(value) ? value : undefined;
+
+const optionalPositiveInt = (value: unknown): number | undefined =>
+	typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : undefined;
+
+const optionalTrimmed = (value: unknown): string | undefined =>
+	typeof value === 'string' && value.trim() ? value.trim() : undefined;
 
 export type RagContextResult = {
 	content?: string | null;
@@ -91,7 +150,29 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 		),
 		requireUserterms: typeof raw.requireUserterms === 'boolean' ? raw.requireUserterms : undefined,
 		usertermsDurationMonths:
-			typeof raw.usertermsDurationMonths === 'number' ? raw.usertermsDurationMonths : undefined
+			typeof raw.usertermsDurationMonths === 'number' ? raw.usertermsDurationMonths : undefined,
+		searchResultLimit: optionalPositiveInt(raw.searchResultLimit),
+		searchSnippetLength: optionalPositiveInt(raw.searchSnippetLength),
+		aiOverviewEnabled:
+			typeof raw.aiOverviewEnabled === 'boolean' ? raw.aiOverviewEnabled : undefined,
+		aiOverviewModel: optionalTrimmed(raw.aiOverviewModel),
+		aiOverviewSystemprompt: optionalTrimmed(raw.aiOverviewSystemprompt),
+		aiOverviewContext: optionalTrimmed(raw.aiOverviewContext),
+		aiOverviewDocuments: optionalPositiveInt(raw.aiOverviewDocuments),
+		aiOverviewApiLanguage: optionalEnum(raw.aiOverviewApiLanguage, QUERY_REWRITE_API_LANGUAGES),
+		aiOverviewReasoningEffort: optionalEnum(
+			raw.aiOverviewReasoningEffort,
+			QUERY_REWRITE_REASONING_EFFORTS
+		),
+		aiOverviewTextVerbosity: optionalEnum(
+			raw.aiOverviewTextVerbosity,
+			QUERY_REWRITE_TEXT_VERBOSITIES
+		),
+		aiOverviewRequireUserterms:
+			typeof raw.aiOverviewRequireUserterms === 'boolean'
+				? raw.aiOverviewRequireUserterms
+				: undefined,
+		aiOverviewUsertermsDurationMonths: optionalPositiveInt(raw.aiOverviewUsertermsDurationMonths)
 	};
 }
 
@@ -120,15 +201,23 @@ export const USERTERMS_GRACE_MS = 6 * 24 * 60 * 60 * 1000;
 // produce an unrecoverable 403 for those visitors.
 export const USERTERMS_FUTURE_SKEW_MS = 24 * 60 * 60 * 1000;
 
+/** Clamp to the allowed window; anything unusable falls back to the default. */
+const clampMonths = (months: unknown): number =>
+	typeof months !== 'number' || !Number.isFinite(months)
+		? USERTERMS_DEFAULT_MONTHS
+		: Math.min(Math.max(Math.floor(months), USERTERMS_MIN_MONTHS), USERTERMS_MAX_MONTHS);
+
 export function getUsertermsDurationMonths(ragConfig: RagConfig | undefined): number {
-	const months = ragConfig?.usertermsDurationMonths;
-	if (typeof months !== 'number' || !Number.isFinite(months)) return USERTERMS_DEFAULT_MONTHS;
-	return Math.min(Math.max(Math.floor(months), USERTERMS_MIN_MONTHS), USERTERMS_MAX_MONTHS);
+	return clampMonths(ragConfig?.usertermsDurationMonths);
 }
 
 export function getUsertermsMaxAgeMs(ragConfig: RagConfig | undefined): number {
 	return getUsertermsDurationMonths(ragConfig) * MONTH_MS + USERTERMS_GRACE_MS;
 }
+
+/** Months -> the server-side acceptance window, grace included. */
+export const usertermsMaxAgeMsForMonths = (months: number): number =>
+	clampMonths(months) * MONTH_MS + USERTERMS_GRACE_MS;
 
 /**
  * Validates a client-supplied acceptance timestamp and returns it in canonical ISO form,
@@ -184,6 +273,49 @@ export function getQueryRewriteConfig(
 			QUERY_REWRITE_REASONING_EFFORTS
 		),
 		textVerbosity: optionalEnum(ragConfig?.queryRewriteTextVerbosity, QUERY_REWRITE_TEXT_VERBOSITIES)
+	};
+}
+
+/** Defaults of the search result list. */
+export const SEARCH_DEFAULT_RESULT_LIMIT = 10;
+export const SEARCH_DEFAULT_SNIPPET_LENGTH = 320;
+
+export function getSearchConfig(ragConfig: RagConfig | undefined): SearchConfig {
+	return {
+		resultLimit: ragConfig?.searchResultLimit ?? SEARCH_DEFAULT_RESULT_LIMIT,
+		snippetLength: ragConfig?.searchSnippetLength ?? SEARCH_DEFAULT_SNIPPET_LENGTH
+	};
+}
+
+/**
+ * The AI overview above the search results.
+ *
+ * `enabled` false is the default on purpose: a repository that was configured
+ * before this feature existed must not start spending tokens - and showing an
+ * answer - because the code was updated.
+ */
+export function getAiOverviewConfig(
+	ragConfig: RagConfig | undefined,
+	fallbackDocs: number = 4
+): AiOverviewConfig {
+	return {
+		enabled: ragConfig?.aiOverviewEnabled === true,
+		model: ragConfig?.aiOverviewModel,
+		systemprompt: ragConfig?.aiOverviewSystemprompt,
+		context: ragConfig?.aiOverviewContext,
+		documents: ragConfig?.aiOverviewDocuments ?? fallbackDocs,
+		apiLanguage: optionalEnum(ragConfig?.aiOverviewApiLanguage, QUERY_REWRITE_API_LANGUAGES),
+		reasoningEffort: optionalEnum(
+			ragConfig?.aiOverviewReasoningEffort,
+			QUERY_REWRITE_REASONING_EFFORTS
+		),
+		textVerbosity: optionalEnum(ragConfig?.aiOverviewTextVerbosity, QUERY_REWRITE_TEXT_VERBOSITIES),
+		// Consent required unless the repo says otherwise: the safe default for a
+		// feature that sends the visitor's question to a language model.
+		requireUserterms: ragConfig?.aiOverviewRequireUserterms !== false,
+		usertermsDurationMonths: clampMonths(
+			ragConfig?.aiOverviewUsertermsDurationMonths ?? ragConfig?.usertermsDurationMonths
+		)
 	};
 }
 
