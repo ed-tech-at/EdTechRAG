@@ -682,7 +682,9 @@
 				<span class="muted" style="font-weight: 400;">
 					Empty falls back to a built-in prompt that answers from the context only and cites the
 					source URLs. Deliberately not the chat system prompt: a search overview is a short
-					summary, not a conversation.
+					summary, not a conversation. What you write here replaces the WORDING only - the output
+					format (Markdown, sources as [label](url), no bare URLs) is appended either way, because
+					the embed renders exactly those constructs and nothing else.
 				</span>
 			</label>
 			<label>

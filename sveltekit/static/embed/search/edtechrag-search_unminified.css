@@ -24,6 +24,27 @@
 	--at-ed-tech-edtechrag-src-accent: #285f82;
 	--at-ed-tech-edtechrag-src-accent-contrast: #ffffff;
 	--at-ed-tech-edtechrag-src-accent-hover: #1d475f;
+	/*
+	 * The edge of the accent buttons. Transparent by default, which looks like no
+	 * border at all: the button's own background is painted under it
+	 * (background-clip is border-box), so nothing changes for a page that ignores
+	 * this variable.
+	 *
+	 * It exists because a filled button DISAPPEARS on a page whose background is
+	 * its own accent colour - a search in a dark brand band, with the button in
+	 * that same brand colour, leaves only the label visible. WCAG 1.4.11 asks for
+	 * 3:1 on whatever makes a control recognisable; where the fill cannot deliver
+	 * that, the edge has to. Deliberately NOT defaulted to var(--accent): a page
+	 * that overrides only --accent would then get this one resolved against the
+	 * DEFAULT accent, because the substitution happens where the declaration sits
+	 * - here on :root, not on the button.
+	 */
+	--at-ed-tech-edtechrag-src-accent-border: transparent;
+	/*
+	 * NOT listed here, but part of the contract: --at-ed-tech-edtechrag-src-focus-color.
+	 * It has no default on purpose - unset, the focus ring follows the accent (see
+	 * the focus rule below for why the fallback cannot live up here).
+	 */
 	--at-ed-tech-edtechrag-src-ink: currentColor;
 	--at-ed-tech-edtechrag-src-muted: #5a6570;
 	--at-ed-tech-edtechrag-src-border: #cbd3da;
@@ -117,7 +138,7 @@
 	   when the page shrinks the font. */
 	min-height: 2.75rem;
 	padding: 0.6rem 1.25rem;
-	border: 1px solid transparent;
+	border: 1px solid var(--at-ed-tech-edtechrag-src-accent-border);
 	border-radius: var(--at-ed-tech-edtechrag-src-radius);
 	background: var(--at-ed-tech-edtechrag-src-accent);
 	color: var(--at-ed-tech-edtechrag-src-accent-contrast);
@@ -128,14 +149,28 @@
 	background: var(--at-ed-tech-edtechrag-src-accent-hover);
 }
 
-/* One focus rule for every interactive element of the widget. Never removed and
-   never replaced by a colour change alone (WCAG 2.4.7, 1.4.11). */
+/*
+   One focus rule for every interactive element of the widget. Never removed and
+   never replaced by a colour change alone (WCAG 2.4.7, 1.4.11).
+
+   The ring follows the accent unless --focus-color says otherwise. That escape
+   hatch is not decoration: the ring needs 3:1 against ITS OWN surroundings, and
+   a page that paints the accent in its own background colour (a search in a dark
+   brand band) would otherwise draw an invisible ring around every control.
+
+   The fallback sits HERE and not as a default on :root, and that placement is the
+   whole point: written as a :root default, `var(--accent)` would be substituted
+   on :root and would keep the DEFAULT accent for every page that overrides only
+   --accent. In the fallback position it is resolved on the focused element, where
+   the overridden accent applies.
+*/
 .at-ed-tech-edtechrag-src-input:focus-visible,
 .at-ed-tech-edtechrag-src-submit:focus-visible,
 .at-ed-tech-edtechrag-src-overview-accept:focus-visible,
 .at-ed-tech-edtechrag-src-overview-menu:focus-visible,
 .at-ed-tech-edtechrag-src-item-title:focus-visible {
-	outline: var(--at-ed-tech-edtechrag-src-focus) solid var(--at-ed-tech-edtechrag-src-accent);
+	outline: var(--at-ed-tech-edtechrag-src-focus) solid
+		var(--at-ed-tech-edtechrag-src-focus-color, var(--at-ed-tech-edtechrag-src-accent));
 	outline-offset: 2px;
 }
 
@@ -296,7 +331,9 @@
 	font-weight: 600;
 	min-height: 2.75rem;
 	padding: 0.5rem 1.25rem;
-	border: 1px solid var(--at-ed-tech-edtechrag-src-accent);
+	/* Dieselbe Kante wie am Suchknopf - er steht im Kasten der Zusammenfassung
+	   und darf dort nicht anders aussehen als in der Suchzeile darueber. */
+	border: 1px solid var(--at-ed-tech-edtechrag-src-accent-border);
 	border-radius: var(--at-ed-tech-edtechrag-src-radius);
 	background: var(--at-ed-tech-edtechrag-src-accent);
 	color: var(--at-ed-tech-edtechrag-src-accent-contrast);
@@ -452,7 +489,8 @@
 }
 
 .at-ed-tech-edtechrag-src-modal-btn:focus-visible {
-	outline: var(--at-ed-tech-edtechrag-src-focus) solid var(--at-ed-tech-edtechrag-src-accent);
+	outline: var(--at-ed-tech-edtechrag-src-focus) solid
+		var(--at-ed-tech-edtechrag-src-focus-color, var(--at-ed-tech-edtechrag-src-accent));
 	outline-offset: 2px;
 }
 

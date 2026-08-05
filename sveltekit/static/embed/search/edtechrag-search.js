@@ -38,6 +38,11 @@
 			searching: 'Searching ...',
 			resultsFor: 'Results for',
 			noResults: 'Nothing found. Try other words.',
+			// The same situation while the overview is still on the table. It searches
+			// by meaning, so it routinely finds pages the full text missed - saying
+			// "nothing found" at that moment would be a verdict on half the job.
+			noResultsPending:
+				'No literal match. The summary above searches by meaning rather than spelling and may still find something.',
 			resultCount: function (n) {
 				return n === 1 ? '1 result' : n + ' results';
 			},
@@ -66,12 +71,14 @@
 			searching: 'Suche l\u00e4uft ...',
 			resultsFor: 'Ergebnisse f\u00fcr',
 			noResults: 'Nichts gefunden. Versuchen Sie es mit anderen Worten.',
+			noResultsPending:
+				'Kein Treffer im Wortlaut. Die Zusammenfassung dar\u00fcber sucht nach Bedeutung statt nach Buchstaben und kann trotzdem etwas finden.',
 			resultCount: function (n) {
 				return n === 1 ? '1 Ergebnis' : n + ' Ergebnisse';
 			},
 			queriesLabel: 'Gesucht wurde nach:',
 			errorPrefix: 'Fehler:',
-			overviewHeading: 'KI-Zusammenfassung',
+			overviewHeading: 'AI-Zusammenfassung',
 			overviewIntro:
 				'Ein Sprachmodell kann diese Ergebnisse f\u00fcr Sie zusammenfassen. Dazu wird Ihre Suchanfrage an das Modell \u00fcbermittelt.',
 			overviewAccept: 'Zusammenfassung anzeigen',
@@ -84,7 +91,7 @@
 			menu: 'Weitere Optionen',
 			revoke: 'Zustimmung widerrufen',
 			revokeQuestion:
-				'Zustimmung widerrufen? Die KI-Zusammenfassung wird wieder gesperrt; die Suche funktioniert weiter.',
+				'Zustimmung widerrufen? Die AI-Zusammenfassung wird wieder gesperrt; die Suche funktioniert weiter.',
 			cancel: 'Abbrechen',
 			noscript: 'Die Suche braucht JavaScript.'
 		}
@@ -152,10 +159,37 @@
 	 */
 	function renderOverview(text) {
 		var out = escapeHtml(text)
-			// [label](https://...) - only http(s), so a javascript: URL cannot get through.
-			.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function (m, label, href) {
-				return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + label + '</a>';
-			})
+			/*
+			 * [label](https://...) AND a bare https://... - in ONE pass.
+			 *
+			 * Only http(s), so a javascript: URL cannot get through, and no quote in
+			 * the address, so it cannot leave the href it is written into.
+			 *
+			 * The bare form is a safety net, not an invitation: the prompt asks for
+			 * Markdown links (see src/lib/server/searchPrompt.ts), but a model drops
+			 * the syntax now and then, and an address in the middle of a sentence
+			 * should be reachable rather than punish the visitor for it.
+			 *
+			 * One alternation and not two passes: a second pass would find the URLs
+			 * the first one had just written into href="..." and wrap them again.
+			 */
+			.replace(
+				/\[([^\]]+)\]\((https?:\/\/[^\s)"]+)\)|(https?:\/\/[^\s<"]+)/g,
+				function (m, label, href, bare) {
+					if (href) {
+						return (
+							'<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + label + '</a>'
+						);
+					}
+					// Satzzeichen am Ende gehoeren zum Satz und nicht zur Adresse - ohne
+					// diese Zeile endet jeder Link am Satzende auf einem Punkt.
+					var url = bare.replace(/[.,;:!?)\]]+$/, '');
+					var tail = bare.slice(url.length);
+					return (
+						'<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>' + tail
+					);
+				}
+			)
 			.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
 			.replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>');
 
@@ -212,6 +246,19 @@
 
 		var overviewAvailable = false;
 		var overviewRequiresTerms = true;
+		/*
+		 * Steht das Angebot der Zusammenfassung gerade? Entweder wartet sie auf die
+		 * Zustimmung, oder sie wird gerade geschrieben.
+		 *
+		 * Die Marke gehoert der Trefferliste, nicht dem Kasten: solange die
+		 * Zusammenfassung noch etwas beitragen kann, darf unter einer leeren Liste
+		 * nicht "Nichts gefunden" stehen. Sie holt ihre Quellen selbst und ueber die
+		 * BEDEUTUNG - der haeufigste Fall einer leeren Volltextsuche ist ein
+		 * Tippfehler, und genau den uebersteht die semantische Suche.
+		 *
+		 * Wer das Angebot zeigt, setzt sie; wer es wegnimmt, loescht sie.
+		 */
+		var overviewPending = false;
 		var currentQuery = '';
 		var searching = false;
 		// Getrennt gehalten: die Datenbanktreffer stehen sofort da, die semantischen
@@ -409,8 +456,11 @@
 			clearAcceptance();
 			// Die semantischen Treffer kamen mit der Zustimmung, sie gehen mit ihr.
 			ragHits = [];
-			renderResults();
+			// Erst das Angebot, dann die Liste - siehe runSearch: bleibt nach dem
+			// Widerruf nichts uebrig, haengt der Text der leeren Liste daran, dass
+			// die Zusammenfassung erneut angeboten wird.
 			showOverviewGate();
+			renderResults();
 		});
 		// Klick auf den Hintergrund schliesst, ohne zu widerrufen.
 		modalEl.addEventListener('click', function (e) {
@@ -468,7 +518,7 @@
 
 			if (!rag.length && !db.length) {
 				var empty = el('p', cn('empty'));
-				empty.textContent = T.noResults;
+				empty.textContent = overviewPending ? T.noResultsPending : T.noResults;
 				resultsBox.appendChild(empty);
 				return;
 			}
@@ -542,8 +592,21 @@
 		/* -- overview -- */
 
 		function hideOverview() {
+			overviewPending = false;
 			overviewBox.setAttribute('hidden', 'hidden');
 			overviewBox.innerHTML = '';
+		}
+
+		/*
+		 * Das Angebot ist vom Tisch - fertig geschrieben, fehlgeschlagen oder vom
+		 * Repository abgeschaltet. Blieb die Liste dabei leer, trug sie bis hierher
+		 * den Hinweis, dass die Zusammenfassung noch sucht; jetzt ist es endgueltig
+		 * ein "nichts gefunden" und muss auch so dastehen.
+		 */
+		function overviewSettled() {
+			if (!overviewPending) return;
+			overviewPending = false;
+			if (!ragHits.length && !dbHits.length) renderResults();
 		}
 
 		function overviewHeader() {
@@ -556,6 +619,7 @@
 
 		/** The consent panel: what happens, a link to the terms, and one button. */
 		function showOverviewGate() {
+			overviewPending = true;
 			overviewBox.innerHTML = '';
 			overviewBox.appendChild(overviewHeader());
 
@@ -634,6 +698,7 @@
 		function requestOverview(query) {
 			if (!query) return;
 
+			overviewPending = true;
 			overviewBox.innerHTML = '';
 			overviewBox.appendChild(overviewHeader());
 
@@ -673,6 +738,7 @@
 					}
 					// The repository switched the overview off while the page was open.
 					if (res.status === 409) {
+						overviewSettled();
 						hideOverview();
 						return null;
 					}
@@ -717,6 +783,7 @@
 					function read() {
 						return reader.read().then(function (chunk) {
 							if (chunk.done) {
+								overviewSettled();
 								appendOverviewFooter();
 								return null;
 							}
@@ -733,6 +800,7 @@
 					return read();
 				})
 				.catch(function (err) {
+					overviewSettled();
 					body.innerHTML =
 						'<p class="' +
 						cn('error') +
@@ -786,14 +854,26 @@
 					ragHits = [];
 					setStatus(T.resultsFor + ' \u201c' + query + '\u201d \u2013 ' + T.resultCount(hits.length));
 					renderQueries(data.queries);
-					renderResults();
 
-					// The results are up; only now is the overview offered - and only when
-					// there is something to summarise.
-					if (overviewAvailable && hits.length > 0) {
+					/*
+					 * Das Angebot der Zusammenfassung kommt VOR der Liste. Nicht weil es
+					 * wichtiger waere - die Liste muss wissen, ob es steht: ohne
+					 * Volltexttreffer haengt ihr Text daran (overviewPending).
+					 *
+					 * Angeboten wird es AUCH bei null Treffern, und das war vorher anders
+					 * ("nur wenn es etwas zusammenzufassen gibt"). Die Annahme dahinter
+					 * stimmt nicht: die Zusammenfassung fasst nicht diese Liste zusammen,
+					 * sie holt ihre Quellen selbst und ueber die Bedeutung. Ein Tippfehler
+					 * ist der haeufigste Grund fuer eine leere Volltextsuche, und genau
+					 * den uebersteht die semantische Suche - "prompt engineeering" fand im
+					 * Wortlaut nichts und bekam bis hierher nicht einmal den Knopf
+					 * angeboten, mit dem die Seiten zu Prompt Engineering zu holen waren.
+					 */
+					if (overviewAvailable) {
 						if (termsValid()) requestOverview(query);
 						else showOverviewGate();
 					}
+					renderResults();
 				})
 				.catch(function (err) {
 					searching = false;
