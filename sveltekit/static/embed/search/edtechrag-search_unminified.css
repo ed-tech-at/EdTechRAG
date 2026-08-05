@@ -41,9 +41,12 @@
 	 */
 	--at-ed-tech-edtechrag-src-accent-border: transparent;
 	/*
-	 * NOT listed here, but part of the contract: --at-ed-tech-edtechrag-src-focus-color.
-	 * It has no default on purpose - unset, the focus ring follows the accent (see
-	 * the focus rule below for why the fallback cannot live up here).
+	 * NOT listed here, but part of the contract - and both without a default on
+	 * purpose, because their fallback has to be resolved on the element and not
+	 * on :root (the reason is spelled out at each rule):
+	 *
+	 *   --at-ed-tech-edtechrag-src-focus-color   unset: the focus ring follows the accent
+	 *   --at-ed-tech-edtechrag-src-placeholder   unset: mixed from --surface-ink and --field
 	 */
 	--at-ed-tech-edtechrag-src-ink: currentColor;
 	--at-ed-tech-edtechrag-src-muted: #5a6570;
@@ -129,6 +132,41 @@
 	border: 1px solid var(--at-ed-tech-edtechrag-src-border);
 	border-radius: var(--at-ed-tech-edtechrag-src-radius);
 	background: var(--at-ed-tech-edtechrag-src-field);
+}
+
+/*
+   The placeholder needs its own colour, and that is not a convenience.
+   ::placeholder does NOT inherit the input's colour: Chrome and Safari paint a
+   fixed grey from their UA stylesheet, so a page that gives the field a dark
+   --field ends up with dark grey on dark and cannot reach it from the outside -
+   the field would look right and read at about 1.5:1 (WCAG 1.4.3; a placeholder
+   is text like any other).
+
+   Unset, the colour is mixed from the two variables that already describe the
+   field: 65% of its ink over its background. That travels automatically - white
+   ink on a navy field gives a light placeholder, dark ink on white a grey one,
+   and both land near 5:1 to 6:1. The mix sits in the FALLBACK and not as a
+   default on :root, for the same reason as --focus-color: on :root it would be
+   substituted there and keep the DEFAULT ink and field for every page that
+   overrides them.
+
+   opacity: 1 because Firefox used to dim the placeholder on top of the colour,
+   which would push a value that was calculated to pass back below the line.
+
+   In a browser without color-mix (before 2023) the declaration is dropped and
+   the UA grey returns - which is why a page with a dark field should set
+   --at-ed-tech-edtechrag-src-placeholder explicitly rather than rely on the mix.
+*/
+.at-ed-tech-edtechrag-src-input::placeholder {
+	color: var(
+		--at-ed-tech-edtechrag-src-placeholder,
+		color-mix(
+			in srgb,
+			var(--at-ed-tech-edtechrag-src-surface-ink) 65%,
+			var(--at-ed-tech-edtechrag-src-field)
+		)
+	);
+	opacity: 1;
 }
 
 .at-ed-tech-edtechrag-src-submit {
