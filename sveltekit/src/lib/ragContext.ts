@@ -16,6 +16,7 @@ export type RagConfig = {
 	requireUserterms?: boolean;
 	usertermsDurationMonths?: number;
 	/* -- Search embed (static/embed/search) -- */
+	searchMode?: string;
 	searchResultLimit?: number;
 	searchSnippetLength?: number;
 	/* -- AI overview above the search results -- */
@@ -75,11 +76,31 @@ export type AiOverviewConfig = {
 };
 
 export type SearchConfig = {
+	/**
+	 * How the result list is found.
+	 *
+	 * 'fulltext' searches the DATABASE ONLY - Postgres full-text search over the
+	 * stored chunks, no embedding call, no LLM call. This is the default, because a
+	 * site search runs on every visitor query and paying an embedding call for
+	 * "which page mentions Notenexport" is spending money on a job SQL already does.
+	 *
+	 * 'vector' is the semantic path the chatbot uses: it embeds the query and
+	 * compares vectors. Better for questions phrased differently from the text,
+	 * worse for exact terms - and it costs one API call per search.
+	 *
+	 * This governs the RESULT LIST only. The AI overview always retrieves
+	 * semantically (RAG) and shows its own matches above the list - but only after
+	 * the visitor consented, because that retrieval is what costs the API call.
+	 */
+	mode: SearchMode;
 	/** How many documents (not chunks) the result list shows at most. */
 	resultLimit: number;
 	/** Characters per snippet. Long enough to judge a hit, short enough to scan. */
 	snippetLength: number;
 };
+
+export const SEARCH_MODES = ['fulltext', 'vector'] as const;
+export type SearchMode = (typeof SEARCH_MODES)[number];
 
 // The three enums are the same values the chat client accepts; the constants stay
 // named after query rewrite because that is where they were first needed.
@@ -151,6 +172,7 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 		requireUserterms: typeof raw.requireUserterms === 'boolean' ? raw.requireUserterms : undefined,
 		usertermsDurationMonths:
 			typeof raw.usertermsDurationMonths === 'number' ? raw.usertermsDurationMonths : undefined,
+		searchMode: optionalEnum(raw.searchMode, [...SEARCH_MODES]),
 		searchResultLimit: optionalPositiveInt(raw.searchResultLimit),
 		searchSnippetLength: optionalPositiveInt(raw.searchSnippetLength),
 		aiOverviewEnabled:
@@ -272,7 +294,10 @@ export function getQueryRewriteConfig(
 			ragConfig?.queryRewriteReasoningEffort,
 			QUERY_REWRITE_REASONING_EFFORTS
 		),
-		textVerbosity: optionalEnum(ragConfig?.queryRewriteTextVerbosity, QUERY_REWRITE_TEXT_VERBOSITIES)
+		textVerbosity: optionalEnum(
+			ragConfig?.queryRewriteTextVerbosity,
+			QUERY_REWRITE_TEXT_VERBOSITIES
+		)
 	};
 }
 
@@ -282,6 +307,8 @@ export const SEARCH_DEFAULT_SNIPPET_LENGTH = 320;
 
 export function getSearchConfig(ragConfig: RagConfig | undefined): SearchConfig {
 	return {
+		// 'fulltext' unless the repository asks for the semantic path - see SearchConfig.
+		mode: ragConfig?.searchMode === 'vector' ? 'vector' : 'fulltext',
 		resultLimit: ragConfig?.searchResultLimit ?? SEARCH_DEFAULT_RESULT_LIMIT,
 		snippetLength: ragConfig?.searchSnippetLength ?? SEARCH_DEFAULT_SNIPPET_LENGTH
 	};
@@ -333,8 +360,60 @@ export function getMetaTags(ragConfig: RagConfig | undefined): string[] {
 	return ragConfig?.metaTags ?? [];
 }
 
+/**
+ * The wildcard for `Meta tags`: take every key the document actually carries,
+ * instead of listing them.
+ *
+ * Useful because the ingest side already stores EVERYTHING. /api/gitlab/chunk
+ * writes all HTML-comment keys of a markdown file into DataFile.meta unfiltered -
+ * `metaTags` never governed what is fetched, only what is handed on. Before this,
+ * a new fact in the export (say RUNTIME_TO) was in the database but invisible until
+ * someone remembered to add it here.
+ */
+export const META_TAGS_ALL = '*';
+
+/**
+ * Keys the ingest pipeline writes for its own bookkeeping. They are never content
+ * and must never be emitted - not to the chatbot and not into a search result.
+ *
+ * `fetch_url` is the one that matters: it is the internal GitLab Files API address
+ * the text was pulled from, including the project id. Handed to a language model it
+ * becomes a URL the model may cite; handed to the search embed it is readable by
+ * every allowed origin. The public address lives in `url`, which is a different
+ * key on purpose.
+ */
+export const INTERNAL_META_KEYS = new Set([
+	'fetch_url',
+	'source',
+	'status',
+	'headsha',
+	'basesha',
+	'path',
+	'workdir',
+	'branch',
+	'ref',
+	'repository_full_name',
+	'github_default_branch'
+]);
+
+/**
+ * The keys to emit for ONE document: the configured list, or - with '*' - every key
+ * the document has, minus the bookkeeping above.
+ *
+ * Resolved per document and not once per repository, because with '*' the answer
+ * depends on the document: an article carries `category`, a project `runtime`.
+ */
+export function resolveMetaTags(meta: unknown, metaTags: string[]): string[] {
+	if (!metaTags.includes(META_TAGS_ALL)) return metaTags;
+
+	const record = getMetaRecord(meta);
+	return Object.keys(record).filter((key) => !INTERNAL_META_KEYS.has(key.toLowerCase()));
+}
+
 function getMetaRecord(meta: unknown): Record<string, unknown> {
-	return meta && typeof meta === 'object' && !Array.isArray(meta) ? (meta as Record<string, unknown>) : {};
+	return meta && typeof meta === 'object' && !Array.isArray(meta)
+		? (meta as Record<string, unknown>)
+		: {};
 }
 
 function stringifyMetaValue(value: unknown): string | undefined {
@@ -377,7 +456,7 @@ export function getRagMetadataJson(
 		}
 	}
 
-	for (const tag of metaTags) {
+	for (const tag of resolveMetaTags(result.meta, metaTags)) {
 		if (tag.toLowerCase() === 'url') {
 			continue;
 		}

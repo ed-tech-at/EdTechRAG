@@ -25,7 +25,9 @@ const DEFAULT_EMBEDDING_MODEL = '';
 const DEFAULT_GITHUB2_BASE = '';
 
 const asRecord = (value: unknown): Record<string, unknown> =>
-	value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+	value && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: {};
 
 const stringValue = (value: unknown, fallback = '') =>
 	typeof value === 'string' && value.trim() ? value.trim() : fallback;
@@ -116,6 +118,7 @@ const publicConfig = (repository: {
 			queryRewriteTextVerbosity: rag?.queryRewriteTextVerbosity ?? '',
 			requireUserterms: rag?.requireUserterms === true,
 			usertermsDurationMonths: rag?.usertermsDurationMonths,
+			searchMode: rag?.searchMode ?? 'fulltext',
 			searchResultLimit: rag?.searchResultLimit,
 			searchSnippetLength: rag?.searchSnippetLength,
 			aiOverviewEnabled: rag?.aiOverviewEnabled === true,
@@ -150,7 +153,8 @@ const formState = (
 	hasOpenAiApiKey: boolean,
 	hasEmbeddingApiKey: boolean
 ) => {
-	const githubBase = optionalString(formData.get('github2_public_base_url')) ?? DEFAULT_GITHUB2_BASE;
+	const githubBase =
+		optionalString(formData.get('github2_public_base_url')) ?? DEFAULT_GITHUB2_BASE;
 	const webhookPath = optionalString(formData.get('github2_webhook_path')) ?? '';
 
 	return {
@@ -188,7 +192,10 @@ const formState = (
 			chunkOverlap: optionalNumber(formData.get('chunkOverlap')),
 			numberDocuments: optionalNumber(formData.get('numberDocuments')) ?? 4,
 			metaTags: metaTagsFromForm(formData.get('metaTags')),
-			systemprompt: typeof formData.get('systemprompt') === 'string' ? String(formData.get('systemprompt')) : '',
+			systemprompt:
+				typeof formData.get('systemprompt') === 'string'
+					? String(formData.get('systemprompt'))
+					: '',
 			queryRewriteEnabled: parseAccessCheckbox(formData, 'queryRewriteEnabled'),
 			queryRewriteModel: optionalString(formData.get('queryRewriteModel')) ?? '',
 			queryRewriteCount: optionalNumber(formData.get('queryRewriteCount')),
@@ -196,10 +203,12 @@ const formState = (
 			queryRewriteIncludeHistory: parseAccessCheckbox(formData, 'queryRewriteIncludeHistory'),
 			queryRewriteContext: optionalString(formData.get('queryRewriteContext')) ?? '',
 			queryRewriteApiLanguage: optionalString(formData.get('queryRewriteApiLanguage')) ?? '',
-			queryRewriteReasoningEffort: optionalString(formData.get('queryRewriteReasoningEffort')) ?? '',
+			queryRewriteReasoningEffort:
+				optionalString(formData.get('queryRewriteReasoningEffort')) ?? '',
 			queryRewriteTextVerbosity: optionalString(formData.get('queryRewriteTextVerbosity')) ?? '',
 			requireUserterms: parseAccessCheckbox(formData, 'requireUserterms'),
 			usertermsDurationMonths: optionalNumber(formData.get('usertermsDurationMonths')),
+			searchMode: optionalString(formData.get('searchMode')) ?? 'fulltext',
 			searchResultLimit: optionalNumber(formData.get('searchResultLimit')),
 			searchSnippetLength: optionalNumber(formData.get('searchSnippetLength')),
 			aiOverviewEnabled: parseAccessCheckbox(formData, 'aiOverviewEnabled'),
@@ -283,6 +292,7 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					queryRewriteTextVerbosity: '',
 					requireUserterms: false,
 					usertermsDurationMonths: undefined,
+					searchMode: 'fulltext',
 					searchResultLimit: undefined,
 					searchSnippetLength: undefined,
 					aiOverviewEnabled: false,
@@ -324,8 +334,12 @@ export const actions: Actions = {
 		const existingUpdateConfig = asRecord(existing?.updateConfig);
 		const existingLLM = asRecord(existing?.LLM_API);
 		const existingRag = asRecord(existing?.ragConfig);
-		const hadGithubSharedSecret = Boolean(stringValue(existingUpdateConfig.Github2EdTechRAG_SHARED_SECRET));
-		const hadGitlabSharedSecret = Boolean(stringValue(existingUpdateConfig.GitLab2EdTechRAG_SHARED_SECRET));
+		const hadGithubSharedSecret = Boolean(
+			stringValue(existingUpdateConfig.Github2EdTechRAG_SHARED_SECRET)
+		);
+		const hadGitlabSharedSecret = Boolean(
+			stringValue(existingUpdateConfig.GitLab2EdTechRAG_SHARED_SECRET)
+		);
 		const hadGitlabPrivateToken = Boolean(stringValue(existingUpdateConfig['PRIVATE-TOKEN']));
 		const hadOpenAiApiKey = Boolean(stringValue(existingLLM.OPENAI_API_KEY));
 		const hadEmbeddingApiKey = Boolean(stringValue(existingLLM.OPENAI_API_KEY_EMBEDDING));
@@ -342,7 +356,8 @@ export const actions: Actions = {
 		const gitlabPrivateToken = optionalString(formData.get('PRIVATE-TOKEN'));
 		const gitlabSharedSecret = optionalString(formData.get('GitLab2EdTechRAG_SHARED_SECRET'));
 
-		const publicBaseUrl = optionalString(formData.get('github2_public_base_url')) ?? DEFAULT_GITHUB2_BASE;
+		const publicBaseUrl =
+			optionalString(formData.get('github2_public_base_url')) ?? DEFAULT_GITHUB2_BASE;
 		const webhookPath = optionalString(formData.get('github2_webhook_path')) ?? '';
 		const webhookUrl = webhookPath
 			? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath)}`
@@ -350,8 +365,10 @@ export const actions: Actions = {
 		const chatBase = optionalString(formData.get('OPENAI_API_BASE')) ?? DEFAULT_CHAT_BASE;
 		const chatModel = optionalString(formData.get('CHAT_MODEL')) ?? DEFAULT_CHAT_MODEL;
 		const apiLanguage = optionalString(formData.get('API_LANGUAGE')) ?? 'chat/completions';
-		const embeddingBase = optionalString(formData.get('OPENAI_API_BASE_EMBEDDING')) ?? DEFAULT_EMBEDDING_BASE;
-		const embeddingModel = optionalString(formData.get('EMBEDDING_MODEL')) ?? DEFAULT_EMBEDDING_MODEL;
+		const embeddingBase =
+			optionalString(formData.get('OPENAI_API_BASE_EMBEDDING')) ?? DEFAULT_EMBEDDING_BASE;
+		const embeddingModel =
+			optionalString(formData.get('EMBEDDING_MODEL')) ?? DEFAULT_EMBEDDING_MODEL;
 
 		const chunkSize = optionalNumber(formData.get('chunkSize'));
 		const chunkOverlap = optionalNumber(formData.get('chunkOverlap'));
@@ -389,6 +406,9 @@ export const actions: Actions = {
 		}
 
 		/* -- Search results and the AI overview above them -- */
+		// Anything other than 'vector' means the database-only path - the safe reading
+		// of a missing or unknown value, because it spends no API calls.
+		const searchMode = formData.get('searchMode') === 'vector' ? 'vector' : 'fulltext';
 		const searchResultLimit = optionalNumber(formData.get('searchResultLimit'));
 		const searchSnippetLength = optionalNumber(formData.get('searchSnippetLength'));
 		if (searchResultLimit !== undefined && searchResultLimit < 1) {
@@ -494,12 +514,15 @@ export const actions: Actions = {
 		const nextRag: Record<string, unknown> = {
 			...existingRag,
 			systemprompt:
-				typeof formData.get('systemprompt') === 'string' ? String(formData.get('systemprompt')) : '',
+				typeof formData.get('systemprompt') === 'string'
+					? String(formData.get('systemprompt'))
+					: '',
 			numberDocuments: numberDocuments ?? 4,
 			metaTags: metaTagsFromForm(formData.get('metaTags')),
 			queryRewriteEnabled,
 			queryRewriteIncludeHistory,
 			requireUserterms,
+			searchMode,
 			aiOverviewEnabled,
 			aiOverviewRequireUserterms
 		};
@@ -519,7 +542,8 @@ export const actions: Actions = {
 		else delete nextRag.queryRewriteDocsPerSearch;
 		if (queryRewriteContext !== undefined) nextRag.queryRewriteContext = queryRewriteContext;
 		else delete nextRag.queryRewriteContext;
-		if (queryRewriteApiLanguage !== undefined) nextRag.queryRewriteApiLanguage = queryRewriteApiLanguage;
+		if (queryRewriteApiLanguage !== undefined)
+			nextRag.queryRewriteApiLanguage = queryRewriteApiLanguage;
 		else delete nextRag.queryRewriteApiLanguage;
 		if (queryRewriteReasoningEffort !== undefined)
 			nextRag.queryRewriteReasoningEffort = queryRewriteReasoningEffort;
@@ -616,7 +640,10 @@ export const actions: Actions = {
 		const session = await requireAllowedRepository(cookies, url, repoUrl);
 
 		if (!canManageUsers(session.role ?? SITE_ROLE.GUEST)) {
-			return fail(403, { success: false, message: 'Manager access required to delete a repository.' });
+			return fail(403, {
+				success: false,
+				message: 'Manager access required to delete a repository.'
+			});
 		}
 
 		try {

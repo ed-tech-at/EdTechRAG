@@ -57,6 +57,12 @@ sitemap has to vanish from the directory — otherwise it would stay in the
 repository and in the vector database forever. Only the site's own subdirectory is
 removed; `.git` and the other sites are untouched.
 
+Documents are fetched from the **origin of `sitemap`**, not from the host inside
+`<loc>`. Only the path of a `<loc>` is used. The two are the same in production, but
+a local or staging build announces the site's public addresses — following those
+would mirror production while claiming to mirror the checkout. The addresses inside
+the `.md` files are untouched, so a citation still points at the public page.
+
 It refuses to continue when a sitemap lists no `<url>` (that would empty the
 mirror), when a `<loc>` is not a `.md` file below `/sitemap-genai/`, when a path
 tries to escape its directory, when a document is larger than 2 MiB, or when a
@@ -132,9 +138,15 @@ second latch.
 
 ```bash
 WORKDIR=/tmp/mirror \
-SITEMAP_GENAI_SITES='[{"key":"telucation","sitemap":"https://telucation.tugraz.at/sitemap-genai/sitemap-genai.xml","repository_path":"llt/telucation-genai"}]' \
+SITEMAP_GENAI_SITES='[{"key":"telucation","sitemap":"http://localhost:5173/sitemap-genai/sitemap-genai.xml","repository_path":"llt/telucation-genai"}]' \
 go run . -mode=build && go run . -mode=diff
 ```
+
+The sitemap may be a `localhost` address: the documents come from there as well.
+`WORKDIR` needs its own `.git`, otherwise `-mode=diff` finds the repository *above*
+it and `git add -A` stages that working tree instead of the mirror. Note the single
+quotes — a `.env` read with `. ./.env` loses the inner `"` of an unquoted
+assignment, and the tool then sees `[{key:…}]`.
 
 Then read `changes.json`. `-mode=notify` against a local EdTechRAG succeeds when
 `/admin/repositories/<url>/files` lists the new `DataFile` rows, `/admin/embeddings`

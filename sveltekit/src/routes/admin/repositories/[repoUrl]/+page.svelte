@@ -71,6 +71,7 @@
 	let requireUsertermsValue = data.config.rag.requireUserterms;
 	let usertermsDurationMonthsValue = data.config.rag.usertermsDurationMonths ?? '';
 	let activeSearchApiValue = data.config.access.activeSearchApi;
+	let searchModeValue = data.config.rag.searchMode;
 	let searchResultLimitValue = data.config.rag.searchResultLimit ?? '';
 	let searchSnippetLengthValue = data.config.rag.searchSnippetLength ?? '';
 	let aiOverviewEnabledValue = data.config.rag.aiOverviewEnabled;
@@ -124,6 +125,7 @@
 		requireUsertermsValue = config.rag.requireUserterms;
 		usertermsDurationMonthsValue = config.rag.usertermsDurationMonths ?? '';
 		activeSearchApiValue = config.access.activeSearchApi;
+		searchModeValue = config.rag.searchMode;
 		searchResultLimitValue = config.rag.searchResultLimit ?? '';
 		searchSnippetLengthValue = config.rag.searchSnippetLength ?? '';
 		aiOverviewEnabledValue = config.rag.aiOverviewEnabled;
@@ -393,7 +395,15 @@
 				</label>
 				<label>
 					Metadata tags
-					<input name="metaTags" bind:value={metaTagsValue} placeholder="url, title, folder" />
+					<input name="metaTags" bind:value={metaTagsValue} placeholder="* or url, title, folder" />
+					<span class="muted" style="font-weight: 400;">
+						Which metadata reaches the chatbot and the search results. <code>*</code> takes every
+						key a document actually has &mdash; ingest already stores all of them, so a new fact in
+						the source appears without being listed here. Bookkeeping keys of the pipeline
+						(<code>fetch_url</code>, <code>path</code>, <code>headSha</code> &hellip;) are never
+						emitted. Empty means no metadata <em>and no URL</em>, so a search result has nothing to
+						link to.
+					</span>
 				</label>
 			</div>
 			<label>
@@ -539,6 +549,13 @@
 					<span>Enable search API</span>
 				</label>
 				<label>
+					How to search
+					<select name="searchMode" bind:value={searchModeValue}>
+						<option value="fulltext">Database only (no embeddings)</option>
+						<option value="vector">Semantic (embeds every query)</option>
+					</select>
+				</label>
+				<label>
 					Results shown
 					<input
 						name="searchResultLimit"
@@ -559,6 +576,18 @@
 					/>
 				</label>
 			</div>
+			<p class="muted">
+				<strong>Database only</strong> is the default: one Postgres full-text query per search, no
+				embedding call and no LLM call. It matches the words that were typed, with prefix matching,
+				so <code>noten</code> finds <code>Notenexport</code>. <strong>Semantic</strong> embeds every
+				visitor query instead &mdash; better for questions phrased differently from the text, and one
+				API call per search.
+			</p>
+			<p class="muted">
+				The AI overview below always retrieves semantically, whatever is chosen here, and shows its
+				own matches above this list &mdash; but only after the visitor consented, because that is
+				where the embedding call happens.
+			</p>
 			<p class="muted">
 				The search API needs the same <code>Allowed embed host regex</code> as the chat embed, but
 				its own switch: a site can have the search without the chatbot.

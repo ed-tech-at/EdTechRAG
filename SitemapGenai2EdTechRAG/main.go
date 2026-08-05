@@ -234,6 +234,40 @@ func repoPathFor(s site, loc string) (string, error) {
 	return s.Key + "/" + rel, nil
 }
 
+/*
+Where a document is actually fetched from.
+
+The <loc> entries are absolute and carry the website's PUBLIC origin - the one its
+generator was built with, not necessarily the one this sitemap was served from. A
+local or staging checkout therefore announces production addresses, and following
+them would mirror production while claiming to mirror the checkout. Mirroring the
+host that was asked for is the only defensible reading of `sitemap`.
+
+In production both are the same host, so this changes nothing there.
+
+Only the origin is replaced. The path stays untouched, so repoPathFor still sees
+the address the website published - and the citation URLs inside the .md files are
+not this tool's business anyway.
+*/
+func documentURL(sitemap string, loc string) (string, error) {
+	base, err := url.Parse(sitemap)
+	if err != nil {
+		return "", fmt.Errorf("sitemap is not a valid URL: %q", sitemap)
+	}
+	target, err := url.Parse(loc)
+	if err != nil {
+		return "", fmt.Errorf("<loc> is not a valid URL: %q", loc)
+	}
+
+	fetchFrom := *base
+	fetchFrom.Path = target.Path
+	fetchFrom.RawPath = target.RawPath
+	fetchFrom.RawQuery = target.RawQuery
+	fetchFrom.Fragment = ""
+
+	return fetchFrom.String(), nil
+}
+
 func fetch(client *http.Client, target string, limit int64) ([]byte, string, error) {
 	resp, err := client.Get(target)
 	if err != nil {
@@ -319,14 +353,19 @@ func runBuild(cfg config) {
 				fatalf("%s: %v", s.Key, err)
 			}
 
-			body, contentType, err := fetch(client, loc, maxFileBytes)
+			docURL, err := documentURL(s.Sitemap, loc)
 			if err != nil {
-				fatalf("%s: fetching %s failed: %v", s.Key, loc, err)
+				fatalf("%s: %v", s.Key, err)
+			}
+
+			body, contentType, err := fetch(client, docURL, maxFileBytes)
+			if err != nil {
+				fatalf("%s: fetching %s failed: %v", s.Key, docURL, err)
 			}
 			// A .md address answering with HTML is a misconfigured server or a
 			// captive portal; indexing that would poison the repository quietly.
 			if ct := strings.ToLower(contentType); ct != "" && !strings.Contains(ct, "markdown") && !strings.Contains(ct, "text/plain") {
-				fatalf("%s: %s answered with Content-Type %q, expected markdown", s.Key, loc, contentType)
+				fatalf("%s: %s answered with Content-Type %q, expected markdown", s.Key, docURL, contentType)
 			}
 
 			target := filepath.Join(cfg.workdir, filepath.FromSlash(repoPath))

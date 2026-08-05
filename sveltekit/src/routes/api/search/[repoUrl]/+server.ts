@@ -2,6 +2,7 @@ import prisma from '$lib/server/db';
 import { retrieveWithRewrite } from '$lib/server/queryRewrite';
 import { embedCorsHeaders, getAllowedSearchOrigin } from '$lib/server/repositoryAccess';
 import { toSearchHits } from '$lib/server/search';
+import { findRepositoryText } from '$lib/server/textSearch';
 import { getAiOverviewConfig, getSearchConfig, parseRagConfig } from '$lib/ragContext';
 import type { RequestHandler } from './$types';
 
@@ -72,6 +73,24 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	// either a paste accident or an attempt to run up the embedding bill.
 	const query = raw.trim().slice(0, 500);
 
+	/*
+	 * The language of the page that is searching.
+	 *
+	 * The index holds both languages, and on purpose: the English pages are their
+	 * own texts with their own addresses, not copies. Without this filter a German
+	 * search would list the English translation of the same article as a second hit -
+	 * which is what "it is in there twice" would actually look like.
+	 *
+	 * Two letters, lower case, or nothing. Anything else is ignored rather than
+	 * rejected: an unknown language would otherwise return an empty result list, and
+	 * "no filter" is the more useful failure.
+	 */
+	const langRaw =
+		body && typeof body === 'object' && typeof (body as { lang?: unknown }).lang === 'string'
+			? (body as { lang: string }).lang.toLowerCase()
+			: '';
+	const lang = /^[a-z]{2}$/.test(langRaw) ? langRaw : undefined;
+
 	if (!query) {
 		return jsonResponse({ success: false, message: 'Missing query' }, 400, corsHeaders);
 	}
@@ -81,27 +100,46 @@ export const POST: RequestHandler = async ({ request, params }) => {
 
 	try {
 		/*
-		 * Retrieval asks for more chunks than the list shows, because grouping
+		 * Both paths ask for more chunks than the list shows, because grouping
 		 * collapses them: eight chunks of one page would otherwise become one result
 		 * and leave nine slots empty. Factor three, capped at 60 - a large
-		 * resultLimit must not turn one search into hundreds of vector comparisons.
+		 * resultLimit must not turn one search into hundreds of comparisons.
 		 */
-		const { results, queries, rewriteApplied } = await retrieveWithRewrite({
-			repoUrl,
-			prompt: query,
-			ragConfig,
-			documents: Math.min(search.resultLimit * 3, 60)
-		});
+		const chunkBudget = Math.min(search.resultLimit * 3, 60);
 
+		const found =
+			search.mode === 'fulltext'
+				? // Database only: one SQL query, no embedding call and no LLM call. The
+					// searched terms take the place of the rewritten queries in the
+					// response - both answer "what was actually looked for".
+					await findRepositoryText(repoUrl, query, chunkBudget, lang).then((r) => ({
+						results: r.results,
+						queries: r.terms,
+						rewriteApplied: false
+					}))
+				: await retrieveWithRewrite({
+						repoUrl,
+						prompt: query,
+						ragConfig,
+						documents: chunkBudget,
+						lang
+					}).then((r) => ({
+						results: r.results,
+						queries: r.rewriteApplied ? r.queries : [],
+						rewriteApplied: r.rewriteApplied
+					}));
+
+		const { results, queries } = found;
 		const hits = toSearchHits(results, ragConfig, search);
 
 		return jsonResponse(
 			{
 				success: true,
 				query,
-				// The rewritten queries are shown as chips in the widget, the same way
-				// the chatbot shows them.
-				queries: rewriteApplied ? queries : [],
+				mode: search.mode,
+				// Shown as chips in the widget: the rewritten queries in 'vector' mode,
+				// the searched terms in 'fulltext'.
+				queries,
 				results: hits,
 				overviewAvailable: overview.enabled,
 				overviewRequiresTerms: overview.enabled && overview.requireUserterms,

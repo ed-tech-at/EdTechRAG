@@ -1,4 +1,10 @@
-import { getMetaTags, getRagContextUrl, type RagConfig, type SearchConfig } from '$lib/ragContext';
+import {
+	getMetaTags,
+	getRagContextUrl,
+	resolveMetaTags,
+	type RagConfig,
+	type SearchConfig
+} from '$lib/ragContext';
 import type { RagResult } from '$lib/server/rag';
 
 /**
@@ -32,9 +38,6 @@ export type SearchHit = {
 	/** Only the metadata the repository declared in ragConfig.metaTags. */
 	meta: Record<string, string>;
 };
-
-/** Which meta keys never reach the client, whatever metaTags says. */
-const NEVER_PUBLIC = new Set(['fetch_url', 'headsha', 'basesha', 'path', 'workdir', 'source']);
 
 const asRecord = (meta: unknown): Record<string, unknown> =>
 	meta && typeof meta === 'object' && !Array.isArray(meta) ? (meta as Record<string, unknown>) : {};
@@ -80,14 +83,18 @@ export function snippetOf(content: string | null | undefined, maxLength: number)
 }
 
 /**
- * Public metadata of a hit: the keys the repository declared, minus the internal
- * ones, minus `url` and `title` (they are their own fields already).
+ * Public metadata of a hit: the keys the repository declared - or all of them with
+ * '*' - minus `url` and `title`, which are their own fields already.
+ *
+ * The bookkeeping keys are dropped by resolveMetaTags (INTERNAL_META_KEYS), so the
+ * exclusion is one list shared with the chatbot rather than a second one here that
+ * could fall behind.
  */
 function publicMeta(meta: Record<string, unknown>, metaTags: string[]): Record<string, string> {
 	const out: Record<string, string> = {};
-	for (const tag of metaTags) {
+	for (const tag of resolveMetaTags(meta, metaTags)) {
 		const key = tag.toLowerCase();
-		if (key === 'url' || key === 'title' || NEVER_PUBLIC.has(key)) continue;
+		if (key === 'url' || key === 'title') continue;
 		const value = asString(meta[tag]) ?? asString(meta[key]);
 		if (value !== undefined) out[key] = value;
 	}

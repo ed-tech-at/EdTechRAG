@@ -3,16 +3,28 @@ import { streamChatText } from '$lib/server/chatStream';
 import { getChatClient, type ApiLanguage } from '$lib/server/openaiClient';
 import { retrieveWithRewrite } from '$lib/server/queryRewrite';
 import { embedCorsHeaders, getAllowedSearchOrigin } from '$lib/server/repositoryAccess';
+import { toSearchHits } from '$lib/server/search';
 import { buildOverviewMessages } from '$lib/server/searchPrompt';
 import {
 	formatRagContext,
 	getAiOverviewConfig,
 	getMetaTags,
+	getSearchConfig,
 	parseRagConfig,
 	usertermsMaxAgeMsForMonths,
 	validateTermsAcceptedAt
 } from '$lib/ragContext';
 import type { RequestHandler } from './$types';
+
+const encoder = new TextEncoder();
+
+/**
+ * Delimiters of the source block that precedes the summary. Mirrors
+ * __EDTECH_SEARCH_START__ in /api/embed; the widget peels the block off before it
+ * treats bytes as text.
+ */
+const SOURCES_START = '__EDTECH_SOURCES_START__\n';
+const SOURCES_END = '\n__EDTECH_SOURCES_END__\n';
 
 /**
  * The streamed AI overview above the search results.
@@ -112,13 +124,25 @@ export const POST: RequestHandler = async ({ request, params }) => {
 
 	const usertermsUrl = asString('usertermsUrl');
 	const source = asString('source');
+	const langRaw = (asString('lang') ?? '').toLowerCase();
+	const lang = /^[a-z]{2}$/.test(langRaw) ? langRaw : undefined;
 
 	try {
+		/*
+		 * ALWAYS semantic retrieval (RAG), whatever searchMode says for the result
+		 * list. The two answer different questions: the list wants the pages that
+		 * contain the words that were typed, the summary wants the passages that are
+		 * ABOUT the question - and those may be worded entirely differently.
+		 *
+		 * This is also why it sits behind the consent gate: the embedding call happens
+		 * here and nowhere else in the search path.
+		 */
 		const { results } = await retrieveWithRewrite({
 			repoUrl,
 			prompt: query,
 			ragConfig,
-			documents: overview.documents
+			documents: overview.documents,
+			lang
 		});
 		const context = formatRagContext(results, getMetaTags(ragConfig));
 
@@ -162,7 +186,36 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			}
 		});
 
-		return new Response(stream, {
+		/*
+		 * The semantic hits are sent BEFORE the summary, as a delimited JSON block.
+		 *
+		 * The widget shows them as their own group above the database results, so the
+		 * visitor can see which passages the summary was written from. Same mechanism
+		 * the chatbot uses for its rewritten queries (__EDTECH_SEARCH_START__ in
+		 * /api/embed) - one stream, a prefix the client peels off, no second request
+		 * and no second retrieval.
+		 */
+		const sources = toSearchHits(results, ragConfig, getSearchConfig(ragConfig));
+		const withSources = new ReadableStream<Uint8Array>({
+			async start(controller) {
+				controller.enqueue(
+					encoder.encode(`${SOURCES_START}${JSON.stringify(sources)}${SOURCES_END}`)
+				);
+				const reader = stream.getReader();
+				try {
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+						if (value) controller.enqueue(value);
+					}
+				} finally {
+					reader.releaseLock();
+					controller.close();
+				}
+			}
+		});
+
+		return new Response(withSources, {
 			status: 200,
 			headers: {
 				'Content-Type': 'text/plain; charset=utf-8',

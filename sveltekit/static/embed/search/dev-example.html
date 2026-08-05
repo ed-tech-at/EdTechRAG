@@ -138,14 +138,42 @@
 }</pre
 		>
 
+		<h2>Wie gesucht wird</h2>
+		<p>
+			Die Trefferliste kommt <strong>ohne Embeddings</strong> – eine
+			Postgres-Volltextsuche über die gespeicherten Chunks, ein SQL-Aufruf, kein
+			API-Aufruf. Gesucht wird mit Präfix-Matching, deshalb findet <code>noten</code> auch
+			<code>Notenexport</code>; findet diese Stufe nichts, greift zusätzlich eine
+			Teilwortsuche. Umstellbar auf semantische Suche unter
+			<code>/admin/repositories/&lt;url&gt;</code> („How to search") – die kostet dann
+			einen Embedding-Aufruf pro Suche.
+		</p>
+		<p>
+			Mitgesendet wird die Sprache der Seite. Der Index enthält beide Sprachfassungen –
+			jede ist ein eigener Text mit eigener Adresse –, aber eine deutsche Suche soll nicht
+			die englische Übersetzung derselben Seite als zweiten Treffer listen.
+		</p>
+
 		<h2>Der AI-Overview</h2>
 		<p>
 			Die Treffer erscheinen <strong>sofort</strong>. Der Overview darüber zeigt zuerst nur
 			die Zustimmung: Hinweis, Link zu den Bedingungen, ein Knopf. Erst danach wird er
-			gestreamt – zeichenweise, nicht am Ende auf einmal. Über die drei Punkte neben der
-			Überschrift lässt sich die Zustimmung widerrufen; die Suche selbst läuft weiter.
-			Gespeichert wird sie unter <code>edtechrag-search-overview-&lt;embedId&gt;</code> im
-			localStorage – ein eigener Schlüssel, damit Chat- und Suchzustimmung getrennt bleiben.
+			gestreamt – zeichenweise, nicht am Ende auf einmal.
+		</p>
+		<p>
+			Der Overview sucht <strong>immer semantisch</strong> (RAG), unabhängig von der
+			Einstellung der Liste: die Liste will die Seiten mit den getippten Worten, die
+			Zusammenfassung die Stellen, die zur <em>Frage</em> passen. Seine Treffer erscheinen
+			als eigene Gruppe <strong>über</strong> den Datenbanktreffern – und erst nach der
+			Zustimmung, denn dort passiert der Embedding-Aufruf. Eine Seite, die in beiden
+			Gruppen wäre, steht nur oben.
+		</p>
+		<p>
+			In der Fußzeile des Overviews stehen Hinweis, Link zu den Bedingungen und die drei
+			Punkte für den Widerruf beisammen. Widerruf entfernt auch die semantische Gruppe
+			wieder; die Datenbanksuche läuft weiter. Gespeichert wird die Zustimmung unter
+			<code>edtechrag-search-overview-&lt;embedId&gt;</code> im localStorage – ein eigener
+			Schlüssel, damit Chat- und Suchzustimmung getrennt bleiben.
 		</p>
 		<p>
 			Ob es einen Overview überhaupt gibt, entscheidet <code>/admin/repositories/&lt;url&gt;</code>

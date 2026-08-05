@@ -173,6 +173,26 @@
 	margin-top: var(--at-ed-tech-edtechrag-src-gap);
 }
 
+/*
+	Ueberschrift einer Trefferguppe. Erscheint nur, wenn es ZWEI Gruppen gibt (siehe
+	renderResults) - eine Ueberschrift, die nichts unterscheidet, waere Rauschen.
+
+	h2 im Markup, aber optisch zurueckhaltend: die Gruppen sind eine Sortierung, kein
+	neuer Seitenabschnitt.
+*/
+.at-ed-tech-edtechrag-src-group-heading {
+	margin: 1.5rem 0 0.75rem;
+	font-size: 0.875em;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--at-ed-tech-edtechrag-src-muted);
+}
+
+.at-ed-tech-edtechrag-src-group-heading:first-child {
+	margin-top: 0;
+}
+
 .at-ed-tech-edtechrag-src-list {
 	/* The ordered list stays an <ol> in the markup - the ranking is meaning - but
 	   the numbers are not shown: they would read as a top-ten chart. */
@@ -317,10 +337,123 @@
 	color: var(--at-ed-tech-edtechrag-src-accent);
 }
 
+/*
+	Fusszeile des erzeugten Overviews: Hinweis, Link zu den Bedingungen, drei Punkte.
+	Alles drei zusammen, weil sie zusammengehoeren - wer den Hinweis liest, ist genau
+	die Person, die den Link und den Widerruf braucht.
+
+	BEWUSST KEIN flex, obwohl es hier zuerst stand: der Trenner ' \u00b7 ' zwischen
+	Hinweis und Link ist ein Textknoten und wurde darin zu einem eigenen
+	Flex-Element - mit gap davor UND dahinter, und beim Umbruch stand er allein in
+	einer Zeile. Als normaler Textfluss bricht die Zeile dort, wo Text bricht.
+*/
 .at-ed-tech-edtechrag-src-overview-note {
 	margin: 0.75rem 0 0;
 	font-size: 0.8125em;
+	line-height: 1.7;
 	color: var(--at-ed-tech-edtechrag-src-muted);
+}
+
+.at-ed-tech-edtechrag-src-overview-note .at-ed-tech-edtechrag-src-overview-terms-link {
+	/* Unterstrichen, nicht nur farbig: der Hinweistext daneben ist schon grau
+	   (WCAG 1.4.1). */
+	text-decoration: underline;
+}
+
+/*
+	Der Widerruf steht unmittelbar hinter dem Link, nicht am rechten Rand: mit
+	margin-left:auto sass er abgesetzt und sah aus wie ein Bedienelement des Kastens
+	statt wie eines zu diesem Satz.
+
+	inline-block mit min-height: er laeuft im Text mit, behaelt aber seine
+	Trefferflaeche von 24px (WCAG 2.5.8).
+*/
+.at-ed-tech-edtechrag-src-overview-note .at-ed-tech-edtechrag-src-overview-menu {
+	display: inline-block;
+	vertical-align: middle;
+	margin-left: 0.35rem;
+	min-width: 1.75rem;
+	min-height: 1.75rem;
+	padding: 0 0.35rem;
+	line-height: 1.5;
+}
+
+/* ==========================================================
+   Widerruf-Dialog
+
+   Gegenstueck zum .at-ed-tech-edtechrag-emd-modal des Chatbot-Embeds, mit einem
+   Unterschied: position FIXED statt absolute. Dort liegt der Dialog im Chatpanel,
+   das den Bildschirm ausfuellt; hier steht die Suche mitten in einer Seite, und
+   absolut positioniert waere der Dialog bei langer Trefferliste ausserhalb des
+   Bildes.
+   ========================================================== */
+
+.at-ed-tech-edtechrag-src-modal {
+	position: fixed;
+	inset: 0;
+	/* Ueber dem Seiteninhalt, aber kein absurder Wert: der Host bestimmt den Rest. */
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	background: rgba(0, 0, 0, 0.45);
+}
+
+.at-ed-tech-edtechrag-src-modal[hidden] {
+	/* Muss wiederholt werden: display:flex auf derselben Regel gewinnt sonst gegen
+	   das hidden-Attribut - dieselbe Falle wie beim Overview-Kasten. */
+	display: none;
+}
+
+.at-ed-tech-edtechrag-src-modal-box {
+	max-width: 26rem;
+	padding: 1.25rem;
+	border-radius: var(--at-ed-tech-edtechrag-src-radius);
+	background: var(--at-ed-tech-edtechrag-src-field);
+	/* Flaeche und Schrift in DERSELBEN Regel - siehe --surface-ink. */
+	color: var(--at-ed-tech-edtechrag-src-surface-ink);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.at-ed-tech-edtechrag-src-modal-text {
+	margin: 0 0 1rem;
+	line-height: 1.5;
+}
+
+.at-ed-tech-edtechrag-src-modal-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: var(--at-ed-tech-edtechrag-src-gap);
+}
+
+.at-ed-tech-edtechrag-src-modal-btn {
+	font: inherit;
+	font-weight: 600;
+	min-height: 2.75rem;
+	padding: 0.5rem 1.25rem;
+	border: 1px solid var(--at-ed-tech-edtechrag-src-border);
+	border-radius: var(--at-ed-tech-edtechrag-src-radius);
+	background: var(--at-ed-tech-edtechrag-src-field);
+	color: var(--at-ed-tech-edtechrag-src-surface-ink);
+	cursor: pointer;
+}
+
+/*
+	Der zerstoerende Knopf ist farblich abgesetzt, aber NICHT nur farblich: er traegt
+	auch den Rahmen in derselben Farbe und steht an zweiter Stelle. Farbe allein waere
+	die einzige Unterscheidung (WCAG 1.4.1).
+*/
+.at-ed-tech-edtechrag-src-modal-btn-danger {
+	border-color: var(--at-ed-tech-edtechrag-src-error);
+	background: var(--at-ed-tech-edtechrag-src-error);
+	color: #ffffff;
+}
+
+.at-ed-tech-edtechrag-src-modal-btn:focus-visible {
+	outline: var(--at-ed-tech-edtechrag-src-focus) solid var(--at-ed-tech-edtechrag-src-accent);
+	outline-offset: 2px;
 }
 
 /* ==========================================================
@@ -338,7 +471,12 @@
 		border: 1px solid ButtonBorder;
 	}
 
-	.at-ed-tech-edtechrag-src-overview {
+	.at-ed-tech-edtechrag-src-overview,
+	.at-ed-tech-edtechrag-src-modal-box {
 		border: 1px solid CanvasText;
+	}
+
+	.at-ed-tech-edtechrag-src-modal-btn {
+		border: 1px solid ButtonBorder;
 	}
 }

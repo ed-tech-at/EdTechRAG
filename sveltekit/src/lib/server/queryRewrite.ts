@@ -5,11 +5,7 @@ import {
 	type TextVerbosity
 } from '$lib/server/openaiClient';
 import { findRepositoryContext, type RagResult } from '$lib/server/rag';
-import {
-	getNumberDocuments,
-	getQueryRewriteConfig,
-	type RagConfig
-} from '$lib/ragContext';
+import { getNumberDocuments, getQueryRewriteConfig, type RagConfig } from '$lib/ragContext';
 
 export type RewriteHistoryItem = { role?: string; content?: string };
 
@@ -114,8 +110,7 @@ export async function rewriteQueries({
 		const effectiveApiLanguage = (apiLanguage as ApiLanguage) || defaultApiLanguage;
 		const effectiveReasoning =
 			(reasoningEffort as ReasoningEffort | undefined) ?? defaultReasoningEffort;
-		const effectiveVerbosity =
-			(textVerbosity as TextVerbosity | undefined) ?? defaultTextVerbosity;
+		const effectiveVerbosity = (textVerbosity as TextVerbosity | undefined) ?? defaultTextVerbosity;
 
 		const contextText = context && context.trim() ? context.trim() : '';
 		const historyText = includeHistory ? buildHistoryText(history) : '';
@@ -178,6 +173,8 @@ type RetrieveWithRewriteParams = {
 	 * queryRewriteDocsPerSearch still wins, because that is a deliberate setting.
 	 */
 	documents?: number;
+	/** Restrict retrieval to one language (meta.lang). See findRepositoryContext. */
+	lang?: string;
 };
 
 export type RetrieveWithRewriteResult = {
@@ -197,14 +194,15 @@ export async function retrieveWithRewrite({
 	history = [],
 	ragConfig,
 	forceRewrite = false,
-	documents
+	documents,
+	lang
 }: RetrieveWithRewriteParams): Promise<RetrieveWithRewriteResult> {
 	const fallbackDocs =
 		documents && documents > 0 ? Math.floor(documents) : getNumberDocuments(ragConfig);
 	const rewrite = getQueryRewriteConfig(ragConfig, fallbackDocs);
 
 	if (!rewrite.enabled && !forceRewrite) {
-		const { results } = await findRepositoryContext(repoUrl, prompt, fallbackDocs);
+		const { results } = await findRepositoryContext(repoUrl, prompt, fallbackDocs, lang);
 		return { queries: [prompt], results, rewriteApplied: false };
 	}
 
@@ -223,7 +221,7 @@ export async function retrieveWithRewrite({
 
 	const merged = new Map<string, RagResult>();
 	for (const query of queries) {
-		const { results } = await findRepositoryContext(repoUrl, query, rewrite.docsPerSearch);
+		const { results } = await findRepositoryContext(repoUrl, query, rewrite.docsPerSearch, lang);
 		for (const result of results) {
 			const existing = merged.get(result.id);
 			if (!existing || result.similarity > existing.similarity) {
