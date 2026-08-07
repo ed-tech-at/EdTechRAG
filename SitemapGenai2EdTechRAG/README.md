@@ -47,6 +47,11 @@ go run . -mode=diff     # stage everything, write changes.json
 go run . -mode=notify   # POST /pull -> /chunk -> /embed, once per site
 ```
 
+
+```bash
+set -a && . ./.env && set +a && go run . -mode=build
+```
+
 Three modes rather than one run, because the pipeline has three stages and the
 middle one is git's job. It also means a failed push cannot leave EdTechRAG
 indexing content that never arrived in the repository.

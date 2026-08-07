@@ -2,3 +2,5 @@
 /out/
 changes.json
 .env
+.env.*
+!.env.example
