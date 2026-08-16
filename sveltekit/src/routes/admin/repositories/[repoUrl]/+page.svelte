@@ -64,12 +64,28 @@
 	let queryRewriteCountValue = data.config.rag.queryRewriteCount ?? '';
 	let queryRewriteDocsPerSearchValue = data.config.rag.queryRewriteDocsPerSearch ?? '';
 	let queryRewriteIncludeHistoryValue = data.config.rag.queryRewriteIncludeHistory;
+	let queryRewriteHistoryLimitValue = data.config.rag.queryRewriteHistoryLimit ?? '';
 	let queryRewriteContextValue = data.config.rag.queryRewriteContext;
 	let queryRewriteApiLanguageValue = data.config.rag.queryRewriteApiLanguage;
 	let queryRewriteReasoningEffortValue = data.config.rag.queryRewriteReasoningEffort;
 	let queryRewriteTextVerbosityValue = data.config.rag.queryRewriteTextVerbosity;
 	let requireUsertermsValue = data.config.rag.requireUserterms;
 	let usertermsDurationMonthsValue = data.config.rag.usertermsDurationMonths ?? '';
+	let activeSearchApiValue = data.config.access.activeSearchApi;
+	let searchModeValue = data.config.rag.searchMode;
+	let searchResultLimitValue = data.config.rag.searchResultLimit ?? '';
+	let searchSnippetLengthValue = data.config.rag.searchSnippetLength ?? '';
+	let aiOverviewEnabledValue = data.config.rag.aiOverviewEnabled;
+	let aiOverviewModelValue = data.config.rag.aiOverviewModel;
+	let aiOverviewSystempromptValue = data.config.rag.aiOverviewSystemprompt;
+	let aiOverviewContextValue = data.config.rag.aiOverviewContext;
+	let aiOverviewDocumentsValue = data.config.rag.aiOverviewDocuments ?? '';
+	let aiOverviewApiLanguageValue = data.config.rag.aiOverviewApiLanguage;
+	let aiOverviewReasoningEffortValue = data.config.rag.aiOverviewReasoningEffort;
+	let aiOverviewTextVerbosityValue = data.config.rag.aiOverviewTextVerbosity;
+	let aiOverviewRequireUsertermsValue = data.config.rag.aiOverviewRequireUserterms;
+	let aiOverviewUsertermsDurationMonthsValue =
+		data.config.rag.aiOverviewUsertermsDurationMonths ?? '';
 
 	$: if (form) {
 		saving = false;
@@ -103,12 +119,27 @@
 		queryRewriteCountValue = config.rag.queryRewriteCount ?? '';
 		queryRewriteDocsPerSearchValue = config.rag.queryRewriteDocsPerSearch ?? '';
 		queryRewriteIncludeHistoryValue = config.rag.queryRewriteIncludeHistory;
+		queryRewriteHistoryLimitValue = config.rag.queryRewriteHistoryLimit ?? '';
 		queryRewriteContextValue = config.rag.queryRewriteContext;
 		queryRewriteApiLanguageValue = config.rag.queryRewriteApiLanguage;
 		queryRewriteReasoningEffortValue = config.rag.queryRewriteReasoningEffort;
 		queryRewriteTextVerbosityValue = config.rag.queryRewriteTextVerbosity;
 		requireUsertermsValue = config.rag.requireUserterms;
 		usertermsDurationMonthsValue = config.rag.usertermsDurationMonths ?? '';
+		activeSearchApiValue = config.access.activeSearchApi;
+		searchModeValue = config.rag.searchMode;
+		searchResultLimitValue = config.rag.searchResultLimit ?? '';
+		searchSnippetLengthValue = config.rag.searchSnippetLength ?? '';
+		aiOverviewEnabledValue = config.rag.aiOverviewEnabled;
+		aiOverviewModelValue = config.rag.aiOverviewModel;
+		aiOverviewSystempromptValue = config.rag.aiOverviewSystemprompt;
+		aiOverviewContextValue = config.rag.aiOverviewContext;
+		aiOverviewDocumentsValue = config.rag.aiOverviewDocuments ?? '';
+		aiOverviewApiLanguageValue = config.rag.aiOverviewApiLanguage;
+		aiOverviewReasoningEffortValue = config.rag.aiOverviewReasoningEffort;
+		aiOverviewTextVerbosityValue = config.rag.aiOverviewTextVerbosity;
+		aiOverviewRequireUsertermsValue = config.rag.aiOverviewRequireUserterms;
+		aiOverviewUsertermsDurationMonthsValue = config.rag.aiOverviewUsertermsDurationMonths ?? '';
 	}
 	$: webhookUrl = webhookPath.trim()
 		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
@@ -366,7 +397,15 @@
 				</label>
 				<label>
 					Metadata tags
-					<input name="metaTags" bind:value={metaTagsValue} placeholder="url, title, folder" />
+					<input name="metaTags" bind:value={metaTagsValue} placeholder="* or url, title, folder" />
+					<span class="muted" style="font-weight: 400;">
+						Which metadata reaches the chatbot and the search results. <code>*</code> takes every
+						key a document actually has &mdash; ingest already stores all of them, so a new fact in
+						the source appears without being listed here. Bookkeeping keys of the pipeline
+						(<code>fetch_url</code>, <code>path</code>, <code>headSha</code> &hellip;) are never
+						emitted. Empty means no metadata <em>and no URL</em>, so a search result has nothing to
+						link to.
+					</span>
 				</label>
 			</div>
 			<label>
@@ -379,6 +418,8 @@
 				<p class="muted">
 					Rewrite the user question into several optimized search queries before retrieval.
 					Each query is searched separately and results are merged (deduplicated by chunk).
+					With chat history on, the last n messages (not turns) are added to the rewrite
+					prompt so references like &quot;it&quot; can be resolved.
 				</p>
 			</div>
 			<div class="field-grid">
@@ -422,6 +463,16 @@
 						min="1"
 						bind:value={queryRewriteDocsPerSearchValue}
 						placeholder={String(numberDocumentsValue ?? 4)}
+					/>
+				</label>
+				<label>
+					History messages (last n)
+					<input
+						name="queryRewriteHistoryLimit"
+						type="number"
+						min="1"
+						bind:value={queryRewriteHistoryLimitValue}
+						placeholder="6"
 					/>
 				</label>
 			</div>
@@ -496,6 +547,169 @@
 				The timestamp comes from the visitor's browser, so it is an attestation and not a proof
 				&mdash; the allowed embed host regex stays the outer gate.
 			</p>
+
+			<div class="section-head" style="margin-top: 0.5rem;">
+				<h3 id="search-heading" style="margin: 0;">Search results</h3>
+				<p class="muted">
+					The search embed (<code>static/embed/search</code>) searches this repository and lists
+					documents, not chunks: several chunks of the same page collapse into one result, the best
+					score wins. The target URL comes from <code>meta.url</code> &mdash; make sure
+					<code>Meta tags</code> above is not empty, otherwise no URL is emitted.
+				</p>
+			</div>
+			<div class="field-grid">
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeSearchApi" bind:checked={activeSearchApiValue} />
+					<span>Enable search API</span>
+				</label>
+				<label>
+					How to search
+					<select name="searchMode" bind:value={searchModeValue}>
+						<option value="fulltext">Database only (no embeddings)</option>
+						<option value="vector">Semantic (embeds every query)</option>
+					</select>
+				</label>
+				<label>
+					Results shown
+					<input
+						name="searchResultLimit"
+						type="number"
+						min="1"
+						bind:value={searchResultLimitValue}
+						placeholder="10"
+					/>
+				</label>
+				<label>
+					Snippet length
+					<input
+						name="searchSnippetLength"
+						type="number"
+						min="40"
+						bind:value={searchSnippetLengthValue}
+						placeholder="320"
+					/>
+				</label>
+			</div>
+			<p class="muted">
+				<strong>Database only</strong> is the default: one Postgres full-text query per search, no
+				embedding call and no LLM call. It matches the words that were typed, with prefix matching,
+				so <code>noten</code> finds <code>Notenexport</code>. <strong>Semantic</strong> embeds every
+				visitor query instead &mdash; better for questions phrased differently from the text, and one
+				API call per search.
+			</p>
+			<p class="muted">
+				The AI overview below always retrieves semantically, whatever is chosen here, and shows its
+				own matches above this list &mdash; but only after the visitor consented, because that is
+				where the embedding call happens.
+			</p>
+			<p class="muted">
+				The search API needs the same <code>Allowed embed host regex</code> as the chat embed, but
+				its own switch: a site can have the search without the chatbot.
+			</p>
+
+			<div class="section-head" style="margin-top: 0.5rem;">
+				<h3 id="ai-overview-heading" style="margin: 0;">AI overview</h3>
+				<p class="muted">
+					A streamed summary above the search results. The results themselves appear immediately;
+					the overview only after the visitor accepted the terms &mdash; and it can be withdrawn
+					again in the widget. Off by default, so updating the code never starts spending tokens on
+					its own.
+				</p>
+			</div>
+			<div class="field-grid">
+				<label class="checkbox-label">
+					<input type="checkbox" name="aiOverviewEnabled" bind:checked={aiOverviewEnabledValue} />
+					<span>Enable AI overview</span>
+				</label>
+				<label class="checkbox-label">
+					<input
+						type="checkbox"
+						name="aiOverviewRequireUserterms"
+						bind:checked={aiOverviewRequireUsertermsValue}
+					/>
+					<span>Require accepted terms</span>
+				</label>
+				<label>
+					Consent validity in months
+					<input
+						name="aiOverviewUsertermsDurationMonths"
+						type="number"
+						min="1"
+						max="60"
+						bind:value={aiOverviewUsertermsDurationMonthsValue}
+						placeholder={String(usertermsDurationMonthsValue || 12)}
+					/>
+				</label>
+			</div>
+			<div class="field-grid">
+				<label>
+					Overview model
+					<input
+						name="aiOverviewModel"
+						bind:value={aiOverviewModelValue}
+						placeholder={chatModelValue || 'chat model'}
+					/>
+				</label>
+				<label>
+					Documents summarised
+					<input
+						name="aiOverviewDocuments"
+						type="number"
+						min="1"
+						bind:value={aiOverviewDocumentsValue}
+						placeholder={String(numberDocumentsValue ?? 4)}
+					/>
+				</label>
+			</div>
+			<div class="field-grid">
+				<label>
+					API language
+					<select name="aiOverviewApiLanguage" bind:value={aiOverviewApiLanguageValue}>
+						<option value="">Default (chat setting)</option>
+						<option value="chat/completions">chat/completions</option>
+						<option value="responses">responses</option>
+					</select>
+				</label>
+				<label>
+					Reasoning effort
+					<select name="aiOverviewReasoningEffort" bind:value={aiOverviewReasoningEffortValue}>
+						<option value="">Default (chat setting)</option>
+						{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
+							<option value={option}>{option}</option>
+						{/each}
+					</select>
+				</label>
+				<label>
+					Text verbosity
+					<select name="aiOverviewTextVerbosity" bind:value={aiOverviewTextVerbosityValue}>
+						<option value="">Default (chat setting)</option>
+						{#each ['low', 'medium', 'high'] as option}
+							<option value={option}>{option}</option>
+						{/each}
+					</select>
+				</label>
+			</div>
+			<label>
+				Overview system prompt
+				<textarea name="aiOverviewSystemprompt" rows="4" bind:value={aiOverviewSystempromptValue}
+				></textarea>
+				<span class="muted" style="font-weight: 400;">
+					Empty falls back to a built-in prompt that answers from the context only and cites the
+					source URLs. Deliberately not the chat system prompt: a search overview is a short
+					summary, not a conversation. What you write here replaces the WORDING only - the output
+					format (Markdown, sources as [label](url), no bare URLs) is appended either way, because
+					the embed renders exactly those constructs and nothing else.
+				</span>
+			</label>
+			<label>
+				Overview context
+				<textarea
+					name="aiOverviewContext"
+					rows="2"
+					bind:value={aiOverviewContextValue}
+					placeholder="e.g. You are answering for TU Graz teaching staff."
+				></textarea>
+			</label>
 		</section>
 
 	</form>

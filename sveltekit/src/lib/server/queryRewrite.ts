@@ -8,6 +8,7 @@ import { findRepositoryContext, type RagResult } from '$lib/server/rag';
 import {
 	getNumberDocuments,
 	getQueryRewriteConfig,
+	QUERY_REWRITE_DEFAULT_HISTORY_LIMIT,
 	type RagConfig
 } from '$lib/ragContext';
 
@@ -20,6 +21,8 @@ type RewriteQueriesParams = {
 	count: number;
 	model?: string;
 	includeHistory: boolean;
+	/** How many of the last messages to keep; defaults to QUERY_REWRITE_DEFAULT_HISTORY_LIMIT. */
+	historyLimit?: number;
 	context?: string;
 	// Optional overrides; when omitted the repo's chat defaults are used.
 	apiLanguage?: string;
@@ -35,13 +38,13 @@ Rules:
 3. Resolve references (e.g. "it", "that") using the conversation context when provided.
 4. Return ONLY valid JSON of the form {"queries": ["...", "..."]} with no extra text.`;
 
-const buildHistoryText = (history: RewriteHistoryItem[]): string => {
+const buildHistoryText = (history: RewriteHistoryItem[], limit: number): string => {
 	const lines = history
 		.filter(
 			(item): item is { role: string; content: string } =>
 				typeof item?.role === 'string' && typeof item?.content === 'string'
 		)
-		.slice(-6)
+		.slice(-limit)
 		.map((item) => `${item.role}: ${item.content}`);
 	return lines.length > 0 ? lines.join('\n') : '';
 };
@@ -93,6 +96,7 @@ export async function rewriteQueries({
 	count,
 	model,
 	includeHistory,
+	historyLimit = QUERY_REWRITE_DEFAULT_HISTORY_LIMIT,
 	context,
 	apiLanguage,
 	reasoningEffort,
@@ -114,11 +118,10 @@ export async function rewriteQueries({
 		const effectiveApiLanguage = (apiLanguage as ApiLanguage) || defaultApiLanguage;
 		const effectiveReasoning =
 			(reasoningEffort as ReasoningEffort | undefined) ?? defaultReasoningEffort;
-		const effectiveVerbosity =
-			(textVerbosity as TextVerbosity | undefined) ?? defaultTextVerbosity;
+		const effectiveVerbosity = (textVerbosity as TextVerbosity | undefined) ?? defaultTextVerbosity;
 
 		const contextText = context && context.trim() ? context.trim() : '';
-		const historyText = includeHistory ? buildHistoryText(history) : '';
+		const historyText = includeHistory ? buildHistoryText(history, historyLimit) : '';
 		const userContent =
 			`Generate ${count} search ${count === 1 ? 'query' : 'queries'}.` +
 			(contextText ? `\n\nContext:\n${contextText}` : '') +
@@ -166,6 +169,20 @@ type RetrieveWithRewriteParams = {
 	ragConfig: RagConfig | undefined;
 	/** Force the rewrite step even when the repo config has it disabled (diagnostic view). */
 	forceRewrite?: boolean;
+	/**
+	 * How many chunks to retrieve, overriding ragConfig.numberDocuments.
+	 *
+	 * The search endpoint needs it: its result list shows DOCUMENTS, and several
+	 * chunks of one page collapse into one entry - so it has to ask for more chunks
+	 * than it wants results. An explicit parameter and not a doctored ragConfig, so
+	 * the call site says what it does.
+	 *
+	 * Only the FALLBACK is overridden: an explicitly configured
+	 * queryRewriteDocsPerSearch still wins, because that is a deliberate setting.
+	 */
+	documents?: number;
+	/** Restrict retrieval to one language (meta.lang). See findRepositoryContext. */
+	lang?: string;
 };
 
 export type RetrieveWithRewriteResult = {
@@ -184,13 +201,16 @@ export async function retrieveWithRewrite({
 	prompt,
 	history = [],
 	ragConfig,
-	forceRewrite = false
+	forceRewrite = false,
+	documents,
+	lang
 }: RetrieveWithRewriteParams): Promise<RetrieveWithRewriteResult> {
-	const fallbackDocs = getNumberDocuments(ragConfig);
+	const fallbackDocs =
+		documents && documents > 0 ? Math.floor(documents) : getNumberDocuments(ragConfig);
 	const rewrite = getQueryRewriteConfig(ragConfig, fallbackDocs);
 
 	if (!rewrite.enabled && !forceRewrite) {
-		const { results } = await findRepositoryContext(repoUrl, prompt, fallbackDocs);
+		const { results } = await findRepositoryContext(repoUrl, prompt, fallbackDocs, lang);
 		return { queries: [prompt], results, rewriteApplied: false };
 	}
 
@@ -201,6 +221,7 @@ export async function retrieveWithRewrite({
 		count: rewrite.count,
 		model: rewrite.model,
 		includeHistory: rewrite.includeHistory,
+		historyLimit: rewrite.historyLimit,
 		context: rewrite.context,
 		apiLanguage: rewrite.apiLanguage,
 		reasoningEffort: rewrite.reasoningEffort,
@@ -209,7 +230,7 @@ export async function retrieveWithRewrite({
 
 	const merged = new Map<string, RagResult>();
 	for (const query of queries) {
-		const { results } = await findRepositoryContext(repoUrl, query, rewrite.docsPerSearch);
+		const { results } = await findRepositoryContext(repoUrl, query, rewrite.docsPerSearch, lang);
 		for (const result of results) {
 			const existing = merged.get(result.id);
 			if (!existing || result.similarity > existing.similarity) {

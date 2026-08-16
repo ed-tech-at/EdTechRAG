@@ -828,6 +828,7 @@ export const RepositoryScalarFieldEnum = {
   activeSinglePage: 'activeSinglePage',
   activeParameterPage: 'activeParameterPage',
   activeEmbedApi: 'activeEmbedApi',
+  activeSearchApi: 'activeSearchApi',
   embedAllowedHostRegex: 'embedAllowedHostRegex'
 } as const
 

@@ -1,0 +1,6 @@
+# Local dry runs write the mirror here; the real one is a separate repository.
+/out/
+changes.json
+.env
+.env.*
+!.env.example
