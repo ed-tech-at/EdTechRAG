@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="de">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>EdTechRAG Embed – Suche</title>
+		<style>
+			body {
+				font-family: system-ui, sans-serif;
+				max-width: 52rem;
+				margin: 0 auto;
+				padding: 2rem 1rem 6rem;
+				line-height: 1.6;
+			}
+			h1 {
+				color: #285f82;
+			}
+			pre {
+				padding: 1rem;
+				border-radius: 8px;
+				background: #eee;
+				overflow-x: auto;
+			}
+			code {
+				background: #eee;
+				padding: 0 3px;
+				border-radius: 3px;
+			}
+			.demo {
+				margin: 2rem 0;
+				padding: 1.5rem;
+				border: 1px dashed #bbb;
+				border-radius: 8px;
+			}
+			/* Wie man auf der Zielseite umfaerbt: eine Variable neu deklarieren.
+			   Hier auf einem VORFAHREN des Widgets - das funktioniert, weil die
+			   Vorgaben auf :root liegen und nicht auf dem Host-Element. */
+			.recolored {
+				--at-ed-tech-edtechrag-src-accent: #7a1f5c;
+				--at-ed-tech-edtechrag-src-accent-hover: #5c1745;
+				--at-ed-tech-edtechrag-src-radius: 0;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>EdTechRAG Suche – Embed</h1>
+
+		<p>
+			Ein Script, zwei Betriebsarten. Die <strong>Box</strong> gehört auf jede Seite und
+			navigiert zur Suchseite; die <strong>Ergebnisdarstellung</strong> liest
+			<code>?q=</code> aus der Adresse.
+		</p>
+
+		<h2>Einbau</h2>
+		<pre>
+&lt;!-- Box, z. B. im Kopfbereich jeder Seite --&gt;
+&lt;div
+  class="at-ed-tech-edtechrag-search"
+  hidden="hidden"
+  data-embed-id="telucation.tugraz.at"
+  data-mode="box"
+  data-results-url="/suche/"
+  data-lang="de"
+  data-edtechrag-base-url="https://e-flaait.tugraz.at/edtechrag/"
+&gt;&lt;/div&gt;
+
+&lt;!-- Ergebnisdarstellung, auf der Suchseite --&gt;
+&lt;div
+  class="at-ed-tech-edtechrag-search"
+  hidden="hidden"
+  data-embed-id="telucation.tugraz.at"
+  data-mode="results"
+  data-lang="de"
+  data-limit="10"
+  data-ai-overview="optin"
+  data-userterms-url="https://e-flaait.tugraz.at/edtechrag/benutzerbedingungen"
+  data-userterms-duration="12"
+  data-edtechrag-base-url="https://e-flaait.tugraz.at/edtechrag/"
+&gt;&lt;/div&gt;
+
+&lt;link rel="stylesheet" href="https://e-flaait.tugraz.at/edtechrag/embed/search/edtechrag-search.css"&gt;
+&lt;script src="https://e-flaait.tugraz.at/edtechrag/embed/search/edtechrag-search.js"&gt;&lt;/script&gt;
+&lt;noscript&gt;&lt;p&gt;Die Suche braucht JavaScript.&lt;/p&gt;&lt;/noscript&gt;</pre
+		>
+
+		<h2>Attribute</h2>
+		<table>
+			<tbody>
+				<tr>
+					<td><code>data-embed-id</code></td>
+					<td>die EdTechRAG-Repository-URL. Pflicht.</td>
+				</tr>
+				<tr>
+					<td><code>data-mode</code></td>
+					<td><code>box</code> (Standard) oder <code>results</code></td>
+				</tr>
+				<tr>
+					<td><code>data-results-url</code></td>
+					<td>Ziel der Box. Ohne sie tut die Box nichts.</td>
+				</tr>
+				<tr>
+					<td><code>data-query-param</code></td>
+					<td>Name des Suchparameters, Standard <code>q</code></td>
+				</tr>
+				<tr>
+					<td><code>data-lang</code></td>
+					<td><code>de</code> / <code>en</code>. Ohne Angabe zählt das <code>lang</code> der Seite.</td>
+				</tr>
+				<tr>
+					<td><code>data-limit</code></td>
+					<td>höchstens so viele Treffer; darüber entscheidet aber das Repository.</td>
+				</tr>
+				<tr>
+					<td><code>data-ai-overview</code></td>
+					<td><code>optin</code> (Standard) oder <code>off</code> für diese Seite</td>
+				</tr>
+				<tr>
+					<td><code>data-userterms-url</code>, <code>data-userterms-duration</code></td>
+					<td>Bedingungen und Gültigkeit in Monaten (Standard 12)</td>
+				</tr>
+				<tr>
+					<td><code>data-design</code></td>
+					<td><code>tugraz</code> oder <code>tc</code></td>
+				</tr>
+			</tbody>
+		</table>
+
+		<h2>Styles überschreiben</h2>
+		<p>
+			Alles, was man vernünftigerweise umstellen will, ist eine Custom Property auf dem
+			Host-Element. Überschreiben heißt: dieselbe Variable neu deklarieren – kein
+			<code>!important</code>, kein Wettrennen um Selektoren.
+		</p>
+		<pre>
+.at-ed-tech-edtechrag-src-host {
+  --at-ed-tech-edtechrag-src-accent: var(--brand);
+  --at-ed-tech-edtechrag-src-radius: 0;
+}</pre
+		>
+
+		<h2>Wie gesucht wird</h2>
+		<p>
+			Die Trefferliste kommt <strong>ohne Embeddings</strong> – eine
+			Postgres-Volltextsuche über die gespeicherten Chunks, ein SQL-Aufruf, kein
+			API-Aufruf. Gesucht wird mit Präfix-Matching, deshalb findet <code>noten</code> auch
+			<code>Notenexport</code>; findet diese Stufe nichts, greift zusätzlich eine
+			Teilwortsuche. Umstellbar auf semantische Suche unter
+			<code>/admin/repositories/&lt;url&gt;</code> („How to search") – die kostet dann
+			einen Embedding-Aufruf pro Suche.
+		</p>
+		<p>
+			Mitgesendet wird die Sprache der Seite. Der Index enthält beide Sprachfassungen –
+			jede ist ein eigener Text mit eigener Adresse –, aber eine deutsche Suche soll nicht
+			die englische Übersetzung derselben Seite als zweiten Treffer listen.
+		</p>
+
+		<h2>Der AI-Overview</h2>
+		<p>
+			Die Treffer erscheinen <strong>sofort</strong>. Der Overview darüber zeigt zuerst nur
+			die Zustimmung: Hinweis, Link zu den Bedingungen, ein Knopf. Erst danach wird er
+			gestreamt – zeichenweise, nicht am Ende auf einmal.
+		</p>
+		<p>
+			Der Overview sucht <strong>immer semantisch</strong> (RAG), unabhängig von der
+			Einstellung der Liste: die Liste will die Seiten mit den getippten Worten, die
+			Zusammenfassung die Stellen, die zur <em>Frage</em> passen. Seine Treffer erscheinen
+			als eigene Gruppe <strong>über</strong> den Datenbanktreffern – und erst nach der
+			Zustimmung, denn dort passiert der Embedding-Aufruf. Eine Seite, die in beiden
+			Gruppen wäre, steht nur oben.
+		</p>
+		<p>
+			In der Fußzeile des Overviews stehen Hinweis, Link zu den Bedingungen und die drei
+			Punkte für den Widerruf beisammen. Widerruf entfernt auch die semantische Gruppe
+			wieder; die Datenbanksuche läuft weiter. Gespeichert wird die Zustimmung unter
+			<code>edtechrag-search-overview-&lt;embedId&gt;</code> im localStorage – ein eigener
+			Schlüssel, damit Chat- und Suchzustimmung getrennt bleiben.
+		</p>
+		<p>
+			Ob es einen Overview überhaupt gibt, entscheidet <code>/admin/repositories/&lt;url&gt;</code>
+			(Abschnitt „AI overview"). Ist er dort aus, meldet die Suche das mit, und das Widget
+			zeigt keine Zustimmung für etwas, das es nicht gibt.
+		</p>
+
+		<h2>Live</h2>
+		<p>
+			Zwei Abweichungen gegenüber dem Snippet, damit diese Seite lokal funktioniert:
+			<code>data-edtechrag-base-url</code> zeigt auf denselben Host, und die Assets werden
+			relativ geladen. <code>data-embed-id</code> muss eine Repository-URL sein, für die
+			<em>Enable search API</em> gesetzt ist und deren
+			<code>Allowed embed host regex</code> auf <code>localhost</code> passt.
+		</p>
+
+		<div class="demo">
+			<p><strong>Box</strong> (navigiert zu <code>?q=</code> auf dieser Seite):</p>
+			<div
+				class="at-ed-tech-edtechrag-search"
+				hidden="hidden"
+				data-embed-id="telucation.tugraz.at"
+				data-mode="box"
+				data-results-url="dev-example.html"
+				data-lang="de"
+				data-edtechrag-base-url="/"
+			></div>
+		</div>
+
+		<div class="demo recolored">
+			<p><strong>Ergebnisdarstellung</strong>, mit überschriebener Akzentfarbe:</p>
+			<div
+				class="at-ed-tech-edtechrag-search"
+				hidden="hidden"
+				data-embed-id="telucation.tugraz.at"
+				data-mode="results"
+				data-lang="de"
+				data-limit="10"
+				data-ai-overview="optin"
+				data-userterms-url="/edtechrag/benutzerbedingungen"
+				data-userterms-duration="12"
+				data-edtechrag-base-url="/"
+			></div>
+		</div>
+
+		<noscript>
+			<p><strong>Die Suche braucht JavaScript.</strong></p>
+		</noscript>
+
+		<link rel="stylesheet" href="edtechrag-search.css" />
+		<script src="edtechrag-search.js"></script>
+	</body>
+</html>

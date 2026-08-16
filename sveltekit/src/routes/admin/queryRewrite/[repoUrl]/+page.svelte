@@ -181,6 +181,7 @@
 			<div>
 				<span class="label">Include history</span>{data.rewrite.includeHistory ? 'yes' : 'no'}
 			</div>
+			<div><span class="label">History messages</span>{data.rewrite.historyLimit}</div>
 			<div>
 				<span class="label">API language</span>{data.rewrite.apiLanguage || 'default (chat)'}
 			</div>

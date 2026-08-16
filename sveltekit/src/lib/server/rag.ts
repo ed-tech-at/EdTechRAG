@@ -1,3 +1,4 @@
+import { Prisma } from '../../generated/prisma/client';
 import prisma from '$lib/server/db';
 import { embedText } from '$lib/server/embed';
 import { quotedVectorColumnForAlias } from '$lib/server/vectorTable';
@@ -14,7 +15,20 @@ export type RagResult = {
 	similarity: number;
 };
 
-export async function findRepositoryContext(repoUrl: string, prompt: string, limit: number = 4) {
+/**
+ * Semantic retrieval over the embedded chunks.
+ *
+ * `lang` is optional and filters on meta.lang - the value the GenAI export writes
+ * into every document. The chatbot passes nothing and is therefore unaffected; the
+ * site search passes the language of the page, so a German search does not return
+ * the English translation of the same article as a second, separate hit.
+ */
+export async function findRepositoryContext(
+	repoUrl: string,
+	prompt: string,
+	limit: number = 4,
+	lang?: string
+) {
 	const vector = await embedText(prompt, repoUrl);
 	const vectorLiteral = `[${vector.join(',')}]`;
 	const vectorColumn = await quotedVectorColumnForAlias('rv');
@@ -29,8 +43,12 @@ export async function findRepositoryContext(repoUrl: string, prompt: string, lim
 
 	// console.log("searching for " + prompt);
 
-			// console.log("vectorLiteral");
-		// console.log(vectorLiteral);
+	// console.log("vectorLiteral");
+	// console.log(vectorLiteral);
+
+	// Prisma.empty when no language is given: the fragment then disappears from the
+	// statement instead of becoming an always-true comparison.
+	const langFilter = lang ? Prisma.sql`AND df."meta"->>'lang' = ${lang}` : Prisma.empty;
 
 	const rows = await prisma.$queryRaw<
 		{
@@ -50,6 +68,7 @@ export async function findRepositoryContext(repoUrl: string, prompt: string, lim
 		WHERE ${vectorColumn} IS NOT NULL
 		  AND rv."repositoryUrl" = ${repoUrl}
 		  AND rv."invalidatedAt" IS NULL
+		  ${langFilter}
 		ORDER BY (${vectorColumn} OPERATOR(rag_vectors.<=>) ${vectorLiteral}::"rag_vectors".vector) ASC
 		LIMIT ${limit}`;
 

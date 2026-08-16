@@ -128,6 +128,68 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA rag_vectors
   GRANT ALL PRIVILEGES ON SEQUENCES TO edtechrag_dev;
 ```
 
+## Search Index (optional, per server)
+
+Only needed on servers that actually serve the **search embed**
+(`static/embed/search`). Deliberately **not** a Prisma migration: `prisma migrate
+deploy` runs on every container start, and the index would then be built on every
+installation, including those that only run the chatbot. Run it by hand where the
+search is used.
+
+The search works without it — just slowly. Measured on a repository with 19 349
+chunks:
+
+| | one query |
+| --- | --- |
+| without the index | **2094 ms** (sequential scan, `to_tsvector` per row) |
+| with the index | **3.4 ms** (bitmap index scan) |
+
+```sql
+-- Full-text index for the database-only search (src/lib/server/textSearch.ts).
+--
+-- THE EXPRESSION MUST STAY CHARACTER-FOR-CHARACTER the one in findRepositoryText.
+-- Postgres only uses an expression index when the query repeats the expression
+-- exactly; a difference as small as dropping the coalesce() makes it fall back to a
+-- scan - silently, and with the same results, so nothing looks broken.
+--
+-- 'simple' and not 'german': measured on the real TELucation corpus, the German
+-- stemmer reduced "Noten" to the stem "not" and matched 111 of 131 documents.
+-- 'simple' plus prefix matching found 5 - and still finds "Notenexport" for
+-- "noten", which the stemmer does not. The configuration is part of the expression,
+-- so this index serves that one choice; another configuration needs another index.
+--
+-- GIN and not GiST: GIN is the slower one to build and the faster one to search,
+-- and this table is written by the ingest job and read by every visitor.
+--
+-- CONCURRENTLY, because by hand there is no transaction in the way: the build takes
+-- longer but does not block the ingest pipeline. Inside a Prisma migration it would
+-- not be allowed at all - one more reason this lives here and not there.
+CREATE INDEX CONCURRENTLY IF NOT EXISTS "vector1536_content_fts_idx"
+  ON "rag_vectors"."vector1536"
+  USING GIN (to_tsvector('simple', coalesce("content", '')));
+```
+
+Check that it exists and that the planner uses it:
+
+```sql
+\di rag_vectors.vector1536_content_fts_idx
+
+EXPLAIN ANALYZE
+SELECT count(*) FROM rag_vectors.vector1536
+WHERE "repositoryUrl" = '<your-repo>' AND "invalidatedAt" IS NULL
+  AND to_tsvector('simple', coalesce("content", '')) @@ to_tsquery('simple', 'test:*');
+```
+
+`Bitmap Index Scan on vector1536_content_fts_idx` means it works. `Seq Scan` means
+the expression does not match the index — compare it against `findRepositoryText`
+character by character.
+
+To remove it again:
+
+```sql
+DROP INDEX CONCURRENTLY IF EXISTS "rag_vectors"."vector1536_content_fts_idx";
+```
+
 ## Run Dev Environment
 
 After the database has started, the local dev environment with hot reloading can be started. Changes in the code are automatically shown locally.
