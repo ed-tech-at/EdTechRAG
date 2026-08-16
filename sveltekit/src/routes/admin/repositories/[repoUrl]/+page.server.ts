@@ -112,6 +112,7 @@ const publicConfig = (repository: {
 			queryRewriteCount: rag?.queryRewriteCount,
 			queryRewriteDocsPerSearch: rag?.queryRewriteDocsPerSearch,
 			queryRewriteIncludeHistory: rag?.queryRewriteIncludeHistory === true,
+			queryRewriteHistoryLimit: rag?.queryRewriteHistoryLimit,
 			queryRewriteContext: rag?.queryRewriteContext ?? '',
 			queryRewriteApiLanguage: rag?.queryRewriteApiLanguage ?? '',
 			queryRewriteReasoningEffort: rag?.queryRewriteReasoningEffort ?? '',
@@ -201,6 +202,7 @@ const formState = (
 			queryRewriteCount: optionalNumber(formData.get('queryRewriteCount')),
 			queryRewriteDocsPerSearch: optionalNumber(formData.get('queryRewriteDocsPerSearch')),
 			queryRewriteIncludeHistory: parseAccessCheckbox(formData, 'queryRewriteIncludeHistory'),
+			queryRewriteHistoryLimit: optionalNumber(formData.get('queryRewriteHistoryLimit')),
 			queryRewriteContext: optionalString(formData.get('queryRewriteContext')) ?? '',
 			queryRewriteApiLanguage: optionalString(formData.get('queryRewriteApiLanguage')) ?? '',
 			queryRewriteReasoningEffort:
@@ -286,6 +288,7 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					queryRewriteCount: undefined,
 					queryRewriteDocsPerSearch: undefined,
 					queryRewriteIncludeHistory: false,
+					queryRewriteHistoryLimit: undefined,
 					queryRewriteContext: '',
 					queryRewriteApiLanguage: '',
 					queryRewriteReasoningEffort: '',
@@ -382,6 +385,7 @@ export const actions: Actions = {
 		const queryRewriteCount = optionalNumber(formData.get('queryRewriteCount'));
 		const queryRewriteDocsPerSearch = optionalNumber(formData.get('queryRewriteDocsPerSearch'));
 		const queryRewriteIncludeHistory = parseAccessCheckbox(formData, 'queryRewriteIncludeHistory');
+		const queryRewriteHistoryLimit = optionalNumber(formData.get('queryRewriteHistoryLimit'));
 		const queryRewriteContext = optionalString(formData.get('queryRewriteContext'));
 		const queryRewriteApiLanguage = optionalString(formData.get('queryRewriteApiLanguage'));
 		const queryRewriteReasoningEffort = optionalString(formData.get('queryRewriteReasoningEffort'));
@@ -391,6 +395,9 @@ export const actions: Actions = {
 		}
 		if (queryRewriteDocsPerSearch !== undefined && queryRewriteDocsPerSearch < 1) {
 			errors.push('Documents per query-rewrite search must be at least 1.');
+		}
+		if (queryRewriteHistoryLimit !== undefined && queryRewriteHistoryLimit < 1) {
+			errors.push('History messages for query rewrite must be at least 1.');
 		}
 
 		const requireUserterms = parseAccessCheckbox(formData, 'requireUserterms');
@@ -540,6 +547,9 @@ export const actions: Actions = {
 		if (queryRewriteDocsPerSearch !== undefined)
 			nextRag.queryRewriteDocsPerSearch = queryRewriteDocsPerSearch;
 		else delete nextRag.queryRewriteDocsPerSearch;
+		if (queryRewriteHistoryLimit !== undefined)
+			nextRag.queryRewriteHistoryLimit = queryRewriteHistoryLimit;
+		else delete nextRag.queryRewriteHistoryLimit;
 		if (queryRewriteContext !== undefined) nextRag.queryRewriteContext = queryRewriteContext;
 		else delete nextRag.queryRewriteContext;
 		if (queryRewriteApiLanguage !== undefined)

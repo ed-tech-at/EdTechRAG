@@ -9,6 +9,7 @@ export type RagConfig = {
 	queryRewriteCount?: number;
 	queryRewriteDocsPerSearch?: number;
 	queryRewriteIncludeHistory?: boolean;
+	queryRewriteHistoryLimit?: number;
 	queryRewriteContext?: string;
 	queryRewriteApiLanguage?: string;
 	queryRewriteReasoningEffort?: string;
@@ -38,6 +39,8 @@ export type QueryRewriteConfig = {
 	count: number;
 	docsPerSearch: number;
 	includeHistory: boolean;
+	/** How many of the last chat messages the rewrite prompt may see. */
+	historyLimit: number;
 	context?: string;
 	// Optional overrides; undefined means "inherit the repo's chat setting".
 	apiLanguage?: string;
@@ -114,6 +117,14 @@ const optionalEnum = (value: unknown, allowed: string[]): string | undefined =>
 const optionalPositiveInt = (value: unknown): number | undefined =>
 	typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : undefined;
 
+/**
+ * How many of the last chat messages go into the rewrite prompt when
+ * `queryRewriteIncludeHistory` is on. Messages, not turns - six is roughly three
+ * question/answer rounds, enough to resolve "it" or "that" without paying for the
+ * whole conversation on every search.
+ */
+export const QUERY_REWRITE_DEFAULT_HISTORY_LIMIT = 6;
+
 const optionalTrimmed = (value: unknown): string | undefined =>
 	typeof value === 'string' && value.trim() ? value.trim() : undefined;
 
@@ -156,6 +167,7 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 			typeof raw.queryRewriteIncludeHistory === 'boolean'
 				? raw.queryRewriteIncludeHistory
 				: undefined,
+		queryRewriteHistoryLimit: optionalPositiveInt(raw.queryRewriteHistoryLimit),
 		queryRewriteContext:
 			typeof raw.queryRewriteContext === 'string' && raw.queryRewriteContext.trim()
 				? raw.queryRewriteContext.trim()
@@ -285,6 +297,9 @@ export function getQueryRewriteConfig(
 		count,
 		docsPerSearch,
 		includeHistory: ragConfig?.queryRewriteIncludeHistory === true,
+		historyLimit:
+			optionalPositiveInt(ragConfig?.queryRewriteHistoryLimit) ??
+			QUERY_REWRITE_DEFAULT_HISTORY_LIMIT,
 		context:
 			typeof ragConfig?.queryRewriteContext === 'string' && ragConfig.queryRewriteContext.trim()
 				? ragConfig.queryRewriteContext.trim()

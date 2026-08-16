@@ -64,6 +64,7 @@
 	let queryRewriteCountValue = data.config.rag.queryRewriteCount ?? '';
 	let queryRewriteDocsPerSearchValue = data.config.rag.queryRewriteDocsPerSearch ?? '';
 	let queryRewriteIncludeHistoryValue = data.config.rag.queryRewriteIncludeHistory;
+	let queryRewriteHistoryLimitValue = data.config.rag.queryRewriteHistoryLimit ?? '';
 	let queryRewriteContextValue = data.config.rag.queryRewriteContext;
 	let queryRewriteApiLanguageValue = data.config.rag.queryRewriteApiLanguage;
 	let queryRewriteReasoningEffortValue = data.config.rag.queryRewriteReasoningEffort;
@@ -118,6 +119,7 @@
 		queryRewriteCountValue = config.rag.queryRewriteCount ?? '';
 		queryRewriteDocsPerSearchValue = config.rag.queryRewriteDocsPerSearch ?? '';
 		queryRewriteIncludeHistoryValue = config.rag.queryRewriteIncludeHistory;
+		queryRewriteHistoryLimitValue = config.rag.queryRewriteHistoryLimit ?? '';
 		queryRewriteContextValue = config.rag.queryRewriteContext;
 		queryRewriteApiLanguageValue = config.rag.queryRewriteApiLanguage;
 		queryRewriteReasoningEffortValue = config.rag.queryRewriteReasoningEffort;
@@ -416,6 +418,8 @@
 				<p class="muted">
 					Rewrite the user question into several optimized search queries before retrieval.
 					Each query is searched separately and results are merged (deduplicated by chunk).
+					With chat history on, the last n messages (not turns) are added to the rewrite
+					prompt so references like &quot;it&quot; can be resolved.
 				</p>
 			</div>
 			<div class="field-grid">
@@ -459,6 +463,16 @@
 						min="1"
 						bind:value={queryRewriteDocsPerSearchValue}
 						placeholder={String(numberDocumentsValue ?? 4)}
+					/>
+				</label>
+				<label>
+					History messages (last n)
+					<input
+						name="queryRewriteHistoryLimit"
+						type="number"
+						min="1"
+						bind:value={queryRewriteHistoryLimitValue}
+						placeholder="6"
 					/>
 				</label>
 			</div>

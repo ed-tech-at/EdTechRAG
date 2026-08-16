@@ -5,7 +5,12 @@ import {
 	type TextVerbosity
 } from '$lib/server/openaiClient';
 import { findRepositoryContext, type RagResult } from '$lib/server/rag';
-import { getNumberDocuments, getQueryRewriteConfig, type RagConfig } from '$lib/ragContext';
+import {
+	getNumberDocuments,
+	getQueryRewriteConfig,
+	QUERY_REWRITE_DEFAULT_HISTORY_LIMIT,
+	type RagConfig
+} from '$lib/ragContext';
 
 export type RewriteHistoryItem = { role?: string; content?: string };
 
@@ -16,6 +21,8 @@ type RewriteQueriesParams = {
 	count: number;
 	model?: string;
 	includeHistory: boolean;
+	/** How many of the last messages to keep; defaults to QUERY_REWRITE_DEFAULT_HISTORY_LIMIT. */
+	historyLimit?: number;
 	context?: string;
 	// Optional overrides; when omitted the repo's chat defaults are used.
 	apiLanguage?: string;
@@ -31,13 +38,13 @@ Rules:
 3. Resolve references (e.g. "it", "that") using the conversation context when provided.
 4. Return ONLY valid JSON of the form {"queries": ["...", "..."]} with no extra text.`;
 
-const buildHistoryText = (history: RewriteHistoryItem[]): string => {
+const buildHistoryText = (history: RewriteHistoryItem[], limit: number): string => {
 	const lines = history
 		.filter(
 			(item): item is { role: string; content: string } =>
 				typeof item?.role === 'string' && typeof item?.content === 'string'
 		)
-		.slice(-6)
+		.slice(-limit)
 		.map((item) => `${item.role}: ${item.content}`);
 	return lines.length > 0 ? lines.join('\n') : '';
 };
@@ -89,6 +96,7 @@ export async function rewriteQueries({
 	count,
 	model,
 	includeHistory,
+	historyLimit = QUERY_REWRITE_DEFAULT_HISTORY_LIMIT,
 	context,
 	apiLanguage,
 	reasoningEffort,
@@ -113,7 +121,7 @@ export async function rewriteQueries({
 		const effectiveVerbosity = (textVerbosity as TextVerbosity | undefined) ?? defaultTextVerbosity;
 
 		const contextText = context && context.trim() ? context.trim() : '';
-		const historyText = includeHistory ? buildHistoryText(history) : '';
+		const historyText = includeHistory ? buildHistoryText(history, historyLimit) : '';
 		const userContent =
 			`Generate ${count} search ${count === 1 ? 'query' : 'queries'}.` +
 			(contextText ? `\n\nContext:\n${contextText}` : '') +
@@ -213,6 +221,7 @@ export async function retrieveWithRewrite({
 		count: rewrite.count,
 		model: rewrite.model,
 		includeHistory: rewrite.includeHistory,
+		historyLimit: rewrite.historyLimit,
 		context: rewrite.context,
 		apiLanguage: rewrite.apiLanguage,
 		reasoningEffort: rewrite.reasoningEffort,
