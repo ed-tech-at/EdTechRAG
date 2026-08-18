@@ -4,3 +4,7 @@ changes.json
 .env
 .env.*
 !.env.example
+
+# Deploy key for the Docker container's git push, mounted from here.
+ssh/*
+!ssh/.gitkeep

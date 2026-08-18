@@ -1,0 +1,7 @@
+.env
+.env.*
+ssh
+out
+.git
+docker-compose.yml
+changes.json

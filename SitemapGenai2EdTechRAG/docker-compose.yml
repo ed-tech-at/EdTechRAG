@@ -1,0 +1,71 @@
+services:
+  sitemap-genai-telucation:
+    container_name: sitemap-genai-telucation
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: .env.telucation
+        required: true
+    environment:
+      # Overrides the WORKDIR from .env.telucation (a host-relative path like
+      # ./out/telucation-website-md), which is only correct for `go run .`.
+      WORKDIR: /work
+      ADDR: ":8080"
+      # Path prefix so this and the flaait service can share one Traefik host,
+      # e.g. https://flaait-test.flaait.app/sitemapgenai2edtechrag-telucation/trigger
+      SUBFOLDER: sitemapgenai2edtechrag-telucation
+      # Set a long random value here AND in .env.telucation (TRIGGER_SECRET=...) -
+      # not committed, .env.telucation is gitignored. The server refuses to
+      # start without it.
+      MIRROR_BRANCH: main
+      GIT_AUTHOR_NAME: "GenAI Sync"
+      GIT_AUTHOR_EMAIL: "noreply@tugraz.at"
+    volumes:
+      # Persistent checkout of the mirror repo - must already have `origin` set
+      # to the SSH remote, e.g. by cloning it here once before first `up`.
+      - ./out/telucation-website-md:/work
+      - ./ssh:/app/.ssh:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sitemap-genai-telucation.rule=Host(`flaait-test.flaait.app`) && PathPrefix(`/sitemapgenai2edtechrag-telucation`)"
+      - "traefik.http.services.sitemap-genai-telucation.loadbalancer.server.port=8080"
+      - "traefik.http.routers.sitemap-genai-telucation.entrypoints=websecure"
+      - "traefik.http.routers.sitemap-genai-telucation.tls.certresolver=myresolver"
+      - "traefik.docker.network=traefik_net"
+    networks:
+      - traefik_net
+
+  sitemap-genai-flaait:
+    container_name: sitemap-genai-flaait
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - path: .env.flaait
+        required: true
+    environment:
+      WORKDIR: /work
+      ADDR: ":8080"
+      SUBFOLDER: sitemapgenai2edtechrag-flaait
+      MIRROR_BRANCH: main
+      GIT_AUTHOR_NAME: "GenAI Sync"
+      GIT_AUTHOR_EMAIL: "noreply@tugraz.at"
+    volumes:
+      - ./out/flaait-website-md:/work
+      - ./ssh:/app/.ssh:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sitemap-genai-flaait.rule=Host(`flaait-test.flaait.app`) && PathPrefix(`/sitemapgenai2edtechrag-flaait`)"
+      - "traefik.http.services.sitemap-genai-flaait.loadbalancer.server.port=8080"
+      - "traefik.http.routers.sitemap-genai-flaait.entrypoints=websecure"
+      - "traefik.http.routers.sitemap-genai-flaait.tls.certresolver=myresolver"
+      - "traefik.docker.network=traefik_net"
+    networks:
+      - traefik_net
+
+networks:
+  traefik_net:
+    external: true
