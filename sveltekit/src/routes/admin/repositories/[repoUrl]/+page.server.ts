@@ -12,9 +12,17 @@ import {
 } from '$lib/server/repositoryAccess';
 import {
 	getNumberDocuments,
+	INTERNAL_META_KEYS,
+	isMetaLabelLang,
+	META_LABEL_ANY_LANG,
+	META_LABEL_MAX_ENTRIES,
+	META_LABEL_MAX_LENGTH,
+	META_TAGS_ALL,
+	normalizeMetaKey,
 	parseRagConfig,
 	USERTERMS_MAX_MONTHS,
-	USERTERMS_MIN_MONTHS
+	USERTERMS_MIN_MONTHS,
+	type MetaLabelTable
 } from '$lib/ragContext';
 import { canManageUsers, SITE_ROLE } from '$lib/siteRole';
 
@@ -48,6 +56,128 @@ const metaTagsFromForm = (value: FormDataEntryValue | null) =>
 				.map((item) => item.trim())
 				.filter(Boolean)
 		: [];
+
+/**
+ * Same field format as metaTagsFromForm, but normalised to the key form the ingest
+ * pipeline stores. Typing `Podcast Folge` should find `podcast_folge` rather than
+ * quietly matching nothing.
+ */
+const searchMetaTagsFromForm = (value: FormDataEntryValue | null) =>
+	metaTagsFromForm(value).map((tag) => (tag === META_TAGS_ALL ? tag : normalizeMetaKey(tag)));
+
+/**
+ * The naming table, one mapping per line:
+ *
+ *   episode.de = Podcast-Folge      a label for German pages
+ *   episode.en = Podcast Episode    a label for English pages
+ *   speaker    = Gast               a label for every language
+ *
+ * Malformed lines are REPORTED, not skipped. A silently dropped line is how an
+ * admin ends up staring at a label that never appears and no message saying why.
+ */
+const metaLabelsFromForm = (
+	value: FormDataEntryValue | null,
+	errors: string[]
+): MetaLabelTable => {
+	if (typeof value !== 'string') return {};
+
+	const table: MetaLabelTable = {};
+	// Textareas submit CRLF; a stray \r would otherwise end up inside a stored label.
+	const lines = value.split(/\r?\n/);
+
+	for (let i = 0; i < lines.length; i += 1) {
+		const line = lines[i].trim();
+		if (!line || line.startsWith('#')) continue;
+
+		const at = line.indexOf('=');
+		if (at < 0) {
+			errors.push(`Meta label line ${i + 1}: expected "key = label" or "key.de = label".`);
+			continue;
+		}
+
+		// First '=' only: a label may legitimately contain one.
+		const rawKey = line.slice(0, at).trim();
+		const label = line.slice(at + 1).trim();
+
+		/*
+		 * The language suffix is split off the LAST dot, and only when what follows
+		 * actually looks like a language. A meta key may itself contain a dot
+		 * (`runtime.min`), which would otherwise be read as key `runtime` in a
+		 * language called `min`.
+		 */
+		let key = rawKey;
+		let lang = META_LABEL_ANY_LANG;
+		const dot = rawKey.lastIndexOf('.');
+		if (dot > 0) {
+			const suffix = rawKey.slice(dot + 1).trim().toLowerCase();
+			if (isMetaLabelLang(suffix)) {
+				key = rawKey.slice(0, dot);
+				lang = suffix;
+			}
+		}
+
+		key = normalizeMetaKey(key);
+
+		if (!key || key === META_TAGS_ALL) {
+			errors.push(`Meta label line ${i + 1}: missing a metadata key before the "=".`);
+			continue;
+		}
+		if (!label) {
+			errors.push(`Meta label line ${i + 1}: missing a label after the "=".`);
+			continue;
+		}
+		if (label.length > META_LABEL_MAX_LENGTH) {
+			errors.push(
+				`Meta label line ${i + 1}: label longer than ${META_LABEL_MAX_LENGTH} characters.`
+			);
+			continue;
+		}
+		// url and title are their own search-result fields and never appear in the
+		// meta line, so a label for them could never be shown.
+		if (key === 'url' || key === 'title' || INTERNAL_META_KEYS.has(key)) {
+			errors.push(`Meta label line ${i + 1}: "${key}" is never emitted, so it cannot be labelled.`);
+			continue;
+		}
+		if (table[key] && table[key][lang] !== undefined) {
+			errors.push(`Meta label line ${i + 1}: "${key}" already has a label for "${lang}".`);
+			continue;
+		}
+
+		if (!table[key]) table[key] = {};
+		table[key][lang] = label;
+	}
+
+	const count = Object.keys(table).length;
+	if (count > META_LABEL_MAX_ENTRIES) {
+		errors.push(`At most ${META_LABEL_MAX_ENTRIES} labelled metadata keys (got ${count}).`);
+	}
+
+	return table;
+};
+
+/**
+ * Table -> textarea text, in a stable order (keys sorted, the any-language slot
+ * first) so reopening the page does not reshuffle what was typed.
+ *
+ * Only used for DB -> form. A failed submit echoes the raw text instead, so the
+ * line that caused the error is still there to be fixed.
+ */
+const metaLabelsToForm = (table: MetaLabelTable | undefined): string => {
+	if (!table) return '';
+	const lines: string[] = [];
+	for (const key of Object.keys(table).sort()) {
+		const langs = table[key];
+		const ordered = Object.keys(langs).sort((a, b) =>
+			a === META_LABEL_ANY_LANG ? -1 : b === META_LABEL_ANY_LANG ? 1 : a.localeCompare(b)
+		);
+		for (const lang of ordered) {
+			lines.push(
+				lang === META_LABEL_ANY_LANG ? `${key} = ${langs[lang]}` : `${key}.${lang} = ${langs[lang]}`
+			);
+		}
+	}
+	return lines.join('\n');
+};
 
 const deriveName = (repoUrl: string) => {
 	const cleaned = repoUrl.replace(/\/$/, '');
@@ -123,6 +253,8 @@ const publicConfig = (repository: {
 			searchMode: rag?.searchMode ?? 'fulltext',
 			searchResultLimit: rag?.searchResultLimit,
 			searchSnippetLength: rag?.searchSnippetLength,
+			searchMetaTags: rag?.searchMetaTags ?? [],
+			searchMetaLabels: metaLabelsToForm(rag?.searchMetaLabels),
 			aiOverviewEnabled: rag?.aiOverviewEnabled === true,
 			aiOverviewModel: rag?.aiOverviewModel ?? '',
 			aiOverviewSystemprompt: rag?.aiOverviewSystemprompt ?? '',
@@ -219,6 +351,18 @@ const formState = (
 			searchMode: optionalString(formData.get('searchMode')) ?? 'fulltext',
 			searchResultLimit: optionalNumber(formData.get('searchResultLimit')),
 			searchSnippetLength: optionalNumber(formData.get('searchSnippetLength')),
+			searchMetaTags: searchMetaTagsFromForm(formData.get('searchMetaTags')),
+			/*
+			 * Echoed VERBATIM, not re-serialised from the parsed table.
+			 *
+			 * This shape is what a failed submit renders, and the line that caused the
+			 * failure was rejected - so a canonical re-serialisation would drop exactly
+			 * the line the admin has to look at to fix it.
+			 */
+			searchMetaLabels:
+				typeof formData.get('searchMetaLabels') === 'string'
+					? String(formData.get('searchMetaLabels'))
+					: '',
 			aiOverviewEnabled: parseAccessCheckbox(formData, 'aiOverviewEnabled'),
 			aiOverviewModel: optionalString(formData.get('aiOverviewModel')) ?? '',
 			aiOverviewSystemprompt: optionalString(formData.get('aiOverviewSystemprompt')) ?? '',
@@ -312,6 +456,8 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					searchMode: 'fulltext',
 					searchResultLimit: undefined,
 					searchSnippetLength: undefined,
+					searchMetaTags: [],
+					searchMetaLabels: '',
 					aiOverviewEnabled: false,
 					aiOverviewModel: '',
 					aiOverviewSystemprompt: '',
@@ -443,6 +589,23 @@ export const actions: Actions = {
 		// than the chunk itself just pads the result list.
 		if (searchSnippetLength !== undefined && searchSnippetLength < 40) {
 			errors.push('Snippet length must be at least 40 characters.');
+		}
+
+		const searchMetaTags = searchMetaTagsFromForm(formData.get('searchMetaTags'));
+		const searchMetaLabels = metaLabelsFromForm(formData.get('searchMetaLabels'), errors);
+		/*
+		 * A label for a key that is never emitted can never appear, so it is a typo
+		 * rather than a preference. Only checkable against an explicit list - with '*'
+		 * the key set is per document and not known here.
+		 */
+		if (!searchMetaTags.includes(META_TAGS_ALL)) {
+			for (const key of Object.keys(searchMetaLabels)) {
+				if (!searchMetaTags.includes(key)) {
+					errors.push(
+						`Meta label "${key}" is not in the search metadata tags, so it would never be shown.`
+					);
+				}
+			}
 		}
 
 		const aiOverviewEnabled = parseAccessCheckbox(formData, 'aiOverviewEnabled');
@@ -588,6 +751,8 @@ export const actions: Actions = {
 			queryRewriteIncludeHistory,
 			requireUserterms,
 			searchMode,
+			searchMetaTags,
+			searchMetaLabels,
 			aiOverviewEnabled,
 			aiOverviewRequireUserterms,
 			webviewRequireUserterms

@@ -76,6 +76,8 @@
 	let searchModeValue = data.config.rag.searchMode;
 	let searchResultLimitValue = data.config.rag.searchResultLimit ?? '';
 	let searchSnippetLengthValue = data.config.rag.searchSnippetLength ?? '';
+	let searchMetaTagsValue = data.config.rag.searchMetaTags.join(', ');
+	let searchMetaLabelsValue = data.config.rag.searchMetaLabels;
 	let aiOverviewEnabledValue = data.config.rag.aiOverviewEnabled;
 	let aiOverviewModelValue = data.config.rag.aiOverviewModel;
 	let aiOverviewSystempromptValue = data.config.rag.aiOverviewSystemprompt;
@@ -136,6 +138,8 @@
 		searchModeValue = config.rag.searchMode;
 		searchResultLimitValue = config.rag.searchResultLimit ?? '';
 		searchSnippetLengthValue = config.rag.searchSnippetLength ?? '';
+		searchMetaTagsValue = config.rag.searchMetaTags.join(', ');
+		searchMetaLabelsValue = config.rag.searchMetaLabels;
 		aiOverviewEnabledValue = config.rag.aiOverviewEnabled;
 		aiOverviewModelValue = config.rag.aiOverviewModel;
 		aiOverviewSystempromptValue = config.rag.aiOverviewSystemprompt;
@@ -413,12 +417,12 @@
 					Metadata tags
 					<input name="metaTags" bind:value={metaTagsValue} placeholder="* or url, title, folder" />
 					<span class="muted" style="font-weight: 400;">
-						Which metadata reaches the chatbot and the search results. <code>*</code> takes every
-						key a document actually has &mdash; ingest already stores all of them, so a new fact in
-						the source appears without being listed here. Bookkeeping keys of the pipeline
-						(<code>fetch_url</code>, <code>path</code>, <code>headSha</code> &hellip;) are never
-						emitted. Empty means no metadata <em>and no URL</em>, so a search result has nothing to
-						link to.
+						Which metadata reaches <strong>the chatbot</strong> &mdash; the
+						<code>METADATA_JSON</code> block of its context. <code>*</code> takes every key a
+						document actually has &mdash; ingest already stores all of them, so a new fact in the
+						source appears without being listed here. Empty means no metadata <em>and no URL</em> in
+						that context. The search results have their own list under
+						<a href="#search-heading">Search results</a>; this field does not affect them.
 					</span>
 				</label>
 			</div>
@@ -603,7 +607,37 @@
 						placeholder="320"
 					/>
 				</label>
+				<label>
+					Search metadata tags
+					<input
+						name="searchMetaTags"
+						bind:value={searchMetaTagsValue}
+						placeholder="* or type, updated, folder"
+					/>
+					<span class="muted" style="font-weight: 400;">
+						The only metadata the search API hands out &mdash; this response is readable by every
+						allowed origin, which is why it is not the chatbot's list above. Empty means no metadata
+						line at all; <code>url</code> and <code>title</code> are delivered as their own fields
+						either way, so results stay clickable. The order here is the order the visitor sees.
+						Bookkeeping keys of the pipeline (<code>fetch_url</code>, <code>path</code>,
+						<code>headSha</code> &hellip;) are never emitted, whether listed or not.
+					</span>
+				</label>
 			</div>
+			<label>
+				Metadata names
+				<textarea name="searchMetaLabels" rows="5" bind:value={searchMetaLabelsValue}></textarea>
+				<span class="muted" style="font-weight: 400;">
+					What those keys are <em>called</em> in the result list, one per line &mdash;
+					<code>episode.de = Podcast-Folge</code> turns a bare <code>42</code> into
+					<code>Podcast-Folge: 42</code>. A suffix of <code>.de</code> / <code>.en</code> applies to
+					pages in that language; without a suffix (<code>speaker = Gast</code>) the name applies to
+					every language. A key falls back from its language to the suffix-less entry to
+					<code>.en</code>, and a key with no name at all keeps showing its bare value. Only worth
+					filling in with an explicit tag list above &mdash; under <code>*</code> the keys differ per
+					document, so some lines would be named and others not.
+				</span>
+			</label>
 			<p class="muted">
 				<strong>Database only</strong> is the default: one Postgres full-text query per search, no
 				embedding call and no LLM call. It matches the words that were typed, with prefix matching,
