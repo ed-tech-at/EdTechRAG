@@ -97,6 +97,7 @@ export const actions: Actions = {
 				activeSimplePage: false,
 				activeSinglePage: false,
 				activeParameterPage: false,
+				activeWebviewPage: false,
 				activeEmbedApi: false,
 				embedAllowedHostRegex: null
 			}

@@ -64,6 +64,7 @@ const publicConfig = (repository: {
 	activeSimplePage: boolean;
 	activeSinglePage: boolean;
 	activeParameterPage: boolean;
+	activeWebviewPage: boolean;
 	activeEmbedApi: boolean;
 	activeSearchApi: boolean;
 	embedAllowedHostRegex: string | null;
@@ -132,12 +133,17 @@ const publicConfig = (repository: {
 			aiOverviewTextVerbosity: rag?.aiOverviewTextVerbosity ?? '',
 			// Not stored yet means "required" - see getAiOverviewConfig.
 			aiOverviewRequireUserterms: rag?.aiOverviewRequireUserterms !== false,
-			aiOverviewUsertermsDurationMonths: rag?.aiOverviewUsertermsDurationMonths
+			aiOverviewUsertermsDurationMonths: rag?.aiOverviewUsertermsDurationMonths,
+			webviewIntroHtml: rag?.webviewIntroHtml ?? '',
+			webviewRequireUserterms: rag?.webviewRequireUserterms === true,
+			webviewUsertermsUrl: rag?.webviewUsertermsUrl ?? '',
+			webviewUsertermsDurationMonths: rag?.webviewUsertermsDurationMonths
 		},
 		access: {
 			activeSimplePage: repository.activeSimplePage,
 			activeSinglePage: repository.activeSinglePage,
 			activeParameterPage: repository.activeParameterPage,
+			activeWebviewPage: repository.activeWebviewPage,
 			activeEmbedApi: repository.activeEmbedApi,
 			activeSearchApi: repository.activeSearchApi,
 			embedAllowedHostRegex: repository.embedAllowedHostRegex ?? ''
@@ -224,12 +230,20 @@ const formState = (
 			aiOverviewRequireUserterms: parseAccessCheckbox(formData, 'aiOverviewRequireUserterms'),
 			aiOverviewUsertermsDurationMonths: optionalNumber(
 				formData.get('aiOverviewUsertermsDurationMonths')
-			)
+			),
+			webviewIntroHtml:
+				typeof formData.get('webviewIntroHtml') === 'string'
+					? String(formData.get('webviewIntroHtml'))
+					: '',
+			webviewRequireUserterms: parseAccessCheckbox(formData, 'webviewRequireUserterms'),
+			webviewUsertermsUrl: optionalString(formData.get('webviewUsertermsUrl')) ?? '',
+			webviewUsertermsDurationMonths: optionalNumber(formData.get('webviewUsertermsDurationMonths'))
 		},
 		access: {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
 			activeSinglePage: parseAccessCheckbox(formData, 'activeSinglePage'),
 			activeParameterPage: parseAccessCheckbox(formData, 'activeParameterPage'),
+			activeWebviewPage: parseAccessCheckbox(formData, 'activeWebviewPage'),
 			activeEmbedApi: parseAccessCheckbox(formData, 'activeEmbedApi'),
 			activeSearchApi: parseAccessCheckbox(formData, 'activeSearchApi'),
 			embedAllowedHostRegex: parseEmbedAllowedHostRegex(formData) ?? ''
@@ -308,7 +322,11 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					aiOverviewTextVerbosity: '',
 					// A new repository gets the safe default: consent required.
 					aiOverviewRequireUserterms: true,
-					aiOverviewUsertermsDurationMonths: undefined
+					aiOverviewUsertermsDurationMonths: undefined,
+					webviewIntroHtml: '',
+					webviewRequireUserterms: false,
+					webviewUsertermsUrl: '',
+					webviewUsertermsDurationMonths: undefined
 				},
 				access: {
 					...defaultRepositoryAccess,
@@ -452,10 +470,50 @@ export const actions: Actions = {
 			);
 		}
 
+		/* -- Webview (the /webview full-page chat) -- */
+		// The intro is raw HTML on purpose (external logos via <img>); only whitespace-only
+		// input counts as empty, the string itself is stored as authored.
+		const webviewIntroHtmlRaw = formData.get('webviewIntroHtml');
+		const webviewIntroHtml =
+			typeof webviewIntroHtmlRaw === 'string' && webviewIntroHtmlRaw.trim()
+				? webviewIntroHtmlRaw
+				: undefined;
+		const webviewRequireUserterms = parseAccessCheckbox(formData, 'webviewRequireUserterms');
+		const webviewUsertermsUrl = optionalString(formData.get('webviewUsertermsUrl'));
+		const webviewUsertermsDurationMonths = optionalNumber(
+			formData.get('webviewUsertermsDurationMonths')
+		);
+		if (webviewUsertermsUrl !== undefined) {
+			try {
+				const parsed = new URL(webviewUsertermsUrl);
+				if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+					errors.push('Webview user-terms URL must be an http(s) URL.');
+				}
+			} catch {
+				errors.push('Webview user-terms URL is not a valid URL.');
+			}
+		}
+		// Unlike the embeds, the webview has no host page that could supply the terms
+		// link - without a URL the consent panel would gate the chat on an unreadable
+		// document.
+		if (webviewRequireUserterms && !webviewUsertermsUrl) {
+			errors.push('Webview user-terms URL is required when the webview requires accepted terms.');
+		}
+		if (
+			webviewUsertermsDurationMonths !== undefined &&
+			(webviewUsertermsDurationMonths < USERTERMS_MIN_MONTHS ||
+				webviewUsertermsDurationMonths > USERTERMS_MAX_MONTHS)
+		) {
+			errors.push(
+				`Webview consent validity must be between ${USERTERMS_MIN_MONTHS} and ${USERTERMS_MAX_MONTHS} months.`
+			);
+		}
+
 		const nextAccess = {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
 			activeSinglePage: parseAccessCheckbox(formData, 'activeSinglePage'),
 			activeParameterPage: parseAccessCheckbox(formData, 'activeParameterPage'),
+			activeWebviewPage: parseAccessCheckbox(formData, 'activeWebviewPage'),
 			activeEmbedApi: parseAccessCheckbox(formData, 'activeEmbedApi'),
 			activeSearchApi: parseAccessCheckbox(formData, 'activeSearchApi'),
 			embedAllowedHostRegex: parseEmbedAllowedHostRegex(formData)
@@ -531,7 +589,8 @@ export const actions: Actions = {
 			requireUserterms,
 			searchMode,
 			aiOverviewEnabled,
-			aiOverviewRequireUserterms
+			aiOverviewRequireUserterms,
+			webviewRequireUserterms
 		};
 		if (usertermsDurationMonths !== undefined)
 			nextRag.usertermsDurationMonths = usertermsDurationMonths;
@@ -591,6 +650,13 @@ export const actions: Actions = {
 		if (aiOverviewUsertermsDurationMonths !== undefined)
 			nextRag.aiOverviewUsertermsDurationMonths = aiOverviewUsertermsDurationMonths;
 		else delete nextRag.aiOverviewUsertermsDurationMonths;
+		if (webviewIntroHtml !== undefined) nextRag.webviewIntroHtml = webviewIntroHtml;
+		else delete nextRag.webviewIntroHtml;
+		if (webviewUsertermsUrl !== undefined) nextRag.webviewUsertermsUrl = webviewUsertermsUrl;
+		else delete nextRag.webviewUsertermsUrl;
+		if (webviewUsertermsDurationMonths !== undefined)
+			nextRag.webviewUsertermsDurationMonths = webviewUsertermsDurationMonths;
+		else delete nextRag.webviewUsertermsDurationMonths;
 
 		try {
 			await prisma.repository.upsert({

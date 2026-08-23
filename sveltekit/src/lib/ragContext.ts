@@ -31,6 +31,11 @@ export type RagConfig = {
 	aiOverviewTextVerbosity?: string;
 	aiOverviewRequireUserterms?: boolean;
 	aiOverviewUsertermsDurationMonths?: number;
+	/* -- Webview (the /webview/[repoUrl] full-page chat) -- */
+	webviewIntroHtml?: string;
+	webviewRequireUserterms?: boolean;
+	webviewUsertermsUrl?: string;
+	webviewUsertermsDurationMonths?: number;
 };
 
 export type QueryRewriteConfig = {
@@ -206,7 +211,17 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 			typeof raw.aiOverviewRequireUserterms === 'boolean'
 				? raw.aiOverviewRequireUserterms
 				: undefined,
-		aiOverviewUsertermsDurationMonths: optionalPositiveInt(raw.aiOverviewUsertermsDurationMonths)
+		aiOverviewUsertermsDurationMonths: optionalPositiveInt(raw.aiOverviewUsertermsDurationMonths),
+		// Kept untrimmed on purpose: this is raw HTML an admin authored (may contain
+		// <img> logos); reformatting it here would surprise the author.
+		webviewIntroHtml:
+			typeof raw.webviewIntroHtml === 'string' && raw.webviewIntroHtml.trim()
+				? raw.webviewIntroHtml
+				: undefined,
+		webviewRequireUserterms:
+			typeof raw.webviewRequireUserterms === 'boolean' ? raw.webviewRequireUserterms : undefined,
+		webviewUsertermsUrl: optionalTrimmed(raw.webviewUsertermsUrl),
+		webviewUsertermsDurationMonths: optionalPositiveInt(raw.webviewUsertermsDurationMonths)
 	};
 }
 
@@ -357,6 +372,33 @@ export function getAiOverviewConfig(
 		requireUserterms: ragConfig?.aiOverviewRequireUserterms !== false,
 		usertermsDurationMonths: clampMonths(
 			ragConfig?.aiOverviewUsertermsDurationMonths ?? ragConfig?.usertermsDurationMonths
+		)
+	};
+}
+
+/**
+ * The /webview/[repoUrl] full-page chat.
+ *
+ * `introHtml` is raw HTML written by the repository admin (so external logos via
+ * <img> are possible) - it is rendered unescaped and must never be filled from
+ * visitor input.
+ */
+export type WebviewConfig = {
+	introHtml: string;
+	requireUserterms: boolean;
+	usertermsUrl?: string;
+	usertermsDurationMonths: number;
+};
+
+export function getWebviewConfig(ragConfig: RagConfig | undefined): WebviewConfig {
+	return {
+		introHtml: ragConfig?.webviewIntroHtml ?? '',
+		requireUserterms: ragConfig?.webviewRequireUserterms === true,
+		usertermsUrl: ragConfig?.webviewUsertermsUrl,
+		// Falls back to the chatbot's consent window, then to the 12-month default -
+		// same chain as the AI overview.
+		usertermsDurationMonths: clampMonths(
+			ragConfig?.webviewUsertermsDurationMonths ?? ragConfig?.usertermsDurationMonths
 		)
 	};
 }

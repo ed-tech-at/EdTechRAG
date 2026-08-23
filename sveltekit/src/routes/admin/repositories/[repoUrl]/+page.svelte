@@ -46,6 +46,7 @@
 	let activeSimplePageValue = data.config.access.activeSimplePage;
 	let activeSinglePageValue = data.config.access.activeSinglePage;
 	let activeParameterPageValue = data.config.access.activeParameterPage;
+	let activeWebviewPageValue = data.config.access.activeWebviewPage;
 	let activeEmbedApiValue = data.config.access.activeEmbedApi;
 	let openAiApiBaseValue = data.config.llm.openAiApiBase;
 	let chatModelValue = data.config.llm.chatModel;
@@ -86,6 +87,10 @@
 	let aiOverviewRequireUsertermsValue = data.config.rag.aiOverviewRequireUserterms;
 	let aiOverviewUsertermsDurationMonthsValue =
 		data.config.rag.aiOverviewUsertermsDurationMonths ?? '';
+	let webviewIntroHtmlValue = data.config.rag.webviewIntroHtml;
+	let webviewRequireUsertermsValue = data.config.rag.webviewRequireUserterms;
+	let webviewUsertermsUrlValue = data.config.rag.webviewUsertermsUrl;
+	let webviewUsertermsDurationMonthsValue = data.config.rag.webviewUsertermsDurationMonths ?? '';
 
 	$: if (form) {
 		saving = false;
@@ -101,6 +106,7 @@
 		activeSimplePageValue = config.access.activeSimplePage;
 		activeSinglePageValue = config.access.activeSinglePage;
 		activeParameterPageValue = config.access.activeParameterPage;
+		activeWebviewPageValue = config.access.activeWebviewPage;
 		activeEmbedApiValue = config.access.activeEmbedApi;
 		openAiApiBaseValue = config.llm.openAiApiBase;
 		chatModelValue = config.llm.chatModel;
@@ -140,6 +146,10 @@
 		aiOverviewTextVerbosityValue = config.rag.aiOverviewTextVerbosity;
 		aiOverviewRequireUsertermsValue = config.rag.aiOverviewRequireUserterms;
 		aiOverviewUsertermsDurationMonthsValue = config.rag.aiOverviewUsertermsDurationMonths ?? '';
+		webviewIntroHtmlValue = config.rag.webviewIntroHtml;
+		webviewRequireUsertermsValue = config.rag.webviewRequireUserterms;
+		webviewUsertermsUrlValue = config.rag.webviewUsertermsUrl;
+		webviewUsertermsDurationMonthsValue = config.rag.webviewUsertermsDurationMonths ?? '';
 	}
 	$: webhookUrl = webhookPath.trim()
 		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
@@ -217,6 +227,10 @@
 				<label class="checkbox-label">
 					<input type="checkbox" name="activeParameterPage" bind:checked={activeParameterPageValue} />
 					<span>Parameter page</span>
+				</label>
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeWebviewPage" bind:checked={activeWebviewPageValue} />
+					<span>Webview page</span>
 				</label>
 				<label class="checkbox-label">
 					<input type="checkbox" name="activeEmbedApi" bind:checked={activeEmbedApiValue} />
@@ -710,6 +724,66 @@
 					placeholder="e.g. You are answering for TU Graz teaching staff."
 				></textarea>
 			</label>
+		</section>
+
+		<section class="config-section" aria-labelledby="webview-heading">
+			<div class="section-head">
+				<h2 id="webview-heading">Webview</h2>
+				<p class="muted">
+					The full-page end-user chat at <code>/webview/&lt;repository&gt;</code>. Supports a
+					fullscreen mode for the page and for text fields. Switched on with the
+					<strong>Webview page</strong> checkbox in <strong>Access</strong> at the top.
+				</p>
+			</div>
+			<label>
+				Intro text (HTML)
+				<textarea
+					name="webviewIntroHtml"
+					rows="5"
+					bind:value={webviewIntroHtmlValue}
+					placeholder={'<p>Willkommen!</p>\n<img src="https://example.org/logo.svg" alt="Logo" height="40">'}
+				></textarea>
+				<span class="muted" style="font-weight: 400;">
+					Shown above the chat. Plain HTML, rendered as-is &mdash; external logos via
+					<code>&lt;img src=&quot;https://&hellip;&quot;&gt;</code> are possible. Whatever is written
+					here is served to every visitor of the page.
+				</span>
+			</label>
+			<div class="field-grid">
+				<label class="checkbox-label">
+					<input
+						type="checkbox"
+						name="webviewRequireUserterms"
+						bind:checked={webviewRequireUsertermsValue}
+					/>
+					<span>Require accepted user terms</span>
+				</label>
+				<label>
+					User-terms URL
+					<input
+						name="webviewUsertermsUrl"
+						bind:value={webviewUsertermsUrlValue}
+						placeholder="https://example.org/benutzerbedingungen"
+					/>
+				</label>
+				<label>
+					Consent validity in months
+					<input
+						name="webviewUsertermsDurationMonths"
+						type="number"
+						min="1"
+						max="60"
+						bind:value={webviewUsertermsDurationMonthsValue}
+						placeholder={String(usertermsDurationMonthsValue || 12)}
+					/>
+				</label>
+			</div>
+			<p class="muted">
+				With terms required, the chat only opens after the visitor accepted the linked terms; the
+				acceptance is stored in the visitor's browser and expires after the configured months
+				(empty inherits the chatbot's <strong>User terms</strong> setting, default 12). The URL is
+				required when the checkbox is on &mdash; the webview has no host page that could supply it.
+			</p>
 		</section>
 
 	</form>

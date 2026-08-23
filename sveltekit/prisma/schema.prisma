@@ -20,6 +20,7 @@ model Repository {
   activeSimplePage    Boolean @default(false)
   activeSinglePage    Boolean @default(false)
   activeParameterPage Boolean @default(false)
+  activeWebviewPage   Boolean @default(false)
   activeEmbedApi      Boolean @default(false)
   activeSearchApi     Boolean @default(false)
   embedAllowedHostRegex String?
