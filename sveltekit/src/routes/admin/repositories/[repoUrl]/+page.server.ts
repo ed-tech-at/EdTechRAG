@@ -210,6 +210,7 @@ const publicConfig = (repository: {
 			repositoryPath: stringValue(updateConfig.repository_path),
 			webhookPath: stringValue(updateConfig.github2_webhook_path),
 			publicBaseUrl: stringValue(updateConfig.github2_public_base_url, DEFAULT_GITHUB2_BASE),
+			excludePathRegex: stringValue(updateConfig.exclude_path_regex),
 			hasSharedSecret: Boolean(stringValue(updateConfig.Github2EdTechRAG_SHARED_SECRET))
 		},
 		gitlab: {
@@ -303,6 +304,7 @@ const formState = (
 			repositoryPath: optionalString(formData.get('repository_path')) ?? '',
 			webhookPath,
 			publicBaseUrl: githubBase,
+			excludePathRegex: optionalString(formData.get('exclude_path_regex')) ?? '',
 			hasSharedSecret: hasGithubSharedSecret
 		},
 		gitlab: {
@@ -413,6 +415,7 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					repositoryPath: '',
 					webhookPath: '',
 					publicBaseUrl: DEFAULT_GITHUB2_BASE,
+					excludePathRegex: '',
 					hasSharedSecret: false
 				},
 				gitlab: {
@@ -526,6 +529,15 @@ export const actions: Actions = {
 		const publicBaseUrl =
 			optionalString(formData.get('github2_public_base_url')) ?? DEFAULT_GITHUB2_BASE;
 		const webhookPath = optionalString(formData.get('github2_webhook_path')) ?? '';
+		const excludePathRegex = optionalString(formData.get('exclude_path_regex')) ?? '';
+		if (excludePathRegex) {
+			try {
+				new RegExp(excludePathRegex);
+			} catch (err) {
+				const message = err instanceof Error ? err.message : 'Invalid regular expression.';
+				errors.push(`Exclude path regex is invalid: ${message}`);
+			}
+		}
 		const webhookUrl = webhookPath
 			? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath)}`
 			: `${publicBaseUrl.replace(/\/$/, '')}/webhook`;
@@ -709,6 +721,8 @@ export const actions: Actions = {
 			gitlab_api_url: gitlabApiUrl,
 			ref: gitlabRef
 		};
+		if (excludePathRegex) nextUpdateConfig.exclude_path_regex = excludePathRegex;
+		else delete nextUpdateConfig.exclude_path_regex;
 		if (sharedSecret) {
 			nextUpdateConfig.Github2EdTechRAG_SHARED_SECRET = sharedSecret;
 		}

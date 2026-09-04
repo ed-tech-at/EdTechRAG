@@ -279,6 +279,14 @@
 					placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Optional'}
 				/>
 			</label>
+			<label>
+				Exclude path/filename regex
+				<input
+					name="exclude_path_regex"
+					value={config.github.excludePathRegex}
+					placeholder="\\.pdf|/raw/"
+				/>
+			</label>
 			<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
 		</section>
 
