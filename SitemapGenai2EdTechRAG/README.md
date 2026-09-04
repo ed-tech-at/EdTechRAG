@@ -232,6 +232,17 @@ sites this container serves. The reason is in the container log.
    `deploy` job, and set `GENAI_TRIGGER_SECRET` in that repository's CI/CD
    variables (masked, protected) to the matching `TRIGGER_SECRET`.
 
+
+
+##### ssh setup
+ssh-keyscan gitlab.tugraz.at > ssh/known_hosts
+
+und das key-file muss akutell so heißen
+
+ssh/id_ed25519 
+
+
+
 ## Dry run without CI
 
 ```bash
