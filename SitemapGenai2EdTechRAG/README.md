@@ -145,9 +145,9 @@ repository races two pushes against each other.
 
 ## Running as a Docker service
 
-Alternative to GitLab CI: a long-lived container per site, sitting behind
-Traefik like `Github2EdTechRAG`, that runs `-mode=build` → `-mode=diff` →
-commit+push → `-mode=notify` once per HTTP request instead of once per
+Alternative to GitLab CI: one long-lived container for all sites, sitting
+behind Traefik like `Github2EdTechRAG`, that runs `-mode=build` → `-mode=diff`
+→ commit+push → `-mode=notify` once per HTTP request instead of once per
 pipeline. Built for the case where the thing that should start a sync is
 another GitLab project's pipeline (the *website*, not the mirror) finishing its
 own deploy job — a plain pipeline trigger can't reach across projects as
@@ -159,28 +159,30 @@ Files, all sibling to `main.go`:
 | --- | --- |
 | `trigger/main.go` | Separate `main` package, own binary. HTTP server that runs the three modes and the git commit/push in a goroutine. Never imported by or changed by `main.go` — the tool's three-modes contract stays as-is. |
 | `Dockerfile` | Multi-stage build of **both** binaries (`sitemapgenai2edtechrag` and `sitemapgenai2edtechrag-trigger`). Alpine runtime with `git` and `openssh-client`, because unlike the CI pipeline this container does its own commit and push. `ENTRYPOINT` is the trigger server. |
-| `docker-compose.yml` | One service per site (`sitemap-genai-telucation`, `sitemap-genai-flaait`) — the real mirror repositories are two separate GitLab projects, not the two-site-in-one-repo layout `.gitlab-ci.yml.example` assumes. |
-| `entrypoint.sh` | Not the container's default entrypoint anymore. Kept in the image for a one-shot run without HTTP: `docker compose run --rm --entrypoint /usr/local/bin/entrypoint.sh sitemap-genai-telucation`. Reads `RUN_MODE=loop` to poll on an interval instead of running once, if you'd rather not wire up a trigger at all. |
+| `config/` | One subfolder per site, each with a `.env` holding that site's settings and secrets — gitignored, `config/.env.example` is the committed template. The folder name is the site's path segment. This is the only place a site is declared: the service reads the folder on every request. |
+| `docker-compose.yml` | **One** service (`sitemap-genai`) and one Traefik router for every site — the real mirror repositories are separate GitLab projects, not the two-site-in-one-repo layout `.gitlab-ci.yml.example` assumes, but they are separate *checkouts* below `out/`, not separate containers. |
+| `entrypoint.sh` | Not the container's default entrypoint anymore. Kept in the image for a one-shot run of one site without HTTP: `docker compose run --rm --entrypoint /usr/local/bin/entrypoint.sh sitemap-genai telucation`. Reads `RUN_MODE=loop` to poll on an interval instead of running once, if you'd rather not wire up a trigger at all. |
 | `website.gitlab-ci.yml.example` | Goes in the **website** repository (e.g. `telucation-website`), not here. Shows the existing `deploy` job unchanged plus a `trigger-genai-sync` job that `curl`s the endpoint below once `deploy` has succeeded. |
 | `ssh/` | Mount point for the deploy key (`ssh/id_ed25519`), gitignored except `.gitkeep`. Needs **write** access to the mirror repository — the CI pipeline's `GENAI_PUSH_TOKEN` is HTTPS-based and doesn't apply here. |
 
 ### The endpoint
 
 ```
-GET/POST /{SUBFOLDER}/trigger
+GET/POST /{SUBFOLDER}/{site}/trigger
 ```
 
-One path prefix per site so both containers can share one Traefik host
-instead of needing a subdomain each, the same pattern as `SUBFOLDER` in
-`Github2EdTechRAG`:
+`SUBFOLDER` is the whole service's path prefix (`sitemapgenai2edtechrag`, the
+same pattern as in `Github2EdTechRAG`) and `{site}` is a folder name in
+`config/`, so one Traefik host and one router serve every site:
 
 ```
-https://flaait-test.flaait.app/sitemapgenai2edtechrag-telucation/trigger
-https://flaait-test.flaait.app/sitemapgenai2edtechrag-flaait/trigger
+https://flaait-test.flaait.app/sitemapgenai2edtechrag/telucation/trigger
+https://flaait-test.flaait.app/sitemapgenai2edtechrag/flaait/trigger
 ```
 
-Authenticated by `TRIGGER_SECRET` (required — the server refuses to start
-without it), sent as either:
+Authenticated by that site's `TRIGGER_SECRET` from `config/{site}/.env`
+(required — a folder without it is not served at all, the trigger answers
+`404`), sent as either:
 
 - `Authorization: Bearer <secret>` — use this for the actual call from the
   website's pipeline (`website.gitlab-ci.yml.example`).
@@ -191,27 +193,40 @@ without it), sent as either:
 The response is immediate (`202 Accepted`, "sync started") and does not wait
 for the sync to finish — `-mode=notify`'s `/chunk` call alone can take
 minutes. A second request while one is still running gets `409 Conflict`
-instead of overlapping it. Watch the actual run with:
+instead of overlapping it — per site, so two sites can sync at the same time.
+Watch the actual run with:
 
 ```bash
-docker compose logs -f sitemap-genai-telucation
+docker compose logs -f sitemap-genai
 ```
 
+Every log line of a run is prefixed with `[{site}]`.
+
 `GET /{SUBFOLDER}/healthz` answers `200 ok` without touching git or the
-network, for Traefik/uptime checks.
+network, for Traefik/uptime checks. `GET /{SUBFOLDER}/{site}/healthz` is the
+per-site version: `200` once that site's `.env` is readable and complete, `404`
+while it is missing, unreadable or without a `TRIGGER_SECRET` — the same answer
+an unknown site gets, so an unauthenticated caller learns nothing about which
+sites this container serves. The reason is in the container log.
 
 ### Setup
 
-1. Clone each mirror repository once into `out/<key>-website-md` with its
-   `origin` remote already pointing at the `git@gitlab.tugraz.at:...` SSH URL —
-   the container mounts this checkout, it doesn't create it.
-2. Put a deploy key with **write** access to both mirror repositories at
+1. Clone each mirror repository once into `out/<name>` with its `origin`
+   remote already pointing at the `git@gitlab.tugraz.at:...` SSH URL — the
+   container mounts `out/` as a whole, it doesn't create the checkouts. A
+   checkout whose directory is not called like the config folder (e.g. the
+   existing `out/telucation-website-md`) needs `MIRROR_DIR=telucation-website-md`
+   in that site's `.env`.
+2. Put a deploy key with **write** access to all mirror repositories at
    `ssh/id_ed25519`.
-3. In `.env.telucation` / `.env.flaait`: point `SITEMAP_GENAI_SITES` at the
+3. Per site, `cp config/.env.example config/<name>/.env`, where `<name>` is the
+   path segment you want in the trigger URL. Point `SITEMAP_GENAI_SITES` at the
    **production** sitemap URL, not a `localhost` one — a container on the
    server can't reach your laptop's dev server. Add `TRIGGER_SECRET` (`openssl
    rand -hex 32`), a different value per site.
-4. `docker compose up -d --build`.
+4. `docker compose up -d --build`. The startup log lists which sites it found
+   and which `.env` is incomplete. Adding a site later is step 1 + step 3 only:
+   the folder is read per request, no restart, no compose change.
 5. In the **website** repository's own `.gitlab-ci.yml`, add the
    `trigger-genai-sync` job from `website.gitlab-ci.yml.example` after the
    `deploy` job, and set `GENAI_TRIGGER_SECRET` in that repository's CI/CD
