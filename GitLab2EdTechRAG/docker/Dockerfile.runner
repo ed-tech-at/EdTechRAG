@@ -1,0 +1,12 @@
+FROM golang:1.27 AS build
+RUN apk add --no-cache git ca-certificates
+WORKDIR /src
+COPY ./main.go .
+RUN go build -trimpath -ldflags="-s -w" -o /out/gitlab2edtechrag main.go
+
+FROM gitlab/gitlab-runner:alpine3.21
+
+RUN apk add --no-cache \
+  bash git curl jq openssl coreutils
+
+COPY --from=build /out/gitlab2edtechrag /usr/local/bin/gitlab2edtechrag

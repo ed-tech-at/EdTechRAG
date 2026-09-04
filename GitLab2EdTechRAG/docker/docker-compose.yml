@@ -1,0 +1,12 @@
+services:
+  gitlab-runner-2edtechrag:
+    build:
+      context: ..
+      dockerfile: ./Dockerfile.runner
+    container_name: gitlab-runner-2edtechrag
+    restart: unless-stopped
+    volumes:
+      - ./config.toml:/etc/gitlab-runner/config.toml:ro
+    environment:
+      - TZ=Europe/Vienna
+  
