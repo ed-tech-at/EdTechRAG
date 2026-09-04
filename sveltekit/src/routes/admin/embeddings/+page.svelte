@@ -21,6 +21,17 @@
 		return value.length > length ? `${value.slice(0, length)}…` : value;
 	};
 
+	type VectorItem = PageData['items'][number];
+
+	// Three states: no vector yet, a freshly computed one, or one copied from an
+	// identical chunk. Rows embedded before the source column existed have no
+	// bookkeeping and therefore read as "New Stored".
+	const vectorState = (item: VectorItem) => {
+		if (!item.hasVector) return { label: 'Missing', className: 'status muted' };
+		if (item.cacheSourceId === null) return { label: 'New Stored', className: 'status ok' };
+		return { label: `Cache Hit (Old ID ${item.cacheSourceId})`, className: 'status cached' };
+	};
+
 	const pageLink = (target: number) => {
 		const next = Math.min(Math.max(target, 1), data.pagination.totalPages);
 		return `?page=${next}`;
@@ -216,8 +227,8 @@
 							<td>{item.dataFileId ?? '—'}</td>
 							<td>{item.chunkNr ?? '—'}</td>
 							<td>{item.embeddingModel ?? '—'}</td>
-							<td class={item.hasVector ? 'status ok' : 'status muted'}>
-								{item.hasVector ? 'Stored' : 'Missing'}
+							<td class={vectorState(item).className}>
+								{vectorState(item).label}
 							</td>
 							<td>{formatDate(item.embeddedAt)}</td>
 							<td>{formatDate(item.createdAt)}</td>
@@ -412,6 +423,10 @@
 
 	.status.ok {
 		color: #0d7a2a;
+	}
+
+	.status.cached {
+		color: #8a5a00;
 	}
 
 	.status.muted {

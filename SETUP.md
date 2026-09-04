@@ -76,8 +76,9 @@ CREATE TABLE rag_vectors.vector1536 (
     "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "embeddedAt"      TIMESTAMP(3),
     "invalidatedAt"   TIMESTAMP(3),
-    "embeddingVector" "rag_vectors".vector(1536)   -- if extension is in rag_vectors
+    "embeddingVector" "rag_vectors".vector(1536),  -- if extension is in rag_vectors
     -- If extension is in public instead, use: public.vector(1536)
+    "embeddingSourceId" INTEGER                    -- id of the row a cached vector was copied from
 );
 
 -- Grants on existing objects
@@ -116,6 +117,7 @@ CREATE TABLE "vector1536" (
     "embeddedAt" TIMESTAMP(3),
     "invalidatedAt" TIMESTAMP(3),
     "embeddingVector" vector(1536),
+    "embeddingSourceId" INTEGER,
 
     CONSTRAINT "vector1536_pkey" PRIMARY KEY ("id")
 );
@@ -133,6 +135,22 @@ GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO edtechrag_dev;
 
 ```
 
+
+## vector v5 — embedding cache bookkeeping
+
+`embedText()` reuses an existing vector when another row has identical `content`
+and `embeddingModel`. `embeddingSourceId` records which row it was copied from,
+so /admin/embeddings can tell "New Stored" apart from "Cache Hit (Old ID …)".
+The column is optional — without it everything still works, the admin table just
+shows every stored vector as "New Stored". For an existing installation:
+
+```
+ALTER TABLE rag_vectors.vector1536
+ADD COLUMN IF NOT EXISTS "embeddingSourceId" INTEGER;
+```
+
+Rows embedded before this column existed keep `NULL` and therefore read as
+"New Stored", even if they were originally cache hits.
 
 ## .env 
 

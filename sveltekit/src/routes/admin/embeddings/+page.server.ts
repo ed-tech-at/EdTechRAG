@@ -3,7 +3,7 @@ import { Prisma } from '../../../generated/prisma/client';
 import prisma from '$lib/server/db';
 import { requireValidJwt } from '$lib/server/jwt';
 import { getRepositoryAccessRegex } from '$lib/server/repository';
-import { quotedVectorColumn } from '$lib/server/vectorTable';
+import { quotedEmbeddingSourceColumn, quotedVectorColumn } from '$lib/server/vectorTable';
 
 const PAGE_SIZE = 100;
 
@@ -18,6 +18,8 @@ type VectorRow = {
 	embeddedAt: Date | null;
 	invalidatedAt: Date | null;
 	hasVector: boolean;
+	/** id of the row this vector was copied from on a cache hit, else null */
+	cacheSourceId: number | null;
 	vectorPreview: string | null;
 };
 
@@ -49,6 +51,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	const page = Math.min(currentPage, totalPages);
 	const offset = (page - 1) * PAGE_SIZE;
 	const vectorColumn = await quotedVectorColumn();
+	const sourceColumn = await quotedEmbeddingSourceColumn();
 
 	const items = await prisma.$queryRaw<VectorRow[]>`
 		SELECT
@@ -62,6 +65,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 			"embeddedAt",
 			"invalidatedAt",
 			${vectorColumn ? Prisma.sql`${vectorColumn} IS NOT NULL` : Prisma.sql`FALSE`} AS "hasVector",
+			${sourceColumn ? Prisma.sql`${sourceColumn}` : Prisma.sql`NULL::integer`} AS "cacheSourceId",
 			${vectorColumn ? Prisma.sql`LEFT((${vectorColumn}::text), 200)` : Prisma.sql`NULL`} AS "vectorPreview"
 		FROM "rag_vectors"."vector1536"
 		WHERE "repositoryUrl" IS NOT NULL

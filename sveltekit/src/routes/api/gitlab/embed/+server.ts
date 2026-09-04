@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
-import { embedText } from '$lib/server/embed';
+import { embeddingSourceAssignment, embedTextWithSource } from '$lib/server/embed';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
 import { logGitLabApiRequest, parseGitLabApiRequest } from '$lib/server/gitlabApi';
 import { quotedVectorColumn } from '$lib/server/vectorTable';
@@ -72,7 +72,10 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	for (const chunk of pendingChunks) {
 		try {
-			const vector = await embedText(chunk.content as string, repositoryUrl);
+			const { vector, cacheSourceId } = await embedTextWithSource(
+				chunk.content as string,
+				repositoryUrl
+			);
 			if (!Array.isArray(vector) || vector.length === 0) {
 				throw new Error(`Embedding API returned no vector for chunk #${chunk.id}.`);
 			}
@@ -85,7 +88,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				SET ${vectorColumn} = ${vectorLiteral}::"rag_vectors".vector,
 				    "embeddingModel" = ${embeddingModel},
 				    "embeddedAt" = NOW(),
-				    "invalidatedAt" = NULL
+				    "invalidatedAt" = NULL${await embeddingSourceAssignment(cacheSourceId)}
 				WHERE "id" = ${chunk.id}
 			`;
 

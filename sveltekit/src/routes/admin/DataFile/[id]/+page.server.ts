@@ -1,7 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import prisma from '$lib/server/db';
-import { embedText } from '$lib/server/embed';
+import { embeddingSourceAssignment, embedText, embedTextWithSource } from '$lib/server/embed';
 import { getMetaDataOutOfMd, splitTextIntoChunks } from '$lib/server/textSplitter';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
 import { requireValidJwt } from '$lib/server/jwt';
@@ -260,7 +260,10 @@ export const actions: Actions = {
 				return fail(403, { success: false, message: 'Repository access denied.' });
 			}
 
-			const vector = await embedText(chunk.content, chunk.repositoryUrl);
+			const { vector, cacheSourceId } = await embedTextWithSource(
+				chunk.content,
+				chunk.repositoryUrl
+			);
 			const vectorColumn = await quotedVectorColumn();
 			if (!vectorColumn) {
 				return fail(500, {
@@ -277,14 +280,17 @@ export const actions: Actions = {
 				SET ${vectorColumn} = ${vectorLiteral}::"rag_vectors".vector,
 					"embeddingModel" = ${embeddingModel},
 					"embeddedAt" = NOW(),
-					"invalidatedAt" = NULL
+					"invalidatedAt" = NULL${await embeddingSourceAssignment(cacheSourceId)}
 				WHERE "id" = ${chunkIdNumber}
 			`;
 
 			return {
 				success: true,
 				chunkId: chunkIdNumber,
-				message: `Stored embedding (${vector.length} dims).`
+				message:
+					cacheSourceId === null
+						? `Stored embedding (${vector.length} dims).`
+						: `Stored embedding (${vector.length} dims, copied from chunk #${cacheSourceId}).`
 			};
 		} catch (err) {
 			console.error('Embedding error', err);
