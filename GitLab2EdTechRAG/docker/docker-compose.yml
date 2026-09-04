@@ -1,7 +1,7 @@
 services:
   gitlab-runner-2edtechrag:
     build:
-      context: ..
+      context: .
       dockerfile: ./Dockerfile.runner
     container_name: gitlab-runner-2edtechrag
     restart: unless-stopped
