@@ -2,7 +2,7 @@ import type { PageServerLoad } from './$types';
 import { Prisma } from '../../../generated/prisma/client';
 import prisma from '$lib/server/db';
 import { requireValidJwt } from '$lib/server/jwt';
-import { getRepositoryAccessRegex } from '$lib/server/repository';
+import { filterAllowedRepositories, getRepositoryAccessRegex } from '$lib/server/repository';
 import { quotedEmbeddingSourceColumn, quotedVectorColumn } from '$lib/server/vectorTable';
 
 const PAGE_SIZE = 100;
@@ -29,6 +29,8 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 	if (!allowRegex || !session.allow_regex) {
 		return {
 			items: [],
+			repositories: [],
+			models: [],
 			pagination: {
 				page: 1,
 				pageSize: PAGE_SIZE,
@@ -80,8 +82,26 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 		LIMIT ${PAGE_SIZE}
 	`;
 
+	// Options for the export modal: repositories the session may see and the
+	// embedding models actually present in their rows.
+	const repositories = filterAllowedRepositories(
+		session,
+		await prisma.repository.findMany({ select: { url: true, name: true }, orderBy: { name: 'asc' } }),
+		(repo) => repo.url
+	);
+	const modelRows = await prisma.$queryRaw<{ embeddingModel: string }[]>`
+		SELECT DISTINCT "embeddingModel"
+		FROM "rag_vectors"."vector1536"
+		WHERE "embeddingModel" IS NOT NULL
+		  AND "repositoryUrl" IS NOT NULL
+		  AND "repositoryUrl" ~ ${session.allow_regex}
+		ORDER BY "embeddingModel" ASC
+	`;
+
 	return {
 		items,
+		repositories,
+		models: modelRows.map((row) => row.embeddingModel),
 		pagination: {
 			page,
 			pageSize: PAGE_SIZE,

@@ -49,3 +49,6 @@ export const quotedVectorColumnForAlias = async (alias: string) => {
 	const column = await vectorColumnName();
 	return column ? Prisma.raw(`${alias}."${column}"`) : null;
 };
+
+// Fixed by the table definition (rag_vectors.vector(1536)); imports are checked against it.
+export const VECTOR_DIMENSIONS = 1536;

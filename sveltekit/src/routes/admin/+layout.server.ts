@@ -85,6 +85,10 @@ const buildAdminBreadcrumbs = (pathname: string): AdminBreadcrumb[] => {
 		return [{ label: 'User management' }];
 	}
 
+	if (section === 'last-100-usages') {
+		return [{ label: 'Last 100 usages' }];
+	}
+
 	return [{ label: decodePathSegment(section) }];
 };
 
