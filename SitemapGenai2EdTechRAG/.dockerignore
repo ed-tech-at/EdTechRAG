@@ -1,5 +1,7 @@
 .env
 .env.*
+# Per-site settings and secrets: mounted at runtime, never baked into the image.
+config
 ssh
 out
 .git

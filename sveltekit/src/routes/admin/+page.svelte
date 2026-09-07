@@ -12,7 +12,12 @@
 		{ href: resolve('/admin/ragView'), label: 'RAG VIEW' },
 		{ href: resolve('/admin/queryRewrite'), label: 'Query Rewrite' },
 		{ href: resolve('/admin/chatLogs'), label: 'Gesendete Chats' },
-		...(data.canManageUsers ? [{ href: resolve('/admin/users'), label: 'User management' }] : [])
+		...(data.canManageUsers
+			? [
+					{ href: resolve('/admin/last-100-usages'), label: 'Last 100 usages' },
+					{ href: resolve('/admin/users'), label: 'User management' }
+				]
+			: [])
 	];
 </script>
 

@@ -5,6 +5,12 @@ changes.json
 .env.*
 !.env.example
 
+# Per-site settings for the Docker service. One folder per instance, contents
+# gitignored (they hold TRIGGER_SECRET and the shared secret) - the template
+# next to them is committed.
+config/*/
+!config/.env.example
+
 # Deploy key for the Docker container's git push, mounted from here.
 ssh/*
 !ssh/.gitkeep

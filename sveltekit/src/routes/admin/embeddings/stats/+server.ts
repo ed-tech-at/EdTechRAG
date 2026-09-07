@@ -14,7 +14,8 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 		return json({
 			total: 0,
 			invalidated: 0,
-			missingVector: 0
+			missingVector: 0,
+			cacheDonors: 0
 		});
 	}
 
@@ -35,9 +36,18 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
 	const stats = rows[0] ?? { total: 0n, invalidated: 0n, missing_vector: 0n };
 
+	// Imported cache donors carry no repositoryUrl, so they fall outside the
+	// per-session scope above and are counted separately.
+	const donorRows = await prisma.$queryRaw<{ count: bigint }[]>`
+		SELECT COUNT(*)::bigint AS count
+		FROM "rag_vectors"."vector1536"
+		WHERE "repositoryUrl" IS NULL
+		  AND ${vectorColumn ? Prisma.sql`${vectorColumn} IS NOT NULL` : Prisma.sql`FALSE`}`;
+
 	return json({
 		total: Number(stats.total ?? 0n),
 		invalidated: Number(stats.invalidated ?? 0n),
-		missingVector: Number(stats.missing_vector ?? 0n)
+		missingVector: Number(stats.missing_vector ?? 0n),
+		cacheDonors: Number(donorRows[0]?.count ?? 0n)
 	});
 };

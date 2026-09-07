@@ -16,8 +16,9 @@ RUN apk add --no-cache ca-certificates git openssh-client tzdata \
 
 COPY --from=build /out/sitemapgenai2edtechrag /usr/local/bin/sitemapgenai2edtechrag
 COPY --from=build /out/sitemapgenai2edtechrag-trigger /usr/local/bin/sitemapgenai2edtechrag-trigger
-# Manual/CI batch mode (build->diff->push->notify once, then exit), kept for
-# `docker compose run --rm --entrypoint /usr/local/bin/entrypoint.sh ...`.
+# Manual/CI batch mode for one instance (build->diff->push->notify once, then
+# exit), kept for `docker compose run --rm --entrypoint
+# /usr/local/bin/entrypoint.sh sitemap-genai <instance>`.
 # The default entrypoint is the HTTP trigger server below.
 COPY --chown=app:app entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

@@ -66,12 +66,14 @@ trigger-genai-sync:
       when: on_success
     - when: never
   variables:
-    # Change this to this site's trigger URL - see SUBFOLDER in
-    # SitemapGenai2EdTechRAG/docker-compose.yml. One job/URL per site.
-    GENAI_TRIGGER_URL: "https://flaait-test.flaait.app/sitemapgenai2edtechrag-telucation/trigger"
+    # Change this to this site's trigger URL: <host>/<SUBFOLDER>/<site>/trigger,
+    # where SUBFOLDER is set in SitemapGenai2EdTechRAG/docker-compose.yml and
+    # <site> is that site's folder name in SitemapGenai2EdTechRAG/config/.
+    # One job/URL per site.
+    GENAI_TRIGGER_URL: "https://flaait-test.flaait.app/sitemapgenai2edtechrag/telucation/trigger"
   script:
     - |
-      : "${GENAI_TRIGGER_SECRET:?Set GENAI_TRIGGER_SECRET in GitLab CI/CD variables - must match TRIGGER_SECRET in .env.telucation on the Docker host}"
+      : "${GENAI_TRIGGER_SECRET:?Set GENAI_TRIGGER_SECRET in GitLab CI/CD variables - must match TRIGGER_SECRET in config/telucation/.env on the Docker host}"
 
       curl --no-buffer --fail-with-body \
         -X POST \
@@ -82,12 +84,13 @@ trigger-genai-sync:
 # CI/CD variable to add in THIS repository (Settings > CI/CD > Variables),
 # masked and protected:
 #
-#   GENAI_TRIGGER_SECRET   same value as TRIGGER_SECRET in .env.telucation (or
-#                          .env.flaait) on the Docker host running
-#                          SitemapGenai2EdTechRAG/trigger.
+#   GENAI_TRIGGER_SECRET   same value as TRIGGER_SECRET in
+#                          SitemapGenai2EdTechRAG/config/<site>/.env on the
+#                          Docker host running SitemapGenai2EdTechRAG/trigger.
 #
 # The sync itself runs on the Docker host, not on this GitLab runner: this job
 # only makes the HTTP call and returns as soon as SitemapGenai2EdTechRAG's
 # trigger server has accepted it (HTTP 202) - it does not wait for
 # build/push/notify to finish. Check that container's logs
-# (`docker compose logs -f sitemap-genai-telucation`) to see the sync itself.
+# (`docker compose logs -f sitemap-genai`) to see the sync itself; its lines
+# for this site are prefixed with [<site>].
