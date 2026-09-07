@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: ./Dockerfile.runner
     container_name: gitlab-runner-2edtechrag
+    env_file:
+      - .env
     restart: unless-stopped
     volumes:
       - ./config.toml:/etc/gitlab-runner/config.toml:ro
