@@ -1,6 +1,7 @@
 import {
-	getMetaTags,
 	getRagContextUrl,
+	getSearchMetaTags,
+	INTERNAL_META_KEYS,
 	resolveMetaTags,
 	type RagConfig,
 	type SearchConfig
@@ -24,6 +25,10 @@ import type { RagResult } from '$lib/server/rag';
  *     the project id, and the ids are only useful to someone probing the
  *     database. The public shape is built by hand for that reason - not by
  *     deleting fields from the row, which would leak every field added later.
+ *
+ *     Which META keys pass is `ragConfig.searchMetaTags` - NOT `metaTags`. The
+ *     latter governs the chatbot's METADATA_JSON, a private prompt where "all of
+ *     it" is usually right; this response is public. Two audiences, two lists.
  */
 
 export type SearchHit = {
@@ -35,7 +40,11 @@ export type SearchHit = {
 	score: number;
 	/** How many chunks of this document matched - a rough "how much of it is relevant". */
 	matches: number;
-	/** Only the metadata the repository declared in ragConfig.metaTags. */
+	/**
+	 * Only the metadata the repository declared in ragConfig.searchMetaTags.
+	 * Keys are lower case; their display names travel once per response, not per
+	 * hit - see the `metaLabels` field of /api/search.
+	 */
 	meta: Record<string, string>;
 };
 
@@ -86,15 +95,18 @@ export function snippetOf(content: string | null | undefined, maxLength: number)
  * Public metadata of a hit: the keys the repository declared - or all of them with
  * '*' - minus `url` and `title`, which are their own fields already.
  *
- * The bookkeeping keys are dropped by resolveMetaTags (INTERNAL_META_KEYS), so the
- * exclusion is one list shared with the chatbot rather than a second one here that
- * could fall behind.
+ * INTERNAL_META_KEYS is enforced HERE and not left to resolveMetaTags, because
+ * resolveMetaTags only applies it in '*' mode. An explicit list containing
+ * `fetch_url` would otherwise hand the internal GitLab Files API address - project
+ * id included - to every allowed origin, which is exactly what that list exists to
+ * prevent. The chatbot path keeps its own behaviour; this is the public gate.
  */
 function publicMeta(meta: Record<string, unknown>, metaTags: string[]): Record<string, string> {
 	const out: Record<string, string> = {};
 	for (const tag of resolveMetaTags(meta, metaTags)) {
 		const key = tag.toLowerCase();
 		if (key === 'url' || key === 'title') continue;
+		if (INTERNAL_META_KEYS.has(key)) continue;
 		const value = asString(meta[tag]) ?? asString(meta[key]);
 		if (value !== undefined) out[key] = value;
 	}
@@ -110,7 +122,7 @@ export function toSearchHits(
 	ragConfig: RagConfig | undefined,
 	search: SearchConfig
 ): SearchHit[] {
-	const metaTags = getMetaTags(ragConfig);
+	const metaTags = getSearchMetaTags(ragConfig);
 	const byUrl = new Map<string, SearchHit>();
 
 	for (const result of results) {

@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import prisma from '$lib/server/db';
-import { embedText } from '$lib/server/embed';
+import { embeddingSourceAssignment, embedTextWithSource } from '$lib/server/embed';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
 
 import { requireValidJwt } from '$lib/server/jwt';
@@ -46,7 +46,10 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 	}
 
 	try {
-		const vector = await embedText(chunk.content as string, chunk.repositoryUrl as string);
+		const { vector, cacheSourceId } = await embedTextWithSource(
+			chunk.content as string,
+			chunk.repositoryUrl as string
+		);
 		if (!Array.isArray(vector) || vector.length === 0) {
 			return json({ status: 'error', message: 'Embedding API returned no vector.' });
 		}
@@ -58,11 +61,16 @@ export const POST: RequestHandler = async ({ cookies, url }) => {
 			SET ${vectorColumn} = ${vectorLiteral}::"rag_vectors".vector,
 			    "embeddingModel" = ${embeddingModel},
 			    "embeddedAt" = NOW(),
-			    "invalidatedAt" = NULL
+			    "invalidatedAt" = NULL${await embeddingSourceAssignment(cacheSourceId)}
 			WHERE "id" = ${chunk.id}
 		`;
 
-		return json({ status: 'embedded', chunkId: chunk.id, dimensions: vector.length });
+		return json({
+			status: 'embedded',
+			chunkId: chunk.id,
+			dimensions: vector.length,
+			cacheSourceId
+		});
 	} catch (err) {
 		console.error('Embedding failed', err);
 		const message = err instanceof Error ? err.message : 'Embedding failed.';

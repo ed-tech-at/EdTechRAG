@@ -249,9 +249,40 @@
 		<div>
 			<a class="link" href={resolve('/admin/ragView')}>← Repositories</a>
 			<h1>RAG view · {data.repository.name}</h1>
-			<p class="muted">URL for Simple: <a href={resolve(`/simple/${data.repository.url}`)}>{data.repository.url}</a></p>
-			<p class="muted">URL for Single: <a href={resolve(`/single/${data.repository.url}`)}>{data.repository.url}</a></p>
-			<p class="muted">URL for Parameter: <a href={resolve(`/parameter/${data.repository.url}`)}>{data.repository.url}</a></p>
+			<!-- Only pages that are switched on in the repository config are links;
+			     an inactive page would answer 403 anyway. -->
+			<p class="muted">
+				URL for Simple:
+				{#if data.repository.activeSimplePage}
+					<a href={resolve(`/simple/${data.repository.url}`)}>{data.repository.url}</a>
+				{:else}
+					<span class="inactive-page" title="Not active — enable in the repository config">{data.repository.url} (inactive)</span>
+				{/if}
+			</p>
+			<p class="muted">
+				URL for Single:
+				{#if data.repository.activeSinglePage}
+					<a href={resolve(`/single/${data.repository.url}`)}>{data.repository.url}</a>
+				{:else}
+					<span class="inactive-page" title="Not active — enable in the repository config">{data.repository.url} (inactive)</span>
+				{/if}
+			</p>
+			<p class="muted">
+				URL for Parameter:
+				{#if data.repository.activeParameterPage}
+					<a href={resolve(`/parameter/${data.repository.url}`)}>{data.repository.url}</a>
+				{:else}
+					<span class="inactive-page" title="Not active — enable in the repository config">{data.repository.url} (inactive)</span>
+				{/if}
+			</p>
+			<p class="muted">
+				URL for Webview:
+				{#if data.repository.activeWebviewPage}
+					<a href={resolve(`/webview/${data.repository.url}`)}>{data.repository.url}</a>
+				{:else}
+					<span class="inactive-page" title="Not active — enable in the repository config">{data.repository.url} (inactive)</span>
+				{/if}
+			</p>
 		</div>
 	</header>
 
@@ -457,6 +488,11 @@
 	.muted {
 		color: #666;
 		margin: 0;
+	}
+
+	.inactive-page {
+		color: #999;
+		cursor: not-allowed;
 	}
 
 	table {

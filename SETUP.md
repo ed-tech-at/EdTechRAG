@@ -76,8 +76,9 @@ CREATE TABLE rag_vectors.vector1536 (
     "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "embeddedAt"      TIMESTAMP(3),
     "invalidatedAt"   TIMESTAMP(3),
-    "embeddingVector" "rag_vectors".vector(1536)   -- if extension is in rag_vectors
+    "embeddingVector" "rag_vectors".vector(1536),  -- if extension is in rag_vectors
     -- If extension is in public instead, use: public.vector(1536)
+    "embeddingSourceId" INTEGER                    -- id of the row a cached vector was copied from
 );
 
 -- Grants on existing objects
@@ -116,6 +117,7 @@ CREATE TABLE "vector1536" (
     "embeddedAt" TIMESTAMP(3),
     "invalidatedAt" TIMESTAMP(3),
     "embeddingVector" vector(1536),
+    "embeddingSourceId" INTEGER,
 
     CONSTRAINT "vector1536_pkey" PRIMARY KEY ("id")
 );
@@ -133,6 +135,54 @@ GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO edtechrag_dev;
 
 ```
 
+
+## vector v5 — embedding cache bookkeeping
+
+`embedText()` reuses an existing vector when another row has identical `content`
+and `embeddingModel`. `embeddingSourceId` records which row it was copied from,
+so /admin/embeddings can tell "New Stored" apart from "Cache Hit (Old ID …)".
+The column is optional — without it everything still works, the admin table just
+shows every stored vector as "New Stored". For an existing installation:
+
+```
+ALTER TABLE rag_vectors.vector1536
+ADD COLUMN IF NOT EXISTS "embeddingSourceId" INTEGER;
+```
+
+Rows embedded before this column existed keep `NULL` and therefore read as
+"New Stored", even if they were originally cache hits.
+
+## Embedding export / import (JSONL)
+
+/admin/embeddings can move stored vectors between installations so the second
+one does not pay for embedding the same text again. Both directions require the
+Manager role or higher; the buttons are hidden for everyone else.
+
+**Export** streams a `.jsonl` file: line 1 is a header
+(`{"type":"edtechrag-embeddings","version":1,"count":…,"filters":{…}}`), every
+further line is one row:
+
+```
+{"sourceId":123,"repositoryUrl":"…","dataFileId":4,"chunkNr":7,"embeddingModel":"…","embeddedAt":"…","invalidatedAt":null,"content":"…","vector":[…1536 floats…]}
+```
+
+Filters: single repository or all, embedding model, `embeddedAt` range, with or
+without invalidated chunks. Only rows the session may see (allow_regex) are exported.
+
+**Import** reads the file in the browser and posts it in batches. Per row:
+
+- identical `content` + `embeddingModel` already has a vector → skipped (duplicate)
+- otherwise inserted with `repositoryUrl = NULL` ("cache row"): invisible to search
+  and the admin table, but found by the cache lookup in `embedText()`
+- with *Fill pending chunks* (default on): chunks without a vector whose repository is
+  configured for that exact `EMBEDDING_MODEL` get the vector and
+  `embeddingSourceId` → shown as "Cache Hit (Old ID …)"
+
+Existing vectors are never overwritten. The node adapter's body limit must allow
+the batches: set `BODY_SIZE_LIMIT=16M` in `sveltekit/.env` (docker-compose passes
+the file through as `env_file`, adapter-node reads it at runtime). Without it the
+import still works – a 413 makes the client halve the batch and retry – just in
+many more requests.
 
 ## .env 
 

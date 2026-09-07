@@ -12,9 +12,17 @@ import {
 } from '$lib/server/repositoryAccess';
 import {
 	getNumberDocuments,
+	INTERNAL_META_KEYS,
+	isMetaLabelLang,
+	META_LABEL_ANY_LANG,
+	META_LABEL_MAX_ENTRIES,
+	META_LABEL_MAX_LENGTH,
+	META_TAGS_ALL,
+	normalizeMetaKey,
 	parseRagConfig,
 	USERTERMS_MAX_MONTHS,
-	USERTERMS_MIN_MONTHS
+	USERTERMS_MIN_MONTHS,
+	type MetaLabelTable
 } from '$lib/ragContext';
 import { canManageUsers, SITE_ROLE } from '$lib/siteRole';
 
@@ -49,6 +57,128 @@ const metaTagsFromForm = (value: FormDataEntryValue | null) =>
 				.filter(Boolean)
 		: [];
 
+/**
+ * Same field format as metaTagsFromForm, but normalised to the key form the ingest
+ * pipeline stores. Typing `Podcast Folge` should find `podcast_folge` rather than
+ * quietly matching nothing.
+ */
+const searchMetaTagsFromForm = (value: FormDataEntryValue | null) =>
+	metaTagsFromForm(value).map((tag) => (tag === META_TAGS_ALL ? tag : normalizeMetaKey(tag)));
+
+/**
+ * The naming table, one mapping per line:
+ *
+ *   episode.de = Podcast-Folge      a label for German pages
+ *   episode.en = Podcast Episode    a label for English pages
+ *   speaker    = Gast               a label for every language
+ *
+ * Malformed lines are REPORTED, not skipped. A silently dropped line is how an
+ * admin ends up staring at a label that never appears and no message saying why.
+ */
+const metaLabelsFromForm = (
+	value: FormDataEntryValue | null,
+	errors: string[]
+): MetaLabelTable => {
+	if (typeof value !== 'string') return {};
+
+	const table: MetaLabelTable = {};
+	// Textareas submit CRLF; a stray \r would otherwise end up inside a stored label.
+	const lines = value.split(/\r?\n/);
+
+	for (let i = 0; i < lines.length; i += 1) {
+		const line = lines[i].trim();
+		if (!line || line.startsWith('#')) continue;
+
+		const at = line.indexOf('=');
+		if (at < 0) {
+			errors.push(`Meta label line ${i + 1}: expected "key = label" or "key.de = label".`);
+			continue;
+		}
+
+		// First '=' only: a label may legitimately contain one.
+		const rawKey = line.slice(0, at).trim();
+		const label = line.slice(at + 1).trim();
+
+		/*
+		 * The language suffix is split off the LAST dot, and only when what follows
+		 * actually looks like a language. A meta key may itself contain a dot
+		 * (`runtime.min`), which would otherwise be read as key `runtime` in a
+		 * language called `min`.
+		 */
+		let key = rawKey;
+		let lang = META_LABEL_ANY_LANG;
+		const dot = rawKey.lastIndexOf('.');
+		if (dot > 0) {
+			const suffix = rawKey.slice(dot + 1).trim().toLowerCase();
+			if (isMetaLabelLang(suffix)) {
+				key = rawKey.slice(0, dot);
+				lang = suffix;
+			}
+		}
+
+		key = normalizeMetaKey(key);
+
+		if (!key || key === META_TAGS_ALL) {
+			errors.push(`Meta label line ${i + 1}: missing a metadata key before the "=".`);
+			continue;
+		}
+		if (!label) {
+			errors.push(`Meta label line ${i + 1}: missing a label after the "=".`);
+			continue;
+		}
+		if (label.length > META_LABEL_MAX_LENGTH) {
+			errors.push(
+				`Meta label line ${i + 1}: label longer than ${META_LABEL_MAX_LENGTH} characters.`
+			);
+			continue;
+		}
+		// url and title are their own search-result fields and never appear in the
+		// meta line, so a label for them could never be shown.
+		if (key === 'url' || key === 'title' || INTERNAL_META_KEYS.has(key)) {
+			errors.push(`Meta label line ${i + 1}: "${key}" is never emitted, so it cannot be labelled.`);
+			continue;
+		}
+		if (table[key] && table[key][lang] !== undefined) {
+			errors.push(`Meta label line ${i + 1}: "${key}" already has a label for "${lang}".`);
+			continue;
+		}
+
+		if (!table[key]) table[key] = {};
+		table[key][lang] = label;
+	}
+
+	const count = Object.keys(table).length;
+	if (count > META_LABEL_MAX_ENTRIES) {
+		errors.push(`At most ${META_LABEL_MAX_ENTRIES} labelled metadata keys (got ${count}).`);
+	}
+
+	return table;
+};
+
+/**
+ * Table -> textarea text, in a stable order (keys sorted, the any-language slot
+ * first) so reopening the page does not reshuffle what was typed.
+ *
+ * Only used for DB -> form. A failed submit echoes the raw text instead, so the
+ * line that caused the error is still there to be fixed.
+ */
+const metaLabelsToForm = (table: MetaLabelTable | undefined): string => {
+	if (!table) return '';
+	const lines: string[] = [];
+	for (const key of Object.keys(table).sort()) {
+		const langs = table[key];
+		const ordered = Object.keys(langs).sort((a, b) =>
+			a === META_LABEL_ANY_LANG ? -1 : b === META_LABEL_ANY_LANG ? 1 : a.localeCompare(b)
+		);
+		for (const lang of ordered) {
+			lines.push(
+				lang === META_LABEL_ANY_LANG ? `${key} = ${langs[lang]}` : `${key}.${lang} = ${langs[lang]}`
+			);
+		}
+	}
+	return lines.join('\n');
+};
+
 const deriveName = (repoUrl: string) => {
 	const cleaned = repoUrl.replace(/\/$/, '');
 	const last = cleaned.split('/').filter(Boolean).pop();
@@ -64,6 +194,7 @@ const publicConfig = (repository: {
 	activeSimplePage: boolean;
 	activeSinglePage: boolean;
 	activeParameterPage: boolean;
+	activeWebviewPage: boolean;
 	activeEmbedApi: boolean;
 	activeSearchApi: boolean;
 	embedAllowedHostRegex: string | null;
@@ -79,6 +210,7 @@ const publicConfig = (repository: {
 			repositoryPath: stringValue(updateConfig.repository_path),
 			webhookPath: stringValue(updateConfig.github2_webhook_path),
 			publicBaseUrl: stringValue(updateConfig.github2_public_base_url, DEFAULT_GITHUB2_BASE),
+			excludePathRegex: stringValue(updateConfig.exclude_path_regex),
 			hasSharedSecret: Boolean(stringValue(updateConfig.Github2EdTechRAG_SHARED_SECRET))
 		},
 		gitlab: {
@@ -122,6 +254,8 @@ const publicConfig = (repository: {
 			searchMode: rag?.searchMode ?? 'fulltext',
 			searchResultLimit: rag?.searchResultLimit,
 			searchSnippetLength: rag?.searchSnippetLength,
+			searchMetaTags: rag?.searchMetaTags ?? [],
+			searchMetaLabels: metaLabelsToForm(rag?.searchMetaLabels),
 			aiOverviewEnabled: rag?.aiOverviewEnabled === true,
 			aiOverviewModel: rag?.aiOverviewModel ?? '',
 			aiOverviewSystemprompt: rag?.aiOverviewSystemprompt ?? '',
@@ -132,12 +266,17 @@ const publicConfig = (repository: {
 			aiOverviewTextVerbosity: rag?.aiOverviewTextVerbosity ?? '',
 			// Not stored yet means "required" - see getAiOverviewConfig.
 			aiOverviewRequireUserterms: rag?.aiOverviewRequireUserterms !== false,
-			aiOverviewUsertermsDurationMonths: rag?.aiOverviewUsertermsDurationMonths
+			aiOverviewUsertermsDurationMonths: rag?.aiOverviewUsertermsDurationMonths,
+			webviewIntroHtml: rag?.webviewIntroHtml ?? '',
+			webviewRequireUserterms: rag?.webviewRequireUserterms === true,
+			webviewUsertermsUrl: rag?.webviewUsertermsUrl ?? '',
+			webviewUsertermsDurationMonths: rag?.webviewUsertermsDurationMonths
 		},
 		access: {
 			activeSimplePage: repository.activeSimplePage,
 			activeSinglePage: repository.activeSinglePage,
 			activeParameterPage: repository.activeParameterPage,
+			activeWebviewPage: repository.activeWebviewPage,
 			activeEmbedApi: repository.activeEmbedApi,
 			activeSearchApi: repository.activeSearchApi,
 			embedAllowedHostRegex: repository.embedAllowedHostRegex ?? ''
@@ -165,6 +304,7 @@ const formState = (
 			repositoryPath: optionalString(formData.get('repository_path')) ?? '',
 			webhookPath,
 			publicBaseUrl: githubBase,
+			excludePathRegex: optionalString(formData.get('exclude_path_regex')) ?? '',
 			hasSharedSecret: hasGithubSharedSecret
 		},
 		gitlab: {
@@ -213,6 +353,18 @@ const formState = (
 			searchMode: optionalString(formData.get('searchMode')) ?? 'fulltext',
 			searchResultLimit: optionalNumber(formData.get('searchResultLimit')),
 			searchSnippetLength: optionalNumber(formData.get('searchSnippetLength')),
+			searchMetaTags: searchMetaTagsFromForm(formData.get('searchMetaTags')),
+			/*
+			 * Echoed VERBATIM, not re-serialised from the parsed table.
+			 *
+			 * This shape is what a failed submit renders, and the line that caused the
+			 * failure was rejected - so a canonical re-serialisation would drop exactly
+			 * the line the admin has to look at to fix it.
+			 */
+			searchMetaLabels:
+				typeof formData.get('searchMetaLabels') === 'string'
+					? String(formData.get('searchMetaLabels'))
+					: '',
 			aiOverviewEnabled: parseAccessCheckbox(formData, 'aiOverviewEnabled'),
 			aiOverviewModel: optionalString(formData.get('aiOverviewModel')) ?? '',
 			aiOverviewSystemprompt: optionalString(formData.get('aiOverviewSystemprompt')) ?? '',
@@ -224,12 +376,20 @@ const formState = (
 			aiOverviewRequireUserterms: parseAccessCheckbox(formData, 'aiOverviewRequireUserterms'),
 			aiOverviewUsertermsDurationMonths: optionalNumber(
 				formData.get('aiOverviewUsertermsDurationMonths')
-			)
+			),
+			webviewIntroHtml:
+				typeof formData.get('webviewIntroHtml') === 'string'
+					? String(formData.get('webviewIntroHtml'))
+					: '',
+			webviewRequireUserterms: parseAccessCheckbox(formData, 'webviewRequireUserterms'),
+			webviewUsertermsUrl: optionalString(formData.get('webviewUsertermsUrl')) ?? '',
+			webviewUsertermsDurationMonths: optionalNumber(formData.get('webviewUsertermsDurationMonths'))
 		},
 		access: {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
 			activeSinglePage: parseAccessCheckbox(formData, 'activeSinglePage'),
 			activeParameterPage: parseAccessCheckbox(formData, 'activeParameterPage'),
+			activeWebviewPage: parseAccessCheckbox(formData, 'activeWebviewPage'),
 			activeEmbedApi: parseAccessCheckbox(formData, 'activeEmbedApi'),
 			activeSearchApi: parseAccessCheckbox(formData, 'activeSearchApi'),
 			embedAllowedHostRegex: parseEmbedAllowedHostRegex(formData) ?? ''
@@ -255,6 +415,7 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					repositoryPath: '',
 					webhookPath: '',
 					publicBaseUrl: DEFAULT_GITHUB2_BASE,
+					excludePathRegex: '',
 					hasSharedSecret: false
 				},
 				gitlab: {
@@ -298,6 +459,8 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					searchMode: 'fulltext',
 					searchResultLimit: undefined,
 					searchSnippetLength: undefined,
+					searchMetaTags: [],
+					searchMetaLabels: '',
 					aiOverviewEnabled: false,
 					aiOverviewModel: '',
 					aiOverviewSystemprompt: '',
@@ -308,7 +471,11 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					aiOverviewTextVerbosity: '',
 					// A new repository gets the safe default: consent required.
 					aiOverviewRequireUserterms: true,
-					aiOverviewUsertermsDurationMonths: undefined
+					aiOverviewUsertermsDurationMonths: undefined,
+					webviewIntroHtml: '',
+					webviewRequireUserterms: false,
+					webviewUsertermsUrl: '',
+					webviewUsertermsDurationMonths: undefined
 				},
 				access: {
 					...defaultRepositoryAccess,
@@ -362,6 +529,15 @@ export const actions: Actions = {
 		const publicBaseUrl =
 			optionalString(formData.get('github2_public_base_url')) ?? DEFAULT_GITHUB2_BASE;
 		const webhookPath = optionalString(formData.get('github2_webhook_path')) ?? '';
+		const excludePathRegex = optionalString(formData.get('exclude_path_regex')) ?? '';
+		if (excludePathRegex) {
+			try {
+				new RegExp(excludePathRegex);
+			} catch (err) {
+				const message = err instanceof Error ? err.message : 'Invalid regular expression.';
+				errors.push(`Exclude path regex is invalid: ${message}`);
+			}
+		}
 		const webhookUrl = webhookPath
 			? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath)}`
 			: `${publicBaseUrl.replace(/\/$/, '')}/webhook`;
@@ -427,6 +603,23 @@ export const actions: Actions = {
 			errors.push('Snippet length must be at least 40 characters.');
 		}
 
+		const searchMetaTags = searchMetaTagsFromForm(formData.get('searchMetaTags'));
+		const searchMetaLabels = metaLabelsFromForm(formData.get('searchMetaLabels'), errors);
+		/*
+		 * A label for a key that is never emitted can never appear, so it is a typo
+		 * rather than a preference. Only checkable against an explicit list - with '*'
+		 * the key set is per document and not known here.
+		 */
+		if (!searchMetaTags.includes(META_TAGS_ALL)) {
+			for (const key of Object.keys(searchMetaLabels)) {
+				if (!searchMetaTags.includes(key)) {
+					errors.push(
+						`Meta label "${key}" is not in the search metadata tags, so it would never be shown.`
+					);
+				}
+			}
+		}
+
 		const aiOverviewEnabled = parseAccessCheckbox(formData, 'aiOverviewEnabled');
 		const aiOverviewModel = optionalString(formData.get('aiOverviewModel'));
 		const aiOverviewSystemprompt = optionalString(formData.get('aiOverviewSystemprompt'));
@@ -452,10 +645,50 @@ export const actions: Actions = {
 			);
 		}
 
+		/* -- Webview (the /webview full-page chat) -- */
+		// The intro is raw HTML on purpose (external logos via <img>); only whitespace-only
+		// input counts as empty, the string itself is stored as authored.
+		const webviewIntroHtmlRaw = formData.get('webviewIntroHtml');
+		const webviewIntroHtml =
+			typeof webviewIntroHtmlRaw === 'string' && webviewIntroHtmlRaw.trim()
+				? webviewIntroHtmlRaw
+				: undefined;
+		const webviewRequireUserterms = parseAccessCheckbox(formData, 'webviewRequireUserterms');
+		const webviewUsertermsUrl = optionalString(formData.get('webviewUsertermsUrl'));
+		const webviewUsertermsDurationMonths = optionalNumber(
+			formData.get('webviewUsertermsDurationMonths')
+		);
+		if (webviewUsertermsUrl !== undefined) {
+			try {
+				const parsed = new URL(webviewUsertermsUrl);
+				if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+					errors.push('Webview user-terms URL must be an http(s) URL.');
+				}
+			} catch {
+				errors.push('Webview user-terms URL is not a valid URL.');
+			}
+		}
+		// Unlike the embeds, the webview has no host page that could supply the terms
+		// link - without a URL the consent panel would gate the chat on an unreadable
+		// document.
+		if (webviewRequireUserterms && !webviewUsertermsUrl) {
+			errors.push('Webview user-terms URL is required when the webview requires accepted terms.');
+		}
+		if (
+			webviewUsertermsDurationMonths !== undefined &&
+			(webviewUsertermsDurationMonths < USERTERMS_MIN_MONTHS ||
+				webviewUsertermsDurationMonths > USERTERMS_MAX_MONTHS)
+		) {
+			errors.push(
+				`Webview consent validity must be between ${USERTERMS_MIN_MONTHS} and ${USERTERMS_MAX_MONTHS} months.`
+			);
+		}
+
 		const nextAccess = {
 			activeSimplePage: parseAccessCheckbox(formData, 'activeSimplePage'),
 			activeSinglePage: parseAccessCheckbox(formData, 'activeSinglePage'),
 			activeParameterPage: parseAccessCheckbox(formData, 'activeParameterPage'),
+			activeWebviewPage: parseAccessCheckbox(formData, 'activeWebviewPage'),
 			activeEmbedApi: parseAccessCheckbox(formData, 'activeEmbedApi'),
 			activeSearchApi: parseAccessCheckbox(formData, 'activeSearchApi'),
 			embedAllowedHostRegex: parseEmbedAllowedHostRegex(formData)
@@ -488,6 +721,8 @@ export const actions: Actions = {
 			gitlab_api_url: gitlabApiUrl,
 			ref: gitlabRef
 		};
+		if (excludePathRegex) nextUpdateConfig.exclude_path_regex = excludePathRegex;
+		else delete nextUpdateConfig.exclude_path_regex;
 		if (sharedSecret) {
 			nextUpdateConfig.Github2EdTechRAG_SHARED_SECRET = sharedSecret;
 		}
@@ -530,8 +765,11 @@ export const actions: Actions = {
 			queryRewriteIncludeHistory,
 			requireUserterms,
 			searchMode,
+			searchMetaTags,
+			searchMetaLabels,
 			aiOverviewEnabled,
-			aiOverviewRequireUserterms
+			aiOverviewRequireUserterms,
+			webviewRequireUserterms
 		};
 		if (usertermsDurationMonths !== undefined)
 			nextRag.usertermsDurationMonths = usertermsDurationMonths;
@@ -591,6 +829,13 @@ export const actions: Actions = {
 		if (aiOverviewUsertermsDurationMonths !== undefined)
 			nextRag.aiOverviewUsertermsDurationMonths = aiOverviewUsertermsDurationMonths;
 		else delete nextRag.aiOverviewUsertermsDurationMonths;
+		if (webviewIntroHtml !== undefined) nextRag.webviewIntroHtml = webviewIntroHtml;
+		else delete nextRag.webviewIntroHtml;
+		if (webviewUsertermsUrl !== undefined) nextRag.webviewUsertermsUrl = webviewUsertermsUrl;
+		else delete nextRag.webviewUsertermsUrl;
+		if (webviewUsertermsDurationMonths !== undefined)
+			nextRag.webviewUsertermsDurationMonths = webviewUsertermsDurationMonths;
+		else delete nextRag.webviewUsertermsDurationMonths;
 
 		try {
 			await prisma.repository.upsert({

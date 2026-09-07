@@ -1,0 +1,50 @@
+services:
+  # One service for every site. Which sites exist is not a compose question
+  # anymore but a config/ question: each subfolder with a .env in it becomes
+  # /sitemapgenai2edtechrag/<folder>/trigger, read per request. Adding a site
+  # is a new folder plus its mirror checkout in out/ - no service, no router,
+  # no restart.
+  sitemap-genai:
+    container_name: sitemap-genai
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # Where the per-site folders are mounted (read-only) below.
+      CONFIG_DIR: /app/config
+      # Parent of the mirror checkouts. An instance uses WORK_ROOT/<MIRROR_DIR>,
+      # and MIRROR_DIR defaults to the folder name in config/.
+      WORK_ROOT: /work
+      ADDR: ":8080"
+      # Path prefix of the whole service, one Traefik router for all sites:
+      # https://flaait-test.flaait.app/sitemapgenai2edtechrag/<site>/trigger
+      SUBFOLDER: sitemapgenai2edtechrag
+      # Defaults for every instance; a config/<site>/.env may override each.
+      # TRIGGER_SECRET is NOT here - it belongs to one site and lives in that
+      # site's .env, which is gitignored.
+      MIRROR_BRANCH: main
+      GIT_AUTHOR_NAME: "GenAI Sync"
+      GIT_AUTHOR_EMAIL: "noreply@tugraz.at"
+    volumes:
+      # The per-site settings. Read-only: the container reads them, an operator
+      # edits them on the host.
+      - ./config:/app/config:ro
+      # Persistent checkouts of the mirror repos, one directory per site - each
+      # must already have `origin` set to the SSH remote, e.g. by cloning it
+      # here once before first `up`.
+      - ./out:/work
+      - ./ssh:/app/.ssh:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sitemap-genai.rule=Host(`flaait-test.flaait.app`) && PathPrefix(`/sitemapgenai2edtechrag`)"
+      - "traefik.http.services.sitemap-genai.loadbalancer.server.port=8080"
+      - "traefik.http.routers.sitemap-genai.entrypoints=websecure"
+      - "traefik.http.routers.sitemap-genai.tls.certresolver=myresolver"
+      - "traefik.docker.network=traefik_net"
+    networks:
+      - traefik_net
+
+networks:
+  traefik_net:
+    external: true

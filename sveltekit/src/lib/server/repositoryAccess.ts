@@ -4,6 +4,8 @@ export type RepositoryAccess = {
 	activeSimplePage: boolean;
 	activeSinglePage: boolean;
 	activeParameterPage: boolean;
+	/** The /webview full-page chat - fullscreen-capable end-user UI with its own consent gate. */
+	activeWebviewPage: boolean;
 	activeEmbedApi: boolean;
 	/**
 	 * The search embed (static/embed/search). Separate from activeEmbedApi, because
@@ -15,18 +17,20 @@ export type RepositoryAccess = {
 	embedAllowedHostRegex: string | null;
 };
 
-type PublicPage = 'simple' | 'single' | 'parameter';
+type PublicPage = 'simple' | 'single' | 'parameter' | 'webview';
 
 const pageFlag: Record<PublicPage, keyof RepositoryAccess> = {
 	simple: 'activeSimplePage',
 	single: 'activeSinglePage',
-	parameter: 'activeParameterPage'
+	parameter: 'activeParameterPage',
+	webview: 'activeWebviewPage'
 };
 
 export const defaultRepositoryAccess: RepositoryAccess = {
 	activeSimplePage: false,
 	activeSinglePage: false,
 	activeParameterPage: false,
+	activeWebviewPage: false,
 	activeEmbedApi: false,
 	activeSearchApi: false,
 	embedAllowedHostRegex: null

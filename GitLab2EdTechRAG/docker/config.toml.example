@@ -1,0 +1,11 @@
+concurrent = 2
+check_interval = 0
+
+[[runners]]
+  name = "GitLab2EdTechRAG-runner"
+  url = "https://gitlab.tugraz.at"
+  token = "glrt-..."
+  executor = "shell"
+  tags = ["GitLab2EdTechRAG"]
+  run_untagged = true
+  locked = false

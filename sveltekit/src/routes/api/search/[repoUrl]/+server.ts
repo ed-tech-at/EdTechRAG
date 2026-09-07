@@ -3,7 +3,13 @@ import { retrieveWithRewrite } from '$lib/server/queryRewrite';
 import { embedCorsHeaders, getAllowedSearchOrigin } from '$lib/server/repositoryAccess';
 import { toSearchHits } from '$lib/server/search';
 import { findRepositoryText } from '$lib/server/textSearch';
-import { getAiOverviewConfig, getSearchConfig, parseRagConfig } from '$lib/ragContext';
+import {
+	getAiOverviewConfig,
+	getSearchConfig,
+	getSearchMetaLabels,
+	parseRagConfig,
+	resolveMetaLabels
+} from '$lib/ragContext';
 import type { RequestHandler } from './$types';
 
 /**
@@ -18,6 +24,11 @@ import type { RequestHandler } from './$types';
  * (`overviewAvailable`). Without it the widget would have to guess: showing a
  * consent panel for a feature the repository has switched off is worse than not
  * offering it.
+ *
+ * `metaLabels` is the naming table, already resolved to the requested language and
+ * sent ONCE per response rather than per hit: the labels are the same for every
+ * result, and repeating them on each would grow the payload for nothing. The keys
+ * stay machine-readable in `results[].meta` so the host page can still style by key.
  */
 
 const jsonResponse = (body: unknown, status: number, headers: Record<string, string>) =>
@@ -141,6 +152,9 @@ export const POST: RequestHandler = async ({ request, params }) => {
 				// the searched terms in 'fulltext'.
 				queries,
 				results: hits,
+				// 'en' matches the widget's own fallback (resolveLang) for the case of a
+				// caller that sent no usable language.
+				metaLabels: resolveMetaLabels(getSearchMetaLabels(ragConfig), lang ?? 'en'),
 				overviewAvailable: overview.enabled,
 				overviewRequiresTerms: overview.enabled && overview.requireUserterms,
 				overviewTermsMonths: overview.usertermsDurationMonths

@@ -20,6 +20,19 @@ export type RagConfig = {
 	searchMode?: string;
 	searchResultLimit?: number;
 	searchSnippetLength?: number;
+	/**
+	 * Which metadata keys the SEARCH API is allowed to emit - deliberately its own
+	 * list and not `metaTags`.
+	 *
+	 * `metaTags` governs what the chatbot gets in its METADATA_JSON context: a
+	 * private prompt, where "everything the document knows" is usually the right
+	 * answer. The search response is read by every allowed origin, so the two
+	 * audiences need two lists. Empty means no metadata at all - `url` and `title`
+	 * are their own SearchHit fields and are unaffected.
+	 */
+	searchMetaTags?: string[];
+	/** Display names for those keys, per language. See MetaLabelTable. */
+	searchMetaLabels?: MetaLabelTable;
 	/* -- AI overview above the search results -- */
 	aiOverviewEnabled?: boolean;
 	aiOverviewModel?: string;
@@ -31,6 +44,11 @@ export type RagConfig = {
 	aiOverviewTextVerbosity?: string;
 	aiOverviewRequireUserterms?: boolean;
 	aiOverviewUsertermsDurationMonths?: number;
+	/* -- Webview (the /webview/[repoUrl] full-page chat) -- */
+	webviewIntroHtml?: string;
+	webviewRequireUserterms?: boolean;
+	webviewUsertermsUrl?: string;
+	webviewUsertermsDurationMonths?: number;
 };
 
 export type QueryRewriteConfig = {
@@ -105,6 +123,56 @@ export type SearchConfig = {
 export const SEARCH_MODES = ['fulltext', 'vector'] as const;
 export type SearchMode = (typeof SEARCH_MODES)[number];
 
+/**
+ * The naming table: meta key -> language -> display name.
+ *
+ * `{ episode: { de: 'Podcast-Folge', en: 'Podcast Episode' } }` turns the raw
+ * ingest key `episode` into something a visitor can read. Per language, because the
+ * search embed ships German and English and a label is visitor-facing text like any
+ * other string in it.
+ *
+ * Applied to the SEARCH RESPONSE ONLY. The chatbot's METADATA_JSON keeps the raw
+ * keys on purpose: a system prompt that says "cite the episode" must keep working
+ * after an admin renames the label.
+ */
+export type MetaLabelTable = Record<string, Record<string, string>>;
+
+/**
+ * The "applies to every language" slot of a label table.
+ *
+ * Same character as META_TAGS_ALL and a different meaning - there it means "every
+ * key", here "every language". Worth knowing when reading a stored ragConfig.
+ */
+export const META_LABEL_ANY_LANG = '*';
+
+/** A label is a chip in a result line, not a sentence. */
+export const META_LABEL_MAX_LENGTH = 80;
+
+/**
+ * The resolved table ships on every search response to every visitor, and in '*'
+ * mode it cannot be pruned to the keys a result actually has - so it is capped.
+ */
+export const META_LABEL_MAX_ENTRIES = 50;
+
+/**
+ * Meta keys as the ingest pipeline stores them: lower case, whitespace collapsed to
+ * '_' (see getMetaDataOutOfMd in server/textSplitter.ts).
+ *
+ * Applied to admin input as well, so typing `Podcast Folge` finds the stored
+ * `podcast_folge` instead of silently matching nothing.
+ */
+export const normalizeMetaKey = (key: string): string =>
+	key.trim().toLowerCase().replace(/\s+/g, '_');
+
+/**
+ * Two lower-case letters, or the any-language slot.
+ *
+ * Deliberately as narrow as the `lang` the search endpoint accepts: a `de-AT`
+ * column could never be requested and would be dead configuration.
+ */
+export const isMetaLabelLang = (lang: string): boolean =>
+	lang === META_LABEL_ANY_LANG || /^[a-z]{2}$/.test(lang);
+
 // The three enums are the same values the chat client accepts; the constants stay
 // named after query rewrite because that is where they were first needed.
 const QUERY_REWRITE_API_LANGUAGES = ['chat/completions', 'responses'];
@@ -128,6 +196,50 @@ export const QUERY_REWRITE_DEFAULT_HISTORY_LIMIT = 6;
 const optionalTrimmed = (value: unknown): string | undefined =>
 	typeof value === 'string' && value.trim() ? value.trim() : undefined;
 
+/** A list of non-empty strings, or undefined when the value is not a list at all. */
+const optionalStringArray = (value: unknown): string[] | undefined =>
+	Array.isArray(value)
+		? value
+				.filter((item): item is string => typeof item === 'string')
+				.map((item) => item.trim())
+				.filter(Boolean)
+		: undefined;
+
+/**
+ * Validates a stored label table.
+ *
+ * Defensive rather than trusting: this JSON column is hand-editable, and whatever
+ * survives here is handed to every visitor. Keys are normalised to the ingest form
+ * so a lookup against an emitted meta key can actually hit.
+ */
+function parseMetaLabelTable(value: unknown): MetaLabelTable | undefined {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+
+	const out: MetaLabelTable = {};
+	let entries = 0;
+
+	for (const [rawKey, rawLangs] of Object.entries(value as Record<string, unknown>)) {
+		if (entries >= META_LABEL_MAX_ENTRIES) break;
+		const key = normalizeMetaKey(rawKey);
+		if (!key || !rawLangs || typeof rawLangs !== 'object' || Array.isArray(rawLangs)) continue;
+
+		const langs: Record<string, string> = {};
+		for (const [rawLang, rawLabel] of Object.entries(rawLangs as Record<string, unknown>)) {
+			const lang = rawLang.trim().toLowerCase();
+			if (!isMetaLabelLang(lang) || typeof rawLabel !== 'string') continue;
+			const label = rawLabel.trim().slice(0, META_LABEL_MAX_LENGTH);
+			if (label) langs[lang] = label;
+		}
+
+		if (Object.keys(langs).length > 0) {
+			out[key] = langs;
+			entries += 1;
+		}
+	}
+
+	return entries > 0 ? out : undefined;
+}
+
 export type RagContextResult = {
 	content?: string | null;
 	remoteUrl?: string;
@@ -140,12 +252,12 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 	}
 
 	const raw = value as Record<string, unknown>;
-	const metaTags = Array.isArray(raw.metaTags)
-		? raw.metaTags
-				.filter((tag): tag is string => typeof tag === 'string')
-				.map((tag) => tag.trim())
-				.filter(Boolean)
-		: undefined;
+	const metaTags = optionalStringArray(raw.metaTags);
+	// Normalised to the ingest key form, unlike `metaTags`: this list is new, so
+	// there is no stored casing to stay compatible with.
+	const searchMetaTags = optionalStringArray(raw.searchMetaTags)?.map((tag) =>
+		tag === META_TAGS_ALL ? tag : normalizeMetaKey(tag)
+	);
 
 	return {
 		systemprompt: typeof raw.systemprompt === 'string' ? raw.systemprompt : undefined,
@@ -187,6 +299,8 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 		searchMode: optionalEnum(raw.searchMode, [...SEARCH_MODES]),
 		searchResultLimit: optionalPositiveInt(raw.searchResultLimit),
 		searchSnippetLength: optionalPositiveInt(raw.searchSnippetLength),
+		searchMetaTags,
+		searchMetaLabels: parseMetaLabelTable(raw.searchMetaLabels),
 		aiOverviewEnabled:
 			typeof raw.aiOverviewEnabled === 'boolean' ? raw.aiOverviewEnabled : undefined,
 		aiOverviewModel: optionalTrimmed(raw.aiOverviewModel),
@@ -206,7 +320,17 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 			typeof raw.aiOverviewRequireUserterms === 'boolean'
 				? raw.aiOverviewRequireUserterms
 				: undefined,
-		aiOverviewUsertermsDurationMonths: optionalPositiveInt(raw.aiOverviewUsertermsDurationMonths)
+		aiOverviewUsertermsDurationMonths: optionalPositiveInt(raw.aiOverviewUsertermsDurationMonths),
+		// Kept untrimmed on purpose: this is raw HTML an admin authored (may contain
+		// <img> logos); reformatting it here would surprise the author.
+		webviewIntroHtml:
+			typeof raw.webviewIntroHtml === 'string' && raw.webviewIntroHtml.trim()
+				? raw.webviewIntroHtml
+				: undefined,
+		webviewRequireUserterms:
+			typeof raw.webviewRequireUserterms === 'boolean' ? raw.webviewRequireUserterms : undefined,
+		webviewUsertermsUrl: optionalTrimmed(raw.webviewUsertermsUrl),
+		webviewUsertermsDurationMonths: optionalPositiveInt(raw.webviewUsertermsDurationMonths)
 	};
 }
 
@@ -361,6 +485,33 @@ export function getAiOverviewConfig(
 	};
 }
 
+/**
+ * The /webview/[repoUrl] full-page chat.
+ *
+ * `introHtml` is raw HTML written by the repository admin (so external logos via
+ * <img> are possible) - it is rendered unescaped and must never be filled from
+ * visitor input.
+ */
+export type WebviewConfig = {
+	introHtml: string;
+	requireUserterms: boolean;
+	usertermsUrl?: string;
+	usertermsDurationMonths: number;
+};
+
+export function getWebviewConfig(ragConfig: RagConfig | undefined): WebviewConfig {
+	return {
+		introHtml: ragConfig?.webviewIntroHtml ?? '',
+		requireUserterms: ragConfig?.webviewRequireUserterms === true,
+		usertermsUrl: ragConfig?.webviewUsertermsUrl,
+		// Falls back to the chatbot's consent window, then to the 12-month default -
+		// same chain as the AI overview.
+		usertermsDurationMonths: clampMonths(
+			ragConfig?.webviewUsertermsDurationMonths ?? ragConfig?.usertermsDurationMonths
+		)
+	};
+}
+
 export function getSystemPrompt(ragConfig: RagConfig | undefined): string {
 	return typeof ragConfig?.systemprompt === 'string' ? ragConfig.systemprompt : '';
 }
@@ -373,6 +524,49 @@ export function getNumberDocuments(ragConfig: RagConfig | undefined, fallback: n
 
 export function getMetaTags(ragConfig: RagConfig | undefined): string[] {
 	return ragConfig?.metaTags ?? [];
+}
+
+/**
+ * The keys the SEARCH API may emit.
+ *
+ * No fallback to `metaTags`: this is the gate to the outside, and a gate that
+ * inherits from a list written for a private prompt is not a gate. A repository
+ * that has not filled this in emits no metadata - which is why the admin field says
+ * so in as many words.
+ */
+export function getSearchMetaTags(ragConfig: RagConfig | undefined): string[] {
+	return ragConfig?.searchMetaTags ?? [];
+}
+
+export function getSearchMetaLabels(ragConfig: RagConfig | undefined): MetaLabelTable {
+	return ragConfig?.searchMetaLabels ?? {};
+}
+
+/**
+ * Flattens the naming table for ONE request language: key -> label.
+ *
+ * Resolved on the server because the request already carries the widget's language,
+ * and sending the whole table would repeat every translation the visitor cannot see.
+ *
+ * Per key: the exact language, else the any-language slot, else English, else no
+ * entry at all - and no entry means the widget shows the bare value, which is what
+ * it did before this table existed.
+ */
+export function resolveMetaLabels(
+	table: MetaLabelTable,
+	lang: string | undefined
+): Record<string, string> {
+	const wanted = typeof lang === 'string' && /^[a-z]{2}$/.test(lang) ? lang : undefined;
+	const out: Record<string, string> = {};
+
+	// Object.entries and not `table[key]`: a meta key may be called `constructor`,
+	// and indexing would then answer with something off the prototype.
+	for (const [key, langs] of Object.entries(table)) {
+		const label = (wanted ? langs[wanted] : undefined) ?? langs[META_LABEL_ANY_LANG] ?? langs.en;
+		if (label) out[key] = label;
+	}
+
+	return out;
 }
 
 /**

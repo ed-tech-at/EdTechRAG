@@ -49,6 +49,9 @@ const uniqueMoved = (entries: MovedEntry[]) => {
 	});
 };
 
+const asRecord = (value: unknown): Record<string, unknown> =>
+	value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+
 const emptyParsedChanges = () => ({
 	added: [] as string[],
 	modified: [] as string[],
@@ -178,6 +181,25 @@ const mergeMeta = (
 	};
 };
 
+const pathFromReference = (value: string) => {
+	try {
+		const parsed = new URL(value);
+		const queryPath = normalizeString(parsed.searchParams.get('path'));
+		if (queryPath) return queryPath;
+
+		return decodeURIComponent(parsed.pathname);
+	} catch {
+		return null;
+	}
+};
+
+const normalizePathForMatch = (value: string) => value.replace(/\\/g, '/').replace(/^\/+/, '');
+
+const regexMatches = (regex: RegExp, value: string) => {
+	regex.lastIndex = 0;
+	return regex.test(value);
+};
+
 export const POST: RequestHandler = async ({ request }) => {
 	let repositoryUrl: string | null = null;
 	const parsed = await parseGitLabApiRequest(request);
@@ -192,12 +214,44 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const { body } = parsed;
 	repositoryUrl = parsed.repositoryUrl;
+	const updateConfig = asRecord(parsed.repository.updateConfig);
+	const excludePathRegexPattern =
+		normalizeString(updateConfig.exclude_path_regex) ??
+		normalizeString(updateConfig.excludePathRegex);
+	let excludePathRegex: RegExp | null = null;
+	if (excludePathRegexPattern) {
+		try {
+			excludePathRegex = new RegExp(excludePathRegexPattern);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : 'Invalid regular expression.';
+			await logGitLabApiRequest(request, '/api/gitlab/pull/', repositoryUrl, {
+				status: 400,
+				success: false,
+				error: `Invalid exclude path regex: ${message}`
+			});
+			return json(
+				{ success: false, message: `Invalid exclude path regex: ${message}` },
+				{ status: 400 }
+			);
+		}
+	}
 
 	const files = Array.isArray(body.files) ? (body.files as IncomingFile[]) : [];
 	const fileMeta = new Map<string, Record<string, unknown>>();
+	const repoPathByReference = new Map<string, string>();
 	for (const file of files) {
 		const path = normalizeString(file.remoteUrl) ?? normalizeString(file.path);
 		if (!path) continue;
+		const meta = asRecord(file.meta);
+		const repoPath =
+			normalizeString(meta.path) ??
+			normalizeString(file.path) ??
+			pathFromReference(path) ??
+			path;
+		repoPathByReference.set(path, repoPath);
+		if (file.path) {
+			repoPathByReference.set(file.path, repoPath);
+		}
 		if (file.meta && typeof file.meta === 'object' && !Array.isArray(file.meta)) {
 			fileMeta.set(path, file.meta as Record<string, unknown>);
 		}
@@ -213,11 +267,42 @@ export const POST: RequestHandler = async ({ request }) => {
 	const deletedPaths = unique([...toStringArray(changeSet.deleted), ...rawChanges.deleted]);
 	const movedEntries = uniqueMoved([...toMovedArray(changeSet.moved), ...rawChanges.moved]);
 
+	const shouldExcludePath = (path: string) => {
+		if (!excludePathRegex) return false;
+
+		const repoPath = repoPathByReference.get(path) ?? pathFromReference(path) ?? path;
+		const normalized = normalizePathForMatch(repoPath);
+		const filename = normalized.split('/').filter(Boolean).pop() ?? normalized;
+		const candidates = [repoPath, normalized, `/${normalized}`, filename];
+
+		return candidates.some((candidate) => regexMatches(excludePathRegex, candidate));
+	};
+
+	const excludedPaths: string[] = [];
+	const filteredAddedPaths = addedPaths.filter((path) => {
+		if (!shouldExcludePath(path)) return true;
+		excludedPaths.push(path);
+		return false;
+	});
+	const filteredModifiedPaths = modifiedPaths.filter((path) => {
+		if (!shouldExcludePath(path)) return true;
+		excludedPaths.push(path);
+		return false;
+	});
+	const movedToExcluded = movedEntries.filter((entry) => shouldExcludePath(entry.to));
+	const filteredMovedEntries = movedEntries.filter((entry) => !shouldExcludePath(entry.to));
+	excludedPaths.push(...movedToExcluded.map((entry) => entry.to));
+	const excludedInvalidationPaths = unique([
+		...excludedPaths,
+		...movedToExcluded.map((entry) => entry.from)
+	]);
+
 	if (
-		addedPaths.length === 0 &&
-		modifiedPaths.length === 0 &&
+		filteredAddedPaths.length === 0 &&
+		filteredModifiedPaths.length === 0 &&
 		deletedPaths.length === 0 &&
-		movedEntries.length === 0
+		filteredMovedEntries.length === 0 &&
+		excludedInvalidationPaths.length === 0
 	) {
 		await logGitLabApiRequest(request, '/api/gitlab/pull/', repositoryUrl, {
 			status: 400,
@@ -235,6 +320,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	let modified = 0;
 	let deleted = 0;
 	let moved = 0;
+	let excluded = 0;
 
 	const fetchFile = (path: string) =>
 		prisma.dataFile.findFirst({
@@ -345,7 +431,18 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 	};
 
-	for (const path of addedPaths) {
+	for (const path of excludedInvalidationPaths) {
+		try {
+			await handleDeletion(path, 'excluded', false);
+			excluded += 1;
+		} catch (err) {
+			console.error('GitLab exclude handling error', err);
+			const reason = err instanceof Error ? err.message : 'Unknown error';
+			errors.push(`Failed to exclude ${path}: ${reason}`);
+		}
+	}
+
+	for (const path of filteredAddedPaths) {
 		try {
 			await ensureFile(path, 'added');
 			added += 1;
@@ -356,7 +453,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 	}
 
-	for (const path of modifiedPaths) {
+	for (const path of filteredModifiedPaths) {
 		try {
 			await handleModification(path);
 			modified += 1;
@@ -377,7 +474,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 	}
 
-	for (const entry of movedEntries) {
+	for (const entry of filteredMovedEntries) {
 		try {
 			await handleDeletion(entry.from, 'moved-from', false);
 			await ensureFile(entry.to, 'moved', { movedFrom: entry.from });
@@ -395,6 +492,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		modified,
 		deleted,
 		moved,
+		excluded,
 		errors
 	};
 
@@ -407,6 +505,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		modified,
 		deleted,
 		moved,
+		excluded,
 		errors
 	});
 

@@ -117,6 +117,19 @@
 		return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 	}
 
+	/*
+	 * Own properties only.
+	 *
+	 * A document meta key may be called `constructor` or `toString` - the ingest side
+	 * stores whatever the source wrote - and a plain `table[key]` would then answer
+	 * with a function off Object.prototype, which would be rendered as the label.
+	 */
+	function ownString(table, key) {
+		return Object.prototype.hasOwnProperty.call(table, key) && typeof table[key] === 'string'
+			? table[key]
+			: '';
+	}
+
 	function resolveLang(raw) {
 		if (raw && TEXT[raw]) return raw;
 		// The host page's language beats English: a German site with no data-lang
@@ -266,6 +279,14 @@
 		// Array muesste beim Widerruf wieder auseinandersortiert werden.
 		var dbHits = [];
 		var ragHits = [];
+		/*
+		 * Naming table for the meta line: key -> display name, already resolved to
+		 * this widget's language by the server (see /api/search).
+		 *
+		 * Lives next to the hits and is replaced with them: a table from a previous
+		 * search must not outlive its result list.
+		 */
+		var metaLabels = {};
 
 		var SOURCES_START = '__EDTECH_SOURCES_START__\n';
 		var SOURCES_END = '\n__EDTECH_SOURCES_END__\n';
@@ -501,6 +522,10 @@
 		 * The semantic group exists only after consent, because that is when its
 		 * retrieval happens (see /api/search-overview).
 		 */
+		function metaLabel(key) {
+			return ownString(metaLabels, key);
+		}
+
 		function renderResults() {
 			resultsBox.innerHTML = '';
 
@@ -562,14 +587,20 @@
 					item.appendChild(snippet);
 				}
 
-				// Whatever the repository declared as meta tags - type, category,
+				// Whatever the repository declared as search meta tags - type, category,
 				// runtime. Rendered as plain text: these are facts, not links.
+				//
+				// A key with an entry in the naming table is prefixed with it, so
+				// "episode" reads as "Podcast Episode: 42" instead of a bare "42". A key
+				// without one keeps showing just its value, which is what the line did
+				// before the table existed.
 				var metaKeys = hit.meta ? Object.keys(hit.meta) : [];
 				if (metaKeys.length) {
 					var meta = el('p', cn('item-meta'));
 					meta.textContent = metaKeys
 						.map(function (key) {
-							return hit.meta[key];
+							var label = metaLabel(key);
+							return label ? label + ': ' + hit.meta[key] : hit.meta[key];
 						})
 						.join(' \u00b7 ');
 					item.appendChild(meta);
@@ -852,6 +883,10 @@
 
 					dbHits = hits;
 					ragHits = [];
+					// An older server does not send the field at all; an empty table is the
+					// same thing as "no labels configured", so there is nothing to report.
+					metaLabels =
+						data.metaLabels && typeof data.metaLabels === 'object' ? data.metaLabels : {};
 					setStatus(T.resultsFor + ' \u201c' + query + '\u201d \u2013 ' + T.resultCount(hits.length));
 					renderQueries(data.queries);
 
@@ -877,6 +912,7 @@
 				})
 				.catch(function (err) {
 					searching = false;
+					metaLabels = {};
 					setStatus('');
 					resultsBox.innerHTML =
 						'<p class="' +

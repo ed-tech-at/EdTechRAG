@@ -1,6 +1,7 @@
+import { Prisma } from '../../generated/prisma/client';
 import prisma from '$lib/server/db';
 import { getEmbeddingConfig } from '$lib/server/openaiClient';
-import { quotedVectorColumn } from '$lib/server/vectorTable';
+import { quotedEmbeddingSourceColumn, quotedVectorColumn } from '$lib/server/vectorTable';
 
 // export const EMBEDDING_MODEL = 'embeddinggemma';
 
@@ -8,14 +9,37 @@ type EmbeddingResponse = {
 	data?: { embedding?: number[] }[];
 };
 
-export async function embedText(text: string, repoUrl: string) {
+export type EmbeddingResult = {
+	vector: number[];
+	/** id of the row the vector was copied from, or null when freshly embedded */
+	cacheSourceId: number | null;
+};
+
+/**
+ * SET fragment recording where a stored vector came from. Appends nothing when
+ * the bookkeeping column is absent, and always overwrites the previous value so
+ * a re-embedded row does not keep a stale source id.
+ */
+export async function embeddingSourceAssignment(cacheSourceId: number | null) {
+	const sourceColumn = await quotedEmbeddingSourceColumn();
+	if (!sourceColumn) {
+		return Prisma.empty;
+	}
+
+	return Prisma.sql`, ${sourceColumn} = ${cacheSourceId}::integer`;
+}
+
+export async function embedTextWithSource(
+	text: string,
+	repoUrl: string
+): Promise<EmbeddingResult> {
 	const { apiKeyEmbedding, embeddingBase, embeddingModel } = await getEmbeddingConfig(repoUrl);
 	const buildEmbeddingUrl = () => new URL(embeddingBase).toString();
 	const vectorColumn = await quotedVectorColumn();
 
 	const existingVectorRows = vectorColumn
-		? await prisma.$queryRaw<{ vectorText: string | null }[]>`
-			SELECT ${vectorColumn}::text AS "vectorText"
+		? await prisma.$queryRaw<{ id: number; vectorText: string | null }[]>`
+			SELECT "id", ${vectorColumn}::text AS "vectorText"
 			FROM "rag_vectors"."vector1536"
 			WHERE "content" = ${text}
 			  AND "embeddingModel" = ${embeddingModel}
@@ -25,7 +49,8 @@ export async function embedText(text: string, repoUrl: string) {
 		`
 		: [];
 
-	const cachedVectorText = existingVectorRows[0]?.vectorText?.trim();
+	const cachedRow = existingVectorRows[0];
+	const cachedVectorText = cachedRow?.vectorText?.trim();
 	if (cachedVectorText) {
 		const normalized =
 			cachedVectorText.startsWith('[') && cachedVectorText.endsWith(']')
@@ -37,7 +62,7 @@ export async function embedText(text: string, repoUrl: string) {
 			if (cachedVector.length && cachedVector.every((value) => Number.isFinite(value))) {
 				
 				// console.log("resusing cached vecotr")
-				return cachedVector;
+				return { vector: cachedVector, cacheSourceId: cachedRow?.id ?? null };
 			}
 		}
 	}
@@ -67,6 +92,11 @@ export async function embedText(text: string, repoUrl: string) {
 		throw new Error('Invalid embedding response');
 	}
 
+	return { vector, cacheSourceId: null };
+}
+
+export async function embedText(text: string, repoUrl: string) {
+	const { vector } = await embedTextWithSource(text, repoUrl);
 	return vector;
 }
 
@@ -87,7 +117,7 @@ export async function embedChunkById(chunkId: string) {
 		throw new Error('Chunk not found or empty content');
 	}
 
-	const vector = await embedText(chunk.content, chunk.repositoryUrl);
+	const { vector, cacheSourceId } = await embedTextWithSource(chunk.content, chunk.repositoryUrl);
 	const vectorColumn = await quotedVectorColumn();
 	if (!vectorColumn) {
 		throw new Error(
@@ -102,8 +132,8 @@ export async function embedChunkById(chunkId: string) {
 		SET ${vectorColumn} = ${vectorLiteral}::"rag_vectors".vector,
 			"embeddingModel" = ${embeddingModel},
 			"embeddedAt" = NOW(),
-			"invalidatedAt" = NULL
+			"invalidatedAt" = NULL${await embeddingSourceAssignment(cacheSourceId)}
 		WHERE "id" = ${chunkIdNumber}`;
 
-	return { chunkId: chunkIdNumber, dimensions: vector.length };
+	return { chunkId: chunkIdNumber, dimensions: vector.length, cacheSourceId };
 }

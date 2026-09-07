@@ -1,0 +1,96 @@
+# Example .gitlab-ci.yml for the WEBSITE repository (e.g. telucation-website),
+# not for the mirror repository - that one is SitemapGenai2EdTechRAG/.gitlab-ci.yml.example.
+#
+# The "deploy" job below is this project's existing deploy job, unchanged.
+# "trigger-genai-sync" is new: it starts the SitemapGenai2EdTechRAG Docker
+# trigger server (see SitemapGenai2EdTechRAG/trigger) right after "deploy"
+# succeeds, so the GenAI sitemap mirror is rebuilt from the freshly deployed
+# site rather than from whatever was live before.
+
+variables:
+  # Change this value to control which branch is allowed to run the deploy job.
+  DEPLOY_BRANCH: "flaait01test"
+
+deploy:
+  stage: deploy
+
+  environment:
+    name: flaait01test
+
+  # Change this runner tag if the GitLab Runner tag changes.
+  tags:
+    - telucation-website-flaait01-test
+  variables:
+    # Change this to the service directory name on the deployment host.
+    SERVICE: "telucation-website"
+    BRANCH: "$CI_COMMIT_REF_NAME"
+    REPO: "$CI_PROJECT_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $DEPLOY_BRANCH'
+      when: on_success
+    - when: never
+  script:
+    - |
+      : "${SERVICE:?Set SERVICE to the deployment service name}"
+      : "${BRANCH:?Set BRANCH to the branch name}"
+      : "${REPO:?Set REPO to the GitLab project name}"
+      : "${CICD_GLOBAL_SECRET:?Set CICD_GLOBAL_SECRET in GitLab CI/CD variables}"
+      : "${CICD_SERVICE_SECRET:?Set CICD_SERVICE_SECRET in GitLab CI/CD variables}"
+
+      DEPLOY_URL="${DEPLOY_URL:-http://host.docker.internal:9009/ci-cd-gitlab}"
+
+      BODY="{\"service\":\"$SERVICE\",\"branch\":\"$BRANCH\",\"repo\":\"$REPO\"}"
+      SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$CICD_GLOBAL_SECRET" -hex | awk '{print $2}')
+
+      curl --no-buffer --fail-with-body \
+        -X POST \
+        -H "Content-Type: application/json" \
+        -H "X-Signature: $SIG" \
+        -H "X-CICD-Service-Secret: $CICD_SERVICE_SECRET" \
+        --data "$BODY" \
+        "$DEPLOY_URL"
+
+trigger-genai-sync:
+  # ".post" always runs last, after every other stage, whether or not it is
+  # listed in a "stages:" section elsewhere in this pipeline.
+  stage: .post
+  # Waits for "deploy" and only runs if it succeeded - this is what makes the
+  # sync start "after the build/deploy is done", not in parallel with it.
+  needs:
+    - job: deploy
+  # Doesn't touch the deployment host, only calls out over the network - the
+  # default runner tag is fine unless egress to GENAI_TRIGGER_URL is blocked
+  # from it, in which case give it the same tag as "deploy".
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $DEPLOY_BRANCH'
+      when: on_success
+    - when: never
+  variables:
+    # Change this to this site's trigger URL: <host>/<SUBFOLDER>/<site>/trigger,
+    # where SUBFOLDER is set in SitemapGenai2EdTechRAG/docker-compose.yml and
+    # <site> is that site's folder name in SitemapGenai2EdTechRAG/config/.
+    # One job/URL per site.
+    GENAI_TRIGGER_URL: "https://flaait-test.flaait.app/sitemapgenai2edtechrag/telucation/trigger"
+  script:
+    - |
+      : "${GENAI_TRIGGER_SECRET:?Set GENAI_TRIGGER_SECRET in GitLab CI/CD variables - must match TRIGGER_SECRET in config/telucation/.env on the Docker host}"
+
+      curl --no-buffer --fail-with-body \
+        -X POST \
+        -H "Authorization: Bearer $GENAI_TRIGGER_SECRET" \
+        "$GENAI_TRIGGER_URL"
+
+# ---------------------------------------------------------------------------
+# CI/CD variable to add in THIS repository (Settings > CI/CD > Variables),
+# masked and protected:
+#
+#   GENAI_TRIGGER_SECRET   same value as TRIGGER_SECRET in
+#                          SitemapGenai2EdTechRAG/config/<site>/.env on the
+#                          Docker host running SitemapGenai2EdTechRAG/trigger.
+#
+# The sync itself runs on the Docker host, not on this GitLab runner: this job
+# only makes the HTTP call and returns as soon as SitemapGenai2EdTechRAG's
+# trigger server has accepted it (HTTP 202) - it does not wait for
+# build/push/notify to finish. Check that container's logs
+# (`docker compose logs -f sitemap-genai`) to see the sync itself; its lines
+# for this site are prefixed with [<site>].

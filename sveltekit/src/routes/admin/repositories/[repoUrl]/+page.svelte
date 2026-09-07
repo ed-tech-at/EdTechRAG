@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
+	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
 
 	export let data: PageData;
@@ -29,6 +30,70 @@
 			: false;
 	let saving = false;
 	let confirmingDelete = false;
+
+	const sectionIds = [
+		'configuration',
+		'access',
+		'github',
+		'gitlab',
+		'llm',
+		'embeddings',
+		'rag',
+		'rag-query-rewrite',
+		'rag-userterms',
+		'search',
+		'ai-overview',
+		'webview'
+	];
+	const sectionStorageKey = `edtechrag.repoConfigSections.${data.config.repositoryUrl}`;
+	let openSections: Record<string, boolean> = { configuration: true };
+	const storeSections = () => {
+		try {
+			localStorage.setItem(sectionStorageKey, JSON.stringify(openSections));
+		} catch {
+			// storing the open state is a convenience, never a hard requirement
+		}
+	};
+	const setSection = (id: string, open: boolean) => {
+		if (openSections[id] === open) return;
+		openSections = { ...openSections, [id]: open };
+		storeSections();
+	};
+	const setAllSections = (open: boolean) => {
+		openSections = Object.fromEntries(sectionIds.map((id) => [id, open]));
+		storeSections();
+	};
+	// A link like href="#search-heading" points into a section that may be collapsed, so open
+	// every <details> on the way to the target instead of relying on browser auto-expansion.
+	const revealHashTarget = () => {
+		const id = location.hash.slice(1);
+		if (!id) return;
+		const target = document.getElementById(id);
+		if (!target) return;
+		const next = { ...openSections };
+		let node = target.closest<HTMLDetailsElement>('details');
+		while (node) {
+			const key = node.dataset.section;
+			if (key) next[key] = true;
+			node = node.parentElement?.closest<HTMLDetailsElement>('details') ?? null;
+		}
+		openSections = next;
+		storeSections();
+		requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
+	};
+	onMount(() => {
+		try {
+			const stored = localStorage.getItem(sectionStorageKey);
+			if (stored) {
+				openSections = { ...openSections, ...(JSON.parse(stored) as Record<string, boolean>) };
+			}
+		} catch {
+			// unreadable storage just means the defaults stay
+		}
+		revealHashTarget();
+		window.addEventListener('hashchange', revealHashTarget);
+		return () => window.removeEventListener('hashchange', revealHashTarget);
+	});
 	const handleDeleteClick = (event: MouseEvent) => {
 		if (!confirmingDelete) {
 			event.preventDefault();
@@ -40,12 +105,14 @@
 	let repositoryPath = data.config.github.repositoryPath;
 	let publicBaseUrl = data.config.github.publicBaseUrl;
 	let webhookPath = data.config.github.webhookPath;
+	let excludePathRegexValue = data.config.github.excludePathRegex;
 	let gitlabApiUrlValue = data.config.gitlab.apiUrl;
 	let gitlabRefValue = data.config.gitlab.ref;
 	let embedAllowedHostRegexValue = data.config.access.embedAllowedHostRegex;
 	let activeSimplePageValue = data.config.access.activeSimplePage;
 	let activeSinglePageValue = data.config.access.activeSinglePage;
 	let activeParameterPageValue = data.config.access.activeParameterPage;
+	let activeWebviewPageValue = data.config.access.activeWebviewPage;
 	let activeEmbedApiValue = data.config.access.activeEmbedApi;
 	let openAiApiBaseValue = data.config.llm.openAiApiBase;
 	let chatModelValue = data.config.llm.chatModel;
@@ -75,6 +142,8 @@
 	let searchModeValue = data.config.rag.searchMode;
 	let searchResultLimitValue = data.config.rag.searchResultLimit ?? '';
 	let searchSnippetLengthValue = data.config.rag.searchSnippetLength ?? '';
+	let searchMetaTagsValue = data.config.rag.searchMetaTags.join(', ');
+	let searchMetaLabelsValue = data.config.rag.searchMetaLabels;
 	let aiOverviewEnabledValue = data.config.rag.aiOverviewEnabled;
 	let aiOverviewModelValue = data.config.rag.aiOverviewModel;
 	let aiOverviewSystempromptValue = data.config.rag.aiOverviewSystemprompt;
@@ -86,6 +155,10 @@
 	let aiOverviewRequireUsertermsValue = data.config.rag.aiOverviewRequireUserterms;
 	let aiOverviewUsertermsDurationMonthsValue =
 		data.config.rag.aiOverviewUsertermsDurationMonths ?? '';
+	let webviewIntroHtmlValue = data.config.rag.webviewIntroHtml;
+	let webviewRequireUsertermsValue = data.config.rag.webviewRequireUserterms;
+	let webviewUsertermsUrlValue = data.config.rag.webviewUsertermsUrl;
+	let webviewUsertermsDurationMonthsValue = data.config.rag.webviewUsertermsDurationMonths ?? '';
 
 	$: if (form) {
 		saving = false;
@@ -95,12 +168,14 @@
 		repositoryPath = config.github.repositoryPath;
 		publicBaseUrl = config.github.publicBaseUrl;
 		webhookPath = config.github.webhookPath;
+		excludePathRegexValue = config.github.excludePathRegex;
 		gitlabApiUrlValue = config.gitlab.apiUrl;
 		gitlabRefValue = config.gitlab.ref;
 		embedAllowedHostRegexValue = config.access.embedAllowedHostRegex;
 		activeSimplePageValue = config.access.activeSimplePage;
 		activeSinglePageValue = config.access.activeSinglePage;
 		activeParameterPageValue = config.access.activeParameterPage;
+		activeWebviewPageValue = config.access.activeWebviewPage;
 		activeEmbedApiValue = config.access.activeEmbedApi;
 		openAiApiBaseValue = config.llm.openAiApiBase;
 		chatModelValue = config.llm.chatModel;
@@ -130,6 +205,8 @@
 		searchModeValue = config.rag.searchMode;
 		searchResultLimitValue = config.rag.searchResultLimit ?? '';
 		searchSnippetLengthValue = config.rag.searchSnippetLength ?? '';
+		searchMetaTagsValue = config.rag.searchMetaTags.join(', ');
+		searchMetaLabelsValue = config.rag.searchMetaLabels;
 		aiOverviewEnabledValue = config.rag.aiOverviewEnabled;
 		aiOverviewModelValue = config.rag.aiOverviewModel;
 		aiOverviewSystempromptValue = config.rag.aiOverviewSystemprompt;
@@ -140,6 +217,10 @@
 		aiOverviewTextVerbosityValue = config.rag.aiOverviewTextVerbosity;
 		aiOverviewRequireUsertermsValue = config.rag.aiOverviewRequireUserterms;
 		aiOverviewUsertermsDurationMonthsValue = config.rag.aiOverviewUsertermsDurationMonths ?? '';
+		webviewIntroHtmlValue = config.rag.webviewIntroHtml;
+		webviewRequireUsertermsValue = config.rag.webviewRequireUserterms;
+		webviewUsertermsUrlValue = config.rag.webviewUsertermsUrl;
+		webviewUsertermsDurationMonthsValue = config.rag.webviewUsertermsDurationMonths ?? '';
 	}
 	$: webhookUrl = webhookPath.trim()
 		? `${publicBaseUrl.replace(/\/$/, '')}/webhook?path=${encodeURIComponent(webhookPath.trim())}`
@@ -181,13 +262,28 @@
 		class="config-form"
 		on:submit={() => (saving = true)}
 	>
-		<p class="form-note">Secrets are write-only. Leave password fields empty to keep existing values.</p>
-
-		<section class="config-section" aria-labelledby="configuration-heading">
-			<div class="section-head">
-				<h2 id="configuration-heading">Configuration</h2>
-				<p class="muted">Repository identity and source mapping.</p>
+		<div class="form-note">
+			<p>Secrets are write-only. Leave password fields empty to keep existing values.</p>
+			<div class="note-actions">
+				<button type="button" class="link-button" on:click={() => setAllSections(true)}>
+					Expand all
+				</button>
+				<button type="button" class="link-button" on:click={() => setAllSections(false)}>
+					Collapse all
+				</button>
 			</div>
+		</div>
+
+		<details
+			class="config-section"
+			data-section="configuration"
+			open={openSections['configuration'] ?? false}
+			on:toggle={(event) => setSection('configuration', event.currentTarget.open)}
+		>
+			<summary class="section-head">
+				<h2 id="configuration-heading">Configuration</h2>
+				<span class="muted">Repository identity and source mapping.</span>
+			</summary>
 			<div class="field-grid">
 				<label>
 					Repository name
@@ -198,13 +294,18 @@
 					<input name="repository_path" placeholder="owner/repository" bind:value={repositoryPath} />
 				</label>
 			</div>
-		</section>
+		</details>
 
-		<section class="config-section" aria-labelledby="access-heading">
-			<div class="section-head">
+		<details
+			class="config-section"
+			data-section="access"
+			open={openSections['access'] ?? false}
+			on:toggle={(event) => setSection('access', event.currentTarget.open)}
+		>
+			<summary class="section-head">
 				<h2 id="access-heading">Access</h2>
-				<p class="muted">Public pages and embed API availability.</p>
-			</div>
+				<span class="muted">Public pages and embed API availability.</span>
+			</summary>
 			<div class="checkbox-grid">
 				<label class="checkbox-label">
 					<input type="checkbox" name="activeSimplePage" bind:checked={activeSimplePageValue} />
@@ -217,6 +318,10 @@
 				<label class="checkbox-label">
 					<input type="checkbox" name="activeParameterPage" bind:checked={activeParameterPageValue} />
 					<span>Parameter page</span>
+				</label>
+				<label class="checkbox-label">
+					<input type="checkbox" name="activeWebviewPage" bind:checked={activeWebviewPageValue} />
+					<span>Webview page</span>
 				</label>
 				<label class="checkbox-label">
 					<input type="checkbox" name="activeEmbedApi" bind:checked={activeEmbedApiValue} />
@@ -232,13 +337,18 @@
 				/>
 			</label>
 			<p class="muted">The embed regex matches only the browser Origin hostname.</p>
-		</section>
+		</details>
 
-		<section class="config-section" aria-labelledby="bridge-heading">
-			<div class="section-head">
+		<details
+			class="config-section"
+			data-section="github"
+			open={openSections['github'] ?? false}
+			on:toggle={(event) => setSection('github', event.currentTarget.open)}
+		>
+			<summary class="section-head">
 				<h2 id="bridge-heading">GitHub2EdTechRAG</h2>
-				<p class="muted">Webhook bridge settings for repository updates.</p>
-			</div>
+				<span class="muted">Webhook bridge settings for repository updates.</span>
+			</summary>
 			<div class="field-grid">
 				<label>
 					Bridge public base URL
@@ -261,14 +371,31 @@
 					placeholder={config.github.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Optional'}
 				/>
 			</label>
+			<label>
+				Exclude path/filename regex
+				<input
+					name="exclude_path_regex"
+					bind:value={excludePathRegexValue}
+					placeholder="\\.pdf|/raw/"
+				/>
+				<span class="muted" style="font-weight: 400;">
+					One setting for both bridges &mdash; the same field is shown under
+					<strong>GitLab2EdTechRAG</strong>.
+				</span>
+			</label>
 			<p class="readonly">GitHub webhook URL: <code>{webhookUrl}</code></p>
-		</section>
+		</details>
 
-		<section class="config-section" aria-labelledby="gitlab-heading">
-			<div class="section-head">
+		<details
+			class="config-section"
+			data-section="gitlab"
+			open={openSections['gitlab'] ?? false}
+			on:toggle={(event) => setSection('gitlab', event.currentTarget.open)}
+		>
+			<summary class="section-head">
 				<h2 id="gitlab-heading">GitLab2EdTechRAG</h2>
-				<p class="muted">GitLab API access and webhook bridge settings for repository updates.</p>
-			</div>
+				<span class="muted">GitLab API access and webhook bridge settings for repository updates.</span>
+			</summary>
 			<div class="field-grid">
 				<label>
 					GitLab API URL
@@ -300,13 +427,28 @@
 					placeholder={config.gitlab.hasSharedSecret ? 'Already set; enter a new value to overwrite' : 'Optional'}
 				/>
 			</label>
-		</section>
+			<!-- Mirror of the GitHub2EdTechRAG field: same stored value, so this input carries no
+			     name and the form submits exclude_path_regex exactly once. -->
+			<label>
+				Exclude path/filename regex
+				<input bind:value={excludePathRegexValue} placeholder="\\.pdf|/raw/" />
+				<span class="muted" style="font-weight: 400;">
+					One setting for both bridges &mdash; the same field is shown under
+					<strong>GitHub2EdTechRAG</strong>.
+				</span>
+			</label>
+		</details>
 
-		<section class="config-section" aria-labelledby="llm-heading">
-			<div class="section-head">
+		<details
+			class="config-section"
+			data-section="llm"
+			open={openSections['llm'] ?? false}
+			on:toggle={(event) => setSection('llm', event.currentTarget.open)}
+		>
+			<summary class="section-head">
 				<h2 id="llm-heading">LLM</h2>
-				<p class="muted">Chat model provider and generation settings.</p>
-			</div>
+				<span class="muted">Chat model provider and generation settings.</span>
+			</summary>
 			<div class="field-grid">
 				<label>
 					OpenAI-compatible API key
@@ -349,13 +491,18 @@
 					</select>
 				</label>
 			</div>
-		</section>
+		</details>
 
-		<section class="config-section" aria-labelledby="embeddings-heading">
-			<div class="section-head">
+		<details
+			class="config-section"
+			data-section="embeddings"
+			open={openSections['embeddings'] ?? false}
+			on:toggle={(event) => setSection('embeddings', event.currentTarget.open)}
+		>
+			<summary class="section-head">
 				<h2 id="embeddings-heading">Embeddings</h2>
-				<p class="muted">Embedding model provider used for vector search.</p>
-			</div>
+				<span class="muted">Embedding model provider used for vector search.</span>
+			</summary>
 			<div class="field-grid">
 				<label>
 					Embedding API key
@@ -375,13 +522,18 @@
 					<input name="EMBEDDING_MODEL" bind:value={embeddingModelValue} />
 				</label>
 			</div>
-		</section>
+		</details>
 
-		<section class="config-section" aria-labelledby="rag-heading">
-			<div class="section-head">
+		<details
+			class="config-section"
+			data-section="rag"
+			open={openSections['rag'] ?? false}
+			on:toggle={(event) => setSection('rag', event.currentTarget.open)}
+		>
+			<summary class="section-head">
 				<h2 id="rag-heading">RAG</h2>
-				<p class="muted">Retrieval chunking, document count, metadata, and prompt.</p>
-			</div>
+				<span class="muted">Retrieval chunking, document count, metadata, and prompt.</span>
+			</summary>
 			<div class="field-grid">
 				<label>
 					Chunk size
@@ -399,12 +551,12 @@
 					Metadata tags
 					<input name="metaTags" bind:value={metaTagsValue} placeholder="* or url, title, folder" />
 					<span class="muted" style="font-weight: 400;">
-						Which metadata reaches the chatbot and the search results. <code>*</code> takes every
-						key a document actually has &mdash; ingest already stores all of them, so a new fact in
-						the source appears without being listed here. Bookkeeping keys of the pipeline
-						(<code>fetch_url</code>, <code>path</code>, <code>headSha</code> &hellip;) are never
-						emitted. Empty means no metadata <em>and no URL</em>, so a search result has nothing to
-						link to.
+						Which metadata reaches <strong>the chatbot</strong> &mdash; the
+						<code>METADATA_JSON</code> block of its context. <code>*</code> takes every key a
+						document actually has &mdash; ingest already stores all of them, so a new fact in the
+						source appears without being listed here. Empty means no metadata <em>and no URL</em> in
+						that context. The search results have their own list under
+						<a href="#search-heading">Search results</a>; this field does not affect them.
 					</span>
 				</label>
 			</div>
@@ -413,150 +565,171 @@
 				<textarea name="systemprompt" rows="6" bind:value={systempromptValue}></textarea>
 			</label>
 
-			<div class="section-head" style="margin-top: 0.5rem;">
-				<h3 id="query-rewrite-heading" style="margin: 0;">Query rewrite</h3>
-				<p class="muted">
-					Rewrite the user question into several optimized search queries before retrieval.
-					Each query is searched separately and results are merged (deduplicated by chunk).
-					With chat history on, the last n messages (not turns) are added to the rewrite
-					prompt so references like &quot;it&quot; can be resolved.
-				</p>
-			</div>
-			<div class="field-grid">
-				<label class="checkbox-label">
-					<input type="checkbox" name="queryRewriteEnabled" bind:checked={queryRewriteEnabledValue} />
-					<span>Enable query rewrite</span>
-				</label>
-				<label class="checkbox-label">
-					<input
-						type="checkbox"
-						name="queryRewriteIncludeHistory"
-						bind:checked={queryRewriteIncludeHistoryValue}
-					/>
-					<span>Include chat history in rewrite prompt</span>
-				</label>
-			</div>
-			<div class="field-grid">
+			<details
+				class="config-section config-subsection"
+				data-section="rag-query-rewrite"
+				open={openSections['rag-query-rewrite'] ?? false}
+				on:toggle={(event) => setSection('rag-query-rewrite', event.currentTarget.open)}
+			>
+				<summary class="section-head">
+					<h3 id="query-rewrite-heading">Query rewrite</h3>
+					<span class="muted">
+						Rewrite the user question into several optimized search queries before retrieval.
+						Each query is searched separately and results are merged (deduplicated by chunk).
+						With chat history on, the last n messages (not turns) are added to the rewrite
+						prompt so references like &quot;it&quot; can be resolved.
+					</span>
+				</summary>
+				<div class="field-grid">
+					<label class="checkbox-label">
+						<input type="checkbox" name="queryRewriteEnabled" bind:checked={queryRewriteEnabledValue} />
+						<span>Enable query rewrite</span>
+					</label>
+					<label class="checkbox-label">
+						<input
+							type="checkbox"
+							name="queryRewriteIncludeHistory"
+							bind:checked={queryRewriteIncludeHistoryValue}
+						/>
+						<span>Include chat history in rewrite prompt</span>
+					</label>
+				</div>
+				<div class="field-grid">
+					<label>
+						Rewrite model
+						<input
+							name="queryRewriteModel"
+							bind:value={queryRewriteModelValue}
+							placeholder={chatModelValue || 'chat model'}
+						/>
+					</label>
+					<label>
+						Number of searches
+						<input
+							name="queryRewriteCount"
+							type="number"
+							min="1"
+							bind:value={queryRewriteCountValue}
+							placeholder="3"
+						/>
+					</label>
+					<label>
+						Documents per search
+						<input
+							name="queryRewriteDocsPerSearch"
+							type="number"
+							min="1"
+							bind:value={queryRewriteDocsPerSearchValue}
+							placeholder={String(numberDocumentsValue ?? 4)}
+						/>
+					</label>
+					<label>
+						History messages (last n)
+						<input
+							name="queryRewriteHistoryLimit"
+							type="number"
+							min="1"
+							bind:value={queryRewriteHistoryLimitValue}
+							placeholder="6"
+						/>
+					</label>
+				</div>
+				<div class="field-grid">
+					<label>
+						API language
+						<select name="queryRewriteApiLanguage" bind:value={queryRewriteApiLanguageValue}>
+							<option value="">Default (chat setting)</option>
+							<option value="chat/completions">chat/completions</option>
+							<option value="responses">responses</option>
+						</select>
+					</label>
+					<label>
+						Reasoning effort
+						<select name="queryRewriteReasoningEffort" bind:value={queryRewriteReasoningEffortValue}>
+							<option value="">Default (chat setting)</option>
+							{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
+								<option value={option}>{option}</option>
+							{/each}
+						</select>
+					</label>
+					<label>
+						Text verbosity
+						<select name="queryRewriteTextVerbosity" bind:value={queryRewriteTextVerbosityValue}>
+							<option value="">Default (chat setting)</option>
+							{#each ['low', 'medium', 'high'] as option}
+								<option value={option}>{option}</option>
+							{/each}
+						</select>
+					</label>
+				</div>
 				<label>
-					Rewrite model
-					<input
-						name="queryRewriteModel"
-						bind:value={queryRewriteModelValue}
-						placeholder={chatModelValue || 'chat model'}
-					/>
+					Rewrite context
+					<textarea
+						name="queryRewriteContext"
+						rows="2"
+						bind:value={queryRewriteContextValue}
+						placeholder="e.g. You are at TU Graz."
+					></textarea>
+					<span class="muted" style="font-weight: 400;">
+						Optional background given to the rewrite model to steer the generated searches.
+					</span>
 				</label>
-				<label>
-					Number of searches
-					<input
-						name="queryRewriteCount"
-						type="number"
-						min="1"
-						bind:value={queryRewriteCountValue}
-						placeholder="3"
-					/>
-				</label>
-				<label>
-					Documents per search
-					<input
-						name="queryRewriteDocsPerSearch"
-						type="number"
-						min="1"
-						bind:value={queryRewriteDocsPerSearchValue}
-						placeholder={String(numberDocumentsValue ?? 4)}
-					/>
-				</label>
-				<label>
-					History messages (last n)
-					<input
-						name="queryRewriteHistoryLimit"
-						type="number"
-						min="1"
-						bind:value={queryRewriteHistoryLimitValue}
-						placeholder="6"
-					/>
-				</label>
-			</div>
-			<div class="field-grid">
-				<label>
-					API language
-					<select name="queryRewriteApiLanguage" bind:value={queryRewriteApiLanguageValue}>
-						<option value="">Default (chat setting)</option>
-						<option value="chat/completions">chat/completions</option>
-						<option value="responses">responses</option>
-					</select>
-				</label>
-				<label>
-					Reasoning effort
-					<select name="queryRewriteReasoningEffort" bind:value={queryRewriteReasoningEffortValue}>
-						<option value="">Default (chat setting)</option>
-						{#each ['none', 'minimal', 'low', 'medium', 'high'] as option}
-							<option value={option}>{option}</option>
-						{/each}
-					</select>
-				</label>
-				<label>
-					Text verbosity
-					<select name="queryRewriteTextVerbosity" bind:value={queryRewriteTextVerbosityValue}>
-						<option value="">Default (chat setting)</option>
-						{#each ['low', 'medium', 'high'] as option}
-							<option value={option}>{option}</option>
-						{/each}
-					</select>
-				</label>
-			</div>
-			<label>
-				Rewrite context
-				<textarea
-					name="queryRewriteContext"
-					rows="2"
-					bind:value={queryRewriteContextValue}
-					placeholder="e.g. You are at TU Graz."
-				></textarea>
-				<span class="muted" style="font-weight: 400;">
-					Optional background given to the rewrite model to steer the generated searches.
-				</span>
-			</label>
+			</details>
 
-			<div class="section-head" style="margin-top: 0.5rem;">
-				<h3 id="userterms-heading" style="margin: 0;">User terms</h3>
+			<details
+				class="config-section config-subsection"
+				data-section="rag-userterms"
+				open={openSections['rag-userterms'] ?? false}
+				on:toggle={(event) => setSection('rag-userterms', event.currentTarget.open)}
+			>
+				<summary class="section-head">
+					<h3 id="userterms-heading">User terms</h3>
+					<span class="muted">
+						Rejects /api/embed chat requests that carry no accepted user-terms timestamp.
+						Requires the <code>block_chatbot</code> widget with <code>data-userterms-url</code>;
+						the older <code>moodle-block_chatbot</code> embed sends no timestamp and will receive
+						403 for every request.
+					</span>
+				</summary>
+				<div class="field-grid">
+					<label class="checkbox-label">
+						<input type="checkbox" name="requireUserterms" bind:checked={requireUsertermsValue} />
+						<span>Require accepted user terms</span>
+					</label>
+					<label>
+						Validity in months
+						<input
+							name="usertermsDurationMonths"
+							type="number"
+							min="1"
+							max="60"
+							bind:value={usertermsDurationMonthsValue}
+							placeholder="12"
+						/>
+					</label>
+				</div>
 				<p class="muted">
-					Rejects /api/embed chat requests that carry no accepted user-terms timestamp.
-					Requires the <code>block_chatbot</code> widget with <code>data-userterms-url</code>;
-					the older <code>moodle-block_chatbot</code> embed sends no timestamp and will receive
-					403 for every request.
+					The timestamp comes from the visitor's browser, so it is an attestation and not a proof
+					&mdash; the allowed embed host regex stays the outer gate.
 				</p>
-			</div>
-			<div class="field-grid">
-				<label class="checkbox-label">
-					<input type="checkbox" name="requireUserterms" bind:checked={requireUsertermsValue} />
-					<span>Require accepted user terms</span>
-				</label>
-				<label>
-					Validity in months
-					<input
-						name="usertermsDurationMonths"
-						type="number"
-						min="1"
-						max="60"
-						bind:value={usertermsDurationMonthsValue}
-						placeholder="12"
-					/>
-				</label>
-			</div>
-			<p class="muted">
-				The timestamp comes from the visitor's browser, so it is an attestation and not a proof
-				&mdash; the allowed embed host regex stays the outer gate.
-			</p>
+			</details>
+		</details>
 
-			<div class="section-head" style="margin-top: 0.5rem;">
-				<h3 id="search-heading" style="margin: 0;">Search results</h3>
-				<p class="muted">
+		<details
+			class="config-section"
+			data-section="search"
+			open={openSections['search'] ?? false}
+			on:toggle={(event) => setSection('search', event.currentTarget.open)}
+		>
+			<summary class="section-head">
+				<h2 id="search-heading">Search results</h2>
+				<span class="muted">
 					The search embed (<code>static/embed/search</code>) searches this repository and lists
 					documents, not chunks: several chunks of the same page collapse into one result, the best
 					score wins. The target URL comes from <code>meta.url</code> &mdash; make sure
 					<code>Meta tags</code> above is not empty, otherwise no URL is emitted.
-				</p>
-			</div>
+				</span>
+			</summary>
 			<div class="field-grid">
 				<label class="checkbox-label">
 					<input type="checkbox" name="activeSearchApi" bind:checked={activeSearchApiValue} />
@@ -589,7 +762,37 @@
 						placeholder="320"
 					/>
 				</label>
+				<label>
+					Search metadata tags
+					<input
+						name="searchMetaTags"
+						bind:value={searchMetaTagsValue}
+						placeholder="* or type, updated, folder"
+					/>
+					<span class="muted" style="font-weight: 400;">
+						The only metadata the search API hands out &mdash; this response is readable by every
+						allowed origin, which is why it is not the chatbot's list above. Empty means no metadata
+						line at all; <code>url</code> and <code>title</code> are delivered as their own fields
+						either way, so results stay clickable. The order here is the order the visitor sees.
+						Bookkeeping keys of the pipeline (<code>fetch_url</code>, <code>path</code>,
+						<code>headSha</code> &hellip;) are never emitted, whether listed or not.
+					</span>
+				</label>
 			</div>
+			<label>
+				Metadata names
+				<textarea name="searchMetaLabels" rows="5" bind:value={searchMetaLabelsValue}></textarea>
+				<span class="muted" style="font-weight: 400;">
+					What those keys are <em>called</em> in the result list, one per line &mdash;
+					<code>episode.de = Podcast-Folge</code> turns a bare <code>42</code> into
+					<code>Podcast-Folge: 42</code>. A suffix of <code>.de</code> / <code>.en</code> applies to
+					pages in that language; without a suffix (<code>speaker = Gast</code>) the name applies to
+					every language. A key falls back from its language to the suffix-less entry to
+					<code>.en</code>, and a key with no name at all keeps showing its bare value. Only worth
+					filling in with an explicit tag list above &mdash; under <code>*</code> the keys differ per
+					document, so some lines would be named and others not.
+				</span>
+			</label>
 			<p class="muted">
 				<strong>Database only</strong> is the default: one Postgres full-text query per search, no
 				embedding call and no LLM call. It matches the words that were typed, with prefix matching,
@@ -606,16 +809,23 @@
 				The search API needs the same <code>Allowed embed host regex</code> as the chat embed, but
 				its own switch: a site can have the search without the chatbot.
 			</p>
+		</details>
 
-			<div class="section-head" style="margin-top: 0.5rem;">
-				<h3 id="ai-overview-heading" style="margin: 0;">AI overview</h3>
-				<p class="muted">
+		<details
+			class="config-section"
+			data-section="ai-overview"
+			open={openSections['ai-overview'] ?? false}
+			on:toggle={(event) => setSection('ai-overview', event.currentTarget.open)}
+		>
+			<summary class="section-head">
+				<h2 id="ai-overview-heading">AI overview</h2>
+				<span class="muted">
 					A streamed summary above the search results. The results themselves appear immediately;
 					the overview only after the visitor accepted the terms &mdash; and it can be withdrawn
 					again in the widget. Off by default, so updating the code never starts spending tokens on
 					its own.
-				</p>
-			</div>
+				</span>
+			</summary>
 			<div class="field-grid">
 				<label class="checkbox-label">
 					<input type="checkbox" name="aiOverviewEnabled" bind:checked={aiOverviewEnabledValue} />
@@ -710,7 +920,72 @@
 					placeholder="e.g. You are answering for TU Graz teaching staff."
 				></textarea>
 			</label>
-		</section>
+		</details>
+
+		<details
+			class="config-section"
+			data-section="webview"
+			open={openSections['webview'] ?? false}
+			on:toggle={(event) => setSection('webview', event.currentTarget.open)}
+		>
+			<summary class="section-head">
+				<h2 id="webview-heading">Webview</h2>
+				<span class="muted">
+					The full-page end-user chat at <code>/webview/&lt;repository&gt;</code>. Supports a
+					fullscreen mode for the page and for text fields. Switched on with the
+					<strong>Webview page</strong> checkbox in <strong>Access</strong> at the top.
+				</span>
+			</summary>
+			<label>
+				Intro text (HTML)
+				<textarea
+					name="webviewIntroHtml"
+					rows="5"
+					bind:value={webviewIntroHtmlValue}
+					placeholder={'<p>Willkommen!</p>\n<img src="https://example.org/logo.svg" alt="Logo" height="40">'}
+				></textarea>
+				<span class="muted" style="font-weight: 400;">
+					Shown above the chat. Plain HTML, rendered as-is &mdash; external logos via
+					<code>&lt;img src=&quot;https://&hellip;&quot;&gt;</code> are possible. Whatever is written
+					here is served to every visitor of the page.
+				</span>
+			</label>
+			<div class="field-grid">
+				<label class="checkbox-label">
+					<input
+						type="checkbox"
+						name="webviewRequireUserterms"
+						bind:checked={webviewRequireUsertermsValue}
+					/>
+					<span>Require accepted user terms</span>
+				</label>
+				<label>
+					User-terms URL
+					<input
+						name="webviewUsertermsUrl"
+						bind:value={webviewUsertermsUrlValue}
+						placeholder="https://example.org/benutzerbedingungen"
+					/>
+				</label>
+				<label>
+					Consent validity in months
+					<input
+						name="webviewUsertermsDurationMonths"
+						type="number"
+						min="1"
+						max="60"
+						bind:value={webviewUsertermsDurationMonthsValue}
+						placeholder={String(usertermsDurationMonthsValue || 12)}
+					/>
+				</label>
+			</div>
+			<p class="muted">
+				With terms required, the chat only opens after the visitor accepted the linked terms; the
+				acceptance is stored in the visitor's browser and expires after the configured months
+				(empty inherits the chatbot's <strong>User terms</strong> setting, default 12). The URL is
+				required when the checkbox is on &mdash; the webview has no host page that could supply it.
+			</p>
+		</details>
 
 	</form>
 
@@ -769,6 +1044,7 @@
 
 	h1,
 	h2,
+	h3,
 	p {
 		margin: 0;
 	}
@@ -779,6 +1055,10 @@
 
 	h2 {
 		font-size: 1.1rem;
+	}
+
+	h3 {
+		font-size: 1rem;
 	}
 
 	.eyebrow {
@@ -825,21 +1105,71 @@
 	}
 
 	.form-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem 0.75rem;
 		padding: 0.75rem 0;
 		border-top: 1px solid #e3e3e3;
 		border-bottom: 1px solid #e3e3e3;
 		color: #666;
 	}
 
+	.note-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.link-button {
+		padding: 0.3rem 0.6rem;
+		border-color: #d0d0d0;
+		background: white;
+		color: #1f7ae0;
+		font-size: 0.9rem;
+	}
+
 	.config-section {
-		display: grid;
-		gap: 0.85rem;
 		padding: 1rem 0;
 		border-bottom: 1px solid #e3e3e3;
 	}
 
+	/* replaces the former grid gap now that the sections are <details> */
+	.config-section > :not(summary) {
+		margin-top: 0.85rem;
+	}
+
+	.config-subsection {
+		padding: 0 0 0 0.85rem;
+		border-bottom: none;
+		border-left: 2px solid #ececec;
+	}
+
 	.section-head {
 		flex-wrap: wrap;
+	}
+
+	summary.section-head {
+		cursor: pointer;
+		list-style: none;
+	}
+
+	summary.section-head::-webkit-details-marker {
+		display: none;
+	}
+
+	summary.section-head h2::before,
+	summary.section-head h3::before {
+		content: '\25B8';
+		display: inline-block;
+		width: 0.9em;
+		color: #888;
+		transition: transform 0.15s ease;
+	}
+
+	details[open] > summary.section-head h2::before,
+	details[open] > summary.section-head h3::before {
+		transform: rotate(90deg);
 	}
 
 	.field-grid {
