@@ -18,9 +18,14 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	assertPublicPageActive(repository, 'webview');
 
+	const webview = getWebviewConfig(parseRagConfig(repository.ragConfig));
+
 	return {
 		repositoryUrl: repository.url,
 		repositoryName: repository.name,
-		webview: getWebviewConfig(parseRagConfig(repository.ragConfig))
+		webview,
+		// Picked up by the root layout, which renders the footer for every page;
+		// an empty string means "use the instance-wide default".
+		footerHtml: webview.footerHtml
 	};
 };

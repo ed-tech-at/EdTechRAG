@@ -45,7 +45,9 @@ export type RagConfig = {
 	aiOverviewRequireUserterms?: boolean;
 	aiOverviewUsertermsDurationMonths?: number;
 	/* -- Webview (the /webview/[repoUrl] full-page chat) -- */
+	webviewLanguage?: WebviewLanguage;
 	webviewIntroHtml?: string;
+	webviewFooterHtml?: string;
 	webviewRequireUserterms?: boolean;
 	webviewUsertermsUrl?: string;
 	webviewUsertermsDurationMonths?: number;
@@ -323,9 +325,14 @@ export function parseRagConfig(value: unknown): RagConfig | undefined {
 		aiOverviewUsertermsDurationMonths: optionalPositiveInt(raw.aiOverviewUsertermsDurationMonths),
 		// Kept untrimmed on purpose: this is raw HTML an admin authored (may contain
 		// <img> logos); reformatting it here would surprise the author.
+		webviewLanguage: parseWebviewLanguage(raw.webviewLanguage),
 		webviewIntroHtml:
 			typeof raw.webviewIntroHtml === 'string' && raw.webviewIntroHtml.trim()
 				? raw.webviewIntroHtml
+				: undefined,
+		webviewFooterHtml:
+			typeof raw.webviewFooterHtml === 'string' && raw.webviewFooterHtml.trim()
+				? raw.webviewFooterHtml
 				: undefined,
 		webviewRequireUserterms:
 			typeof raw.webviewRequireUserterms === 'boolean' ? raw.webviewRequireUserterms : undefined,
@@ -493,15 +500,36 @@ export function getAiOverviewConfig(
  * visitor input.
  */
 export type WebviewConfig = {
+	/** UI language of the webview (labels, consent texts). */
+	language: WebviewLanguage;
 	introHtml: string;
+	/**
+	 * The page footer, complete with its `<footer>` element, so the admin controls
+	 * colours and layout. Empty in the config means the instance-wide default.
+	 */
+	footerHtml: string;
 	requireUserterms: boolean;
 	usertermsUrl?: string;
 	usertermsDurationMonths: number;
 };
 
+export const WEBVIEW_LANGUAGES = ['de', 'en'] as const;
+export type WebviewLanguage = (typeof WEBVIEW_LANGUAGES)[number];
+export const WEBVIEW_DEFAULT_LANGUAGE: WebviewLanguage = 'de';
+/** Footer default: an empty element, so pages without a configured footer show nothing. */
+export const WEBVIEW_DEFAULT_FOOTER_HTML = '<footer></footer>';
+
+export function parseWebviewLanguage(value: unknown): WebviewLanguage | undefined {
+	return typeof value === 'string' && (WEBVIEW_LANGUAGES as readonly string[]).includes(value)
+		? (value as WebviewLanguage)
+		: undefined;
+}
+
 export function getWebviewConfig(ragConfig: RagConfig | undefined): WebviewConfig {
 	return {
+		language: ragConfig?.webviewLanguage ?? WEBVIEW_DEFAULT_LANGUAGE,
 		introHtml: ragConfig?.webviewIntroHtml ?? '',
+		footerHtml: ragConfig?.webviewFooterHtml ?? '',
 		requireUserterms: ragConfig?.webviewRequireUserterms === true,
 		usertermsUrl: ragConfig?.webviewUsertermsUrl,
 		// Falls back to the chatbot's consent window, then to the 12-month default -

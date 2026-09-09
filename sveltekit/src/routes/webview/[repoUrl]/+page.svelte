@@ -6,6 +6,44 @@
 
 	export let data: PageData;
 
+	/* -- UI texts -------------------------------------------------------------
+	 * Selected per repository in the admin config (Webview > Language). Admin-authored
+	 * intro/footer HTML is not translated - it is shown as written.
+	 */
+	const texts = {
+		de: {
+			termsIntro: 'Bevor Sie den Chat nutzen können, lesen und akzeptieren Sie bitte die',
+			termsName: 'Benutzerbedingungen',
+			termsAccept: 'Benutzerbedingungen akzeptieren',
+			termsRevoke: 'Zustimmung widerrufen',
+			emptyChat: 'Stellen Sie eine Frage, um den Chat zu starten.',
+			search: 'Suche',
+			loading: 'Lädt…',
+			yourQuestion: 'Ihre Frage',
+			placeholder: 'Stellen Sie Ihre Frage…',
+			send: 'Senden',
+			sending: 'Sendet…',
+			emptyPrompt: 'Bitte geben Sie eine Frage ein.',
+			requestFailed: 'Anfrage fehlgeschlagen'
+		},
+		en: {
+			termsIntro: 'Before you can use the chat, please read and accept the',
+			termsName: 'terms of use',
+			termsAccept: 'Accept terms of use',
+			termsRevoke: 'Withdraw consent',
+			emptyChat: 'Ask a question to start the chat.',
+			search: 'Search',
+			loading: 'Loading…',
+			yourQuestion: 'Your question',
+			placeholder: 'Type your question…',
+			send: 'Send',
+			sending: 'Sending…',
+			emptyPrompt: 'Please enter a question.',
+			requestFailed: 'Request failed'
+		}
+	} as const;
+	const t = texts[data.webview.language] ?? texts.de;
+
 	let prompt = '';
 	let loading = false;
 	let errorMessage = '';
@@ -66,34 +104,14 @@
 		}
 	});
 
-	/* -- Fullscreen ----------------------------------------------------------
-	 * Two independent modes: the whole page via the Fullscreen API, and the
-	 * composer text field as an expanded overlay for writing longer questions.
-	 */
-	let isFullscreen = false;
-	let composerExpanded = false;
-
-	const toggleFullscreen = async () => {
-		try {
-			if (document.fullscreenElement) {
-				await document.exitFullscreen();
-			} else {
-				await document.documentElement.requestFullscreen();
-			}
-		} catch {
-			/* Fullscreen not permitted (e.g. inside an iframe without allowfullscreen). */
-		}
-	};
-
 	const send = async () => {
 		if (!termsAccepted) return;
 		if (!prompt.trim()) {
-			errorMessage = 'Bitte geben Sie eine Frage ein.';
+			errorMessage = t.emptyPrompt;
 			return;
 		}
 
 		errorMessage = '';
-		composerExpanded = false;
 		const nextPrompt = prompt.trim();
 		prompt = '';
 		loading = true;
@@ -116,7 +134,7 @@
 			});
 
 			if (!res.ok || !res.body) {
-				throw new Error('Anfrage fehlgeschlagen');
+				throw new Error(t.requestFailed);
 			}
 
 			const reader = res.body.getReader();
@@ -186,25 +204,20 @@
 			if (messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content) {
 				messages = messages.slice(0, -1);
 			}
-			errorMessage = err instanceof Error ? err.message : 'Anfrage fehlgeschlagen';
+			errorMessage = err instanceof Error ? err.message : t.requestFailed;
 		} finally {
 			loading = false;
 		}
 	};
 </script>
 
-<svelte:document on:fullscreenchange={() => (isFullscreen = Boolean(document.fullscreenElement))} />
-
 <svelte:head>
 	<title>{data.repositoryName}</title>
 </svelte:head>
 
-<section class="page">
+<section class="page" lang={data.webview.language}>
 	<header class="topbar">
 		<h1>{data.repositoryName}</h1>
-		<button class="ghost-button" type="button" on:click={toggleFullscreen}>
-			{isFullscreen ? '⤡ Vollbild beenden' : '⤢ Vollbild'}
-		</button>
 	</header>
 
 	{#if data.webview.introHtml}
@@ -215,34 +228,34 @@
 	{#if !termsAccepted}
 		<div class="terms-panel">
 			<p>
-				Bevor Sie den Chat nutzen können, lesen und akzeptieren Sie bitte die
+				{t.termsIntro}
 				{#if data.webview.usertermsUrl}
 					<a href={data.webview.usertermsUrl} target="_blank" rel="noopener noreferrer"
-						>Benutzerbedingungen</a
+						>{t.termsName}</a
 					>.
 				{:else}
-					Benutzerbedingungen.
+					{t.termsName}.
 				{/if}
 			</p>
-			<button type="button" on:click={acceptTerms}>Benutzerbedingungen akzeptieren</button>
+			<button type="button" on:click={acceptTerms}>{t.termsAccept}</button>
 		</div>
 	{:else}
 		<div class="messages">
 			{#if messages.length === 0}
-				<p class="muted empty">Stellen Sie eine Frage, um den Chat zu starten.</p>
+				<p class="muted empty">{t.emptyChat}</p>
 			{/if}
 			{#each messages as message}
 				<div class="bubble {message.role}">
 					{#if message.role === 'search'}
 						<div class="search-bubbles">
 							{#each message.queries ?? [] as q}
-								<span class="search-chip">🔍 Suche: {q}</span>
+								<span class="search-chip">🔍 {t.search}: {q}</span>
 							{/each}
 						</div>
 					{:else if message.role === 'assistant'}
 						<div class="bubble-content">
 							{#if loading && !message.content}
-								<span class="muted">Lädt…</span>
+								<span class="muted">{t.loading}</span>
 							{:else}
 								{@html message.html}
 							{/if}
@@ -254,33 +267,24 @@
 			{/each}
 		</div>
 
-		<div class="composer" class:expanded={composerExpanded}>
+		<div class="composer">
 			<div class="composer-toolbar">
-				<span class="composer-label">Ihre Frage</span>
-				<button
-					class="ghost-button"
-					type="button"
-					on:click={() => (composerExpanded = !composerExpanded)}
-				>
-					{composerExpanded ? '⤡ Eingabe verkleinern' : '⤢ Eingabe vergrößern'}
-				</button>
+				<span class="composer-label">{t.yourQuestion}</span>
 			</div>
 			<textarea
 				bind:value={prompt}
-				placeholder="Stellen Sie Ihre Frage…"
+				placeholder={t.placeholder}
 				rows="3"
 				on:keydown={(e) => {
 					if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
 						e.preventDefault();
 						send();
-					} else if (e.key === 'Escape' && composerExpanded) {
-						composerExpanded = false;
 					}
 				}}
 			></textarea>
 			<div class="composer-actions">
 				<button type="button" on:click={send} disabled={loading}>
-					{loading ? 'Sendet…' : 'Senden'}
+					{loading ? t.sending : t.send}
 				</button>
 				{#if errorMessage}
 					<span class="error">{errorMessage}</span>
@@ -292,12 +296,12 @@
 			<footer class="terms-footer">
 				{#if data.webview.usertermsUrl}
 					<a href={data.webview.usertermsUrl} target="_blank" rel="noopener noreferrer"
-						>Benutzerbedingungen</a
+						>{t.termsName}</a
 					>
 					·
 				{/if}
 				<button class="link-button" type="button" on:click={revokeTerms}>
-					Zustimmung widerrufen
+					{t.termsRevoke}
 				</button>
 			</footer>
 		{/if}
@@ -310,9 +314,10 @@
 	.page {
 		display: flex;
 		flex-direction: column;
-		/* The root layout appends a 70px footer; subtracting it keeps the page
-		   plus footer exactly one viewport, so only the message list scrolls. */
-		height: calc(100dvh - 70px);
+		/* The root layout measures its footer into --footer-height and pads <main>
+		   by 20px; subtracting both keeps page plus footer exactly one viewport,
+		   so only the message list scrolls. */
+		height: calc(100dvh - var(--footer-height, 0px) - 40px);
 		max-width: 900px;
 		margin: 0 auto;
 		padding: 0.75rem 1rem;
@@ -446,25 +451,6 @@
 		background: #fafafa;
 	}
 
-	/* Fullscreen mode of the text field: the composer becomes the viewport. */
-	.composer.expanded {
-		position: fixed;
-		inset: 0;
-		z-index: 20;
-		border-radius: 0;
-		border: none;
-		background: #ffffff;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.composer.expanded textarea {
-		flex: 1 1 auto;
-		min-height: 0;
-		resize: none;
-		font-size: 1.1rem;
-	}
-
 	.composer-toolbar {
 		display: flex;
 		align-items: center;
@@ -508,12 +494,6 @@
 	button:disabled {
 		opacity: 0.7;
 		cursor: wait;
-	}
-
-	.ghost-button {
-		background: white;
-		color: #1f7ae0;
-		white-space: nowrap;
 	}
 
 	.link-button {

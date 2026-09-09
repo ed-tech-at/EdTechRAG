@@ -1,24 +1,36 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import { env } from '$env/dynamic/public';
+	import { page } from '$app/state';
 
 	let { children } = $props();
 	import './fonts.css';
 
-	const defaultFooterHtml =
-		'<a href="https://github.com/ed-tech-at/edtechrag" target="_blank">Code @ GitHub</a>';
-	const footerHtml = `${env.PUBLIC_FOOTER_HTML || ''}${defaultFooterHtml}`;
+	/* The footer is admin-authored HTML, complete with its own <footer> element
+	   (colours, padding and links included). A page may supply its own via
+	   `footerHtml` in its load data (the webview does, per repository); otherwise
+	   the instance-wide PUBLIC_FOOTER_HTML applies, and without that an empty
+	   <footer></footer>. */
+	const DEFAULT_FOOTER_HTML = '<footer></footer>';
+	const footerHtml = $derived(
+		(typeof page.data.footerHtml === 'string' && page.data.footerHtml.trim()
+			? page.data.footerHtml
+			: env.PUBLIC_FOOTER_HTML?.trim()) || DEFAULT_FOOTER_HTML
+	);
+
+	/* Measured so pages can size themselves to the viewport minus the footer. */
+	let footerHeight = $state(0);
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
-<main>
+<main style="--footer-height: {footerHeight}px">
 {@render children()}
 </main>
-<footer>
+<div class="footer-slot" bind:clientHeight={footerHeight}>
 	{@html footerHtml}
-</footer>
+</div>
 
 <style>
 	:global(html, body) {
@@ -30,20 +42,14 @@
 		box-sizing: border-box;
 	}
 
-	footer {
-		background-color: #263B48;
-		height: 70px;
-	}
-	:global(nav a),
-	footer :global(a) {
+	:global(nav a) {
 		color: white;
 	}
 	main {
 		padding: 20px;
-		min-height: calc(100dvh - 70px);
+		min-height: calc(100dvh - var(--footer-height, 0px));
 	}
-	:global(nav),
-	footer {
+	:global(nav) {
 		display: flex;
 		position: sticky;
 		width: 100%;
@@ -51,11 +57,6 @@
 		background-color: #39515f;
 		color: white;
 		padding: 20px;
-		height: 70px;
-
-	}
-	footer {
-		background-color: #263B48;
 		height: 70px;
 	}
 </style>
