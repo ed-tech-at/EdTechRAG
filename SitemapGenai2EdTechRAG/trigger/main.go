@@ -500,7 +500,7 @@ func (inst *instance) commitAndPush() error {
 	if err := inst.git("config", "user.email", inst.authorEmail); err != nil {
 		return err
 	}
-	msg := fmt.Sprintf("genai sync %s [skip ci]", time.Now().UTC().Format(time.RFC3339))
+	msg := fmt.Sprintf("genai sync %s", time.Now().UTC().Format(time.RFC3339))
 	if err := inst.git("commit", "-m", msg); err != nil {
 		return err
 	}

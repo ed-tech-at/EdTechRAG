@@ -56,7 +56,7 @@ run_once() {
 		return 0
 	fi
 
-	git commit -m "genai sync $(date -u +%Y-%m-%dT%H:%M:%SZ) [skip ci]"
+	git commit -m "genai sync $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 	git push origin "HEAD:${MIRROR_BRANCH:-main}"
 
 	echo "[$INSTANCE] notify"
