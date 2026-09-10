@@ -4,7 +4,7 @@ export type RepositoryAccess = {
 	activeSimplePage: boolean;
 	activeSinglePage: boolean;
 	activeParameterPage: boolean;
-	/** The /webview full-page chat - fullscreen-capable end-user UI with its own consent gate. */
+	/** The /webview full-page chat - end-user UI with its own consent gate. */
 	activeWebviewPage: boolean;
 	activeEmbedApi: boolean;
 	/**

@@ -155,7 +155,9 @@
 	let aiOverviewRequireUsertermsValue = data.config.rag.aiOverviewRequireUserterms;
 	let aiOverviewUsertermsDurationMonthsValue =
 		data.config.rag.aiOverviewUsertermsDurationMonths ?? '';
+	let webviewLanguageValue = data.config.rag.webviewLanguage;
 	let webviewIntroHtmlValue = data.config.rag.webviewIntroHtml;
+	let webviewFooterHtmlValue = data.config.rag.webviewFooterHtml;
 	let webviewRequireUsertermsValue = data.config.rag.webviewRequireUserterms;
 	let webviewUsertermsUrlValue = data.config.rag.webviewUsertermsUrl;
 	let webviewUsertermsDurationMonthsValue = data.config.rag.webviewUsertermsDurationMonths ?? '';
@@ -217,7 +219,9 @@
 		aiOverviewTextVerbosityValue = config.rag.aiOverviewTextVerbosity;
 		aiOverviewRequireUsertermsValue = config.rag.aiOverviewRequireUserterms;
 		aiOverviewUsertermsDurationMonthsValue = config.rag.aiOverviewUsertermsDurationMonths ?? '';
+		webviewLanguageValue = config.rag.webviewLanguage;
 		webviewIntroHtmlValue = config.rag.webviewIntroHtml;
+		webviewFooterHtmlValue = config.rag.webviewFooterHtml;
 		webviewRequireUsertermsValue = config.rag.webviewRequireUserterms;
 		webviewUsertermsUrlValue = config.rag.webviewUsertermsUrl;
 		webviewUsertermsDurationMonthsValue = config.rag.webviewUsertermsDurationMonths ?? '';
@@ -931,11 +935,22 @@
 			<summary class="section-head">
 				<h2 id="webview-heading">Webview</h2>
 				<span class="muted">
-					The full-page end-user chat at <code>/webview/&lt;repository&gt;</code>. Supports a
-					fullscreen mode for the page and for text fields. Switched on with the
-					<strong>Webview page</strong> checkbox in <strong>Access</strong> at the top.
+					The full-page end-user chat at <code>/webview/&lt;repository&gt;</code>. Switched on
+					with the <strong>Webview page</strong> checkbox in <strong>Access</strong> at the top.
 				</span>
 			</summary>
+			<label>
+				Language
+				<select name="webviewLanguage" bind:value={webviewLanguageValue}>
+					<option value="de">Deutsch (de)</option>
+					<option value="en">English (en)</option>
+				</select>
+				<span class="muted" style="font-weight: 400;">
+					Language of the webview's own texts: consent panel ("Benutzerbedingungen akzeptieren" /
+					"Accept terms of use"), buttons, placeholders. Your intro and footer HTML are shown
+					as written.
+				</span>
+			</label>
 			<label>
 				Intro text (HTML)
 				<textarea
@@ -948,6 +963,22 @@
 					Shown above the chat. Plain HTML, rendered as-is &mdash; external logos via
 					<code>&lt;img src=&quot;https://&hellip;&quot;&gt;</code> are possible. Whatever is written
 					here is served to every visitor of the page.
+				</span>
+			</label>
+			<label>
+				Footer (HTML)
+				<textarea
+					name="webviewFooterHtml"
+					rows="4"
+					bind:value={webviewFooterHtmlValue}
+					placeholder={'<footer style="background: #263b48; color: white; padding: 20px;">\n  <a href="https://example.org/impressum" style="color: white;">Impressum</a>\n</footer>'}
+				></textarea>
+				<span class="muted" style="font-weight: 400;">
+					The complete footer of the webview page, including the <code>&lt;footer&gt;</code>
+					element itself, so colours, padding and links are entirely yours (inline
+					<code>style</code> attributes). Empty uses the instance default from
+					<code>PUBLIC_FOOTER_HTML</code>, which falls back to an empty
+					<code>&lt;footer&gt;&lt;/footer&gt;</code>.
 				</span>
 			</label>
 			<div class="field-grid">

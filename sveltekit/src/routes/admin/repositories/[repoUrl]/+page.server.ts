@@ -22,6 +22,8 @@ import {
 	parseRagConfig,
 	USERTERMS_MAX_MONTHS,
 	USERTERMS_MIN_MONTHS,
+	WEBVIEW_DEFAULT_LANGUAGE,
+	parseWebviewLanguage,
 	type MetaLabelTable
 } from '$lib/ragContext';
 import { canManageUsers, SITE_ROLE } from '$lib/siteRole';
@@ -267,7 +269,9 @@ const publicConfig = (repository: {
 			// Not stored yet means "required" - see getAiOverviewConfig.
 			aiOverviewRequireUserterms: rag?.aiOverviewRequireUserterms !== false,
 			aiOverviewUsertermsDurationMonths: rag?.aiOverviewUsertermsDurationMonths,
+			webviewLanguage: rag?.webviewLanguage ?? WEBVIEW_DEFAULT_LANGUAGE,
 			webviewIntroHtml: rag?.webviewIntroHtml ?? '',
+			webviewFooterHtml: rag?.webviewFooterHtml ?? '',
 			webviewRequireUserterms: rag?.webviewRequireUserterms === true,
 			webviewUsertermsUrl: rag?.webviewUsertermsUrl ?? '',
 			webviewUsertermsDurationMonths: rag?.webviewUsertermsDurationMonths
@@ -377,9 +381,15 @@ const formState = (
 			aiOverviewUsertermsDurationMonths: optionalNumber(
 				formData.get('aiOverviewUsertermsDurationMonths')
 			),
+			webviewLanguage:
+				parseWebviewLanguage(formData.get('webviewLanguage')) ?? WEBVIEW_DEFAULT_LANGUAGE,
 			webviewIntroHtml:
 				typeof formData.get('webviewIntroHtml') === 'string'
 					? String(formData.get('webviewIntroHtml'))
+					: '',
+			webviewFooterHtml:
+				typeof formData.get('webviewFooterHtml') === 'string'
+					? String(formData.get('webviewFooterHtml'))
 					: '',
 			webviewRequireUserterms: parseAccessCheckbox(formData, 'webviewRequireUserterms'),
 			webviewUsertermsUrl: optionalString(formData.get('webviewUsertermsUrl')) ?? '',
@@ -472,7 +482,9 @@ export const load: PageServerLoad = async ({ cookies, params, url }) => {
 					// A new repository gets the safe default: consent required.
 					aiOverviewRequireUserterms: true,
 					aiOverviewUsertermsDurationMonths: undefined,
+					webviewLanguage: WEBVIEW_DEFAULT_LANGUAGE,
 					webviewIntroHtml: '',
+					webviewFooterHtml: '',
 					webviewRequireUserterms: false,
 					webviewUsertermsUrl: '',
 					webviewUsertermsDurationMonths: undefined
@@ -653,6 +665,17 @@ export const actions: Actions = {
 			typeof webviewIntroHtmlRaw === 'string' && webviewIntroHtmlRaw.trim()
 				? webviewIntroHtmlRaw
 				: undefined;
+		// Same rules for the footer: stored verbatim, including its own <footer> element.
+		const webviewFooterHtmlRaw = formData.get('webviewFooterHtml');
+		const webviewFooterHtml =
+			typeof webviewFooterHtmlRaw === 'string' && webviewFooterHtmlRaw.trim()
+				? webviewFooterHtmlRaw
+				: undefined;
+		const webviewLanguageRaw = optionalString(formData.get('webviewLanguage'));
+		const webviewLanguage = parseWebviewLanguage(webviewLanguageRaw);
+		if (webviewLanguageRaw !== undefined && webviewLanguage === undefined) {
+			errors.push('Webview language must be "de" or "en".');
+		}
 		const webviewRequireUserterms = parseAccessCheckbox(formData, 'webviewRequireUserterms');
 		const webviewUsertermsUrl = optionalString(formData.get('webviewUsertermsUrl'));
 		const webviewUsertermsDurationMonths = optionalNumber(
@@ -829,8 +852,13 @@ export const actions: Actions = {
 		if (aiOverviewUsertermsDurationMonths !== undefined)
 			nextRag.aiOverviewUsertermsDurationMonths = aiOverviewUsertermsDurationMonths;
 		else delete nextRag.aiOverviewUsertermsDurationMonths;
+		if (webviewLanguage !== undefined && webviewLanguage !== WEBVIEW_DEFAULT_LANGUAGE)
+			nextRag.webviewLanguage = webviewLanguage;
+		else delete nextRag.webviewLanguage;
 		if (webviewIntroHtml !== undefined) nextRag.webviewIntroHtml = webviewIntroHtml;
 		else delete nextRag.webviewIntroHtml;
+		if (webviewFooterHtml !== undefined) nextRag.webviewFooterHtml = webviewFooterHtml;
+		else delete nextRag.webviewFooterHtml;
 		if (webviewUsertermsUrl !== undefined) nextRag.webviewUsertermsUrl = webviewUsertermsUrl;
 		else delete nextRag.webviewUsertermsUrl;
 		if (webviewUsertermsDurationMonths !== undefined)
