@@ -49,6 +49,23 @@
 		padding: 20px;
 		min-height: calc(100dvh - var(--footer-height, 0px));
 	}
+	/* Align the admin-authored footer's content with the 900px page column:
+	   the horizontal padding grows with the viewport so links start where the
+	   page's h1 does (20px main padding + centred 900px column + 1rem page
+	   padding), and never drops below the 20px main padding on phones. The
+	   admin HTML usually carries an inline `padding`, hence !important; the
+	   vertical padding stays whatever the admin set. */
+	.footer-slot > :global(footer) {
+		padding-left: calc(max(20px, (100% - 900px) / 2) + 1rem) !important;
+		padding-right: calc(max(20px, (100% - 900px) / 2) + 1rem) !important;
+	}
+	@media (max-width: 600px) {
+		/* The webview drops its 1rem side padding on phones; follow suit. */
+		.footer-slot > :global(footer) {
+			padding-left: 20px !important;
+			padding-right: 20px !important;
+		}
+	}
 	:global(nav) {
 		display: flex;
 		position: sticky;

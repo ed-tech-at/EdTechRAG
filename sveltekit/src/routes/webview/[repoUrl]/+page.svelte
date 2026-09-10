@@ -309,21 +309,31 @@
 </section>
 
 <style>
-	/* The page IS the viewport: header, intro and composer keep their height,
-	   the message list takes the rest and scrolls. */
+	/* The page fills the viewport: header, intro and composer keep their height,
+	   the message list takes the rest and scrolls. On short viewports (phones,
+	   soft keyboard open) the list keeps its minimum height instead, the page
+	   grows past the viewport and the whole document scrolls. */
 	.page {
 		display: flex;
 		flex-direction: column;
 		/* The root layout measures its footer into --footer-height and pads <main>
-		   by 20px; subtracting both keeps page plus footer exactly one viewport,
-		   so only the message list scrolls. */
-		height: calc(100dvh - var(--footer-height, 0px) - 40px);
+		   by 20px; subtracting both keeps page plus footer exactly one viewport
+		   whenever the content fits. */
+		min-height: calc(100dvh - var(--footer-height, 0px) - 40px);
 		max-width: 900px;
 		margin: 0 auto;
 		padding: 0.75rem 1rem;
 		box-sizing: border-box;
 		gap: 0.75rem;
 		background: #ffffff;
+	}
+
+	@media (max-width: 600px) {
+		/* <main> already keeps 20px from the screen edge; don't spend more on phones. */
+		.page {
+			padding-left: 0;
+			padding-right: 0;
+		}
 	}
 
 	.topbar {
@@ -366,8 +376,10 @@
 	}
 
 	.messages {
-		flex: 1 1 auto;
-		min-height: 0;
+		/* Basis 0 + explicit min-height: the list is sized by the free space in
+		   .page (and scrolls internally) instead of growing with its content. */
+		flex: 1 1 0;
+		min-height: 260px;
 		display: grid;
 		gap: 0.75rem;
 		align-content: start;
@@ -431,6 +443,16 @@
 		background: #1f7ae0;
 		color: white;
 		border-color: #1f7ae0;
+	}
+
+	@media (max-width: 600px) {
+		.messages {
+			padding: 0.75rem;
+		}
+
+		.bubble-content {
+			max-width: 92%;
+		}
 	}
 
 	.bubble.assistant .bubble-content :global(p) {
