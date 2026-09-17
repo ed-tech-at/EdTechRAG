@@ -397,7 +397,8 @@
 		border-radius: 14px;
 		border: 1px solid #e3e3e3;
 		background: #f6f6f6;
-		white-space: pre-wrap;
+		line-height: 1.5;
+		word-break: break-word;
 		font-family: 'Jost';
 	}
 
@@ -405,14 +406,79 @@
 		background: #1f7ae0;
 		color: white;
 		border-color: #1f7ae0;
+		/* Nur die User-Bubble rendert Plaintext und braucht erhaltene Umbrüche.
+		   Auf den Markdown-Bubbles würde pre-wrap die Zeilenumbrüche des von
+		   marked erzeugten HTML als Leerzeilen sichtbar machen. */
+		white-space: pre-wrap;
 	}
 
-	.bubble.assistant .bubble-content :global(p) {
-		margin: 0 0 0.5rem 0;
+	/* Markdown-Reset für das per {@html} eingesetzte HTML. Gilt für assistant und
+	   context (beide rendern marked-Output); diese Knoten tragen keine
+	   Svelte-Scope-Attribute, daher durchgehend :global(). */
+	.bubble:not(.user) .bubble-content :global(> :first-child) {
+		margin-top: 0;
 	}
 
-	.bubble.assistant .bubble-content :global(p:last-child) {
+	.bubble:not(.user) .bubble-content :global(> :last-child) {
 		margin-bottom: 0;
+	}
+
+	.bubble:not(.user) .bubble-content :global(p),
+	.bubble:not(.user) .bubble-content :global(ul),
+	.bubble:not(.user) .bubble-content :global(ol),
+	.bubble:not(.user) .bubble-content :global(blockquote),
+	.bubble:not(.user) .bubble-content :global(pre),
+	.bubble:not(.user) .bubble-content :global(table) {
+		margin: 0 0 0.5em 0;
+	}
+
+	.bubble:not(.user) .bubble-content :global(ul),
+	.bubble:not(.user) .bubble-content :global(ol) {
+		padding-left: 1.25em;
+	}
+
+	.bubble:not(.user) .bubble-content :global(li) {
+		margin: 0 0 0.2em 0;
+	}
+
+	.bubble:not(.user) .bubble-content :global(li:last-child) {
+		margin-bottom: 0;
+	}
+
+	.bubble:not(.user) .bubble-content :global(li > p) {
+		margin: 0;
+	}
+
+	.bubble:not(.user) .bubble-content :global(h1),
+	.bubble:not(.user) .bubble-content :global(h2),
+	.bubble:not(.user) .bubble-content :global(h3),
+	.bubble:not(.user) .bubble-content :global(h4),
+	.bubble:not(.user) .bubble-content :global(h5),
+	.bubble:not(.user) .bubble-content :global(h6) {
+		margin: 0.8em 0 0.35em 0;
+		font-size: 1em;
+		font-weight: 600;
+		line-height: 1.3;
+	}
+
+	.bubble:not(.user) .bubble-content :global(pre) {
+		background: rgba(0, 0, 0, 0.07);
+		padding: 0.5em;
+		border-radius: 6px;
+		overflow-x: auto;
+		font-size: 0.85em;
+	}
+
+	.bubble:not(.user) .bubble-content :global(code) {
+		font-size: 0.9em;
+	}
+
+	.bubble:not(.user) .bubble-content :global(pre code) {
+		font-size: 1em;
+	}
+
+	.bubble:not(.user) .bubble-content :global(a) {
+		word-break: break-all;
 	}
 
 	.composer {
