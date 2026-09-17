@@ -13,8 +13,8 @@
 	const texts = {
 		de: {
 			termsIntro: 'Bevor Sie den Chat nutzen können, lesen und akzeptieren Sie bitte die',
-			termsName: 'Benutzerbedingungen',
-			termsAccept: 'Benutzerbedingungen akzeptieren',
+			termsName: 'Benutzer:innenbedingungen',
+			termsAccept: 'Benutzer:innenbedingungen akzeptieren',
 			termsRevoke: 'Zustimmung widerrufen',
 			emptyChat: 'Stellen Sie eine Frage, um den Chat zu starten.',
 			search: 'Suche',
