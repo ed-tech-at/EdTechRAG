@@ -405,24 +405,18 @@
 }
 
 /*
-	Der Ausschalter. Steht ueber dem Kasten und nicht darin: er muss sichtbar sein,
-	solange die Suche laeuft und die Zusammenfassung geschrieben wird - also bevor es
-	einen Kasten mit Inhalt gibt. Zurueckhaltend gestaltet, weil er neben dem
-	eigentlichen Inhalt steht, aber ein echter Knopf mit Text und 44px Hoehe.
+	Der Ausschalter. Steht am Anfang der Fusszeile, vor dem Hinweis - klein, weil er
+	neben dem Inhalt steht und nicht mit ihm konkurriert. inline-block mit
+	min-height: er laeuft im Text mit, behaelt aber eine Trefferflaeche von 24px
+	(WCAG 2.5.8).
 */
-.at-ed-tech-edtechrag-src-overview-toggle-row {
-	margin-top: var(--at-ed-tech-edtechrag-src-gap);
-}
-
-.at-ed-tech-edtechrag-src-overview-toggle-row[hidden] {
-	display: none;
-}
-
 .at-ed-tech-edtechrag-src-overview-toggle {
+	display: inline-block;
+	vertical-align: middle;
 	font: inherit;
-	font-size: 0.875em;
-	min-height: 2.75rem;
-	padding: 0.4rem 1rem;
+	line-height: 1.2;
+	min-height: 1.5rem;
+	padding: 0.15rem 0.6rem;
 	border: 1px solid var(--at-ed-tech-edtechrag-src-border);
 	border-radius: var(--at-ed-tech-edtechrag-src-radius);
 	background: var(--at-ed-tech-edtechrag-src-field);
@@ -447,7 +441,8 @@
 }
 
 /*
-	Fusszeile des erzeugten Overviews: Hinweis und Link zu den Bedingungen.
+	Fusszeile des Overviews: Ausschalter, Hinweis und - falls gesetzt - Link zu den
+	Bedingungen.
 
 	BEWUSST KEIN flex: der Trenner ' \u00b7 ' zwischen Hinweis und Link ist ein
 	Textknoten und wurde darin zu einem eigenen Flex-Element - mit gap davor UND

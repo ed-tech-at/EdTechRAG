@@ -417,42 +417,31 @@
 		var queriesBox = el('p', cn('queries'), { hidden: 'hidden' });
 
 		/*
-		 * The disable switch. Its own element OUTSIDE overviewBox, and that is the
-		 * point: the box is emptied on every search and every state change, the
-		 * switch must stay put - also while the search is still running and while the
-		 * summary is being written. Whoever enabled the summary has to be able to
-		 * take it back at any moment without hunting for it.
+		 * The disable switch. ONE element for the widget's lifetime, moved into the
+		 * footer of the overview box each time the box is built - the box is emptied
+		 * on every search, the button is not rebuilt with it, so focus handling and
+		 * the listener stay in one place.
+		 *
+		 * The footer is built together with the box, not when the summary is done: the
+		 * switch has to be there while the search is still running and while the
+		 * summary is being written.
 		 *
 		 * No confirmation dialog: disabling destroys nothing the visitor cannot get
 		 * back with one click on "enable".
 		 */
-		var toggleBox = el('div', cn('overview-toggle-row'), { hidden: 'hidden' });
 		var disableBtn = el('button', cn('overview-toggle'), { type: 'button' });
 		disableBtn.textContent = T.overviewDisable;
-		toggleBox.appendChild(disableBtn);
 
 		host.appendChild(status);
-		host.appendChild(toggleBox);
 		host.appendChild(overviewBox);
 		host.appendChild(queriesBox);
 		host.appendChild(resultsBox);
-
-		function renderToggle() {
-			var show =
-				overviewMode !== 'off' &&
-				overviewAvailable !== false &&
-				overviewRequiresTerms &&
-				termsValid();
-			if (show) toggleBox.removeAttribute('hidden');
-			else toggleBox.setAttribute('hidden', 'hidden');
-		}
 
 		disableBtn.addEventListener('click', function () {
 			abortOverview();
 			clearAcceptance();
 			// Die semantischen Treffer kamen mit der Zustimmung, sie gehen mit ihr.
 			ragHits = [];
-			renderToggle();
 			// Erst das Angebot, dann die Liste - siehe runSearch: bleibt danach nichts
 			// uebrig, haengt der Text der leeren Liste daran, dass die Zusammenfassung
 			// wieder aktiviert werden kann.
@@ -651,7 +640,6 @@
 			enable.textContent = T.overviewEnable;
 			enable.addEventListener('click', function () {
 				acceptTerms();
-				renderToggle();
 				requestOverview(currentQuery);
 				// Der Knopf ist weg; der Fokus geht auf sein Gegenstueck.
 				disableBtn.focus();
@@ -668,23 +656,41 @@
 		}
 
 		/**
-		 * The footer of a generated overview: the note that a model wrote it and the
-		 * link to the terms that were accepted. The disable switch is NOT here - it
-		 * stands above the box, where it is visible before the summary is finished.
+		 * The box of an enabled overview: heading, body, and at the bottom one line
+		 * with the disable switch, the note that a model writes this, and the link to
+		 * the terms (only when the page configured one). Returns the body.
+		 *
+		 * Built right away - while searching and while writing - so the switch is
+		 * always where it will be once the summary is finished.
 		 */
-		function appendOverviewFooter() {
-			var footer = el('p', cn('overview-note'));
+		function showOverviewShell() {
+			overviewPending = true;
+			overviewBox.innerHTML = '';
+			overviewBox.classList.remove(cn('overview-gate'));
+			overviewBox.appendChild(overviewHeader());
 
+			var body = el('div', cn('overview-body'), { 'aria-live': 'polite' });
+			var pending = el('p', cn('overview-pending'));
+			pending.textContent = T.overviewGenerating;
+			body.appendChild(pending);
+			overviewBox.appendChild(body);
+
+			var footer = el('p', cn('overview-note'));
+			if (overviewRequiresTerms) {
+				footer.appendChild(disableBtn);
+				footer.appendChild(document.createTextNode(' '));
+			}
 			var note = el('span', cn('overview-note-text'));
 			note.textContent = T.overviewNote;
 			footer.appendChild(note);
-
 			if (usertermsUrl) {
 				footer.appendChild(document.createTextNode(' \u00b7 '));
 				footer.appendChild(termsLinkEl());
 			}
-
 			overviewBox.appendChild(footer);
+
+			overviewBox.removeAttribute('hidden');
+			return body;
 		}
 
 		/*
@@ -710,17 +716,10 @@
 				return overviewController !== controller || (controller && controller.signal.aborted);
 			}
 
-			overviewPending = true;
-			overviewBox.innerHTML = '';
-			overviewBox.classList.remove(cn('overview-gate'));
-			overviewBox.appendChild(overviewHeader());
-
-			var body = el('div', cn('overview-body'), { 'aria-live': 'polite' });
-			var pending = el('p', cn('overview-pending'));
-			pending.textContent = T.overviewGenerating;
-			body.appendChild(pending);
-			overviewBox.appendChild(body);
-			overviewBox.removeAttribute('hidden');
+			// The focused switch is moved into the new box; keep the focus on it.
+			var hadFocus = document.activeElement === disableBtn;
+			var body = showOverviewShell();
+			if (hadFocus) disableBtn.focus();
 
 			var decoder = new TextDecoder();
 			var answer = '';
@@ -746,7 +745,6 @@
 								// of showing an error the visitor cannot act on.
 								if (stale()) return null;
 								clearAcceptance();
-								renderToggle();
 								showOverviewGate();
 								return null;
 							}
@@ -803,7 +801,6 @@
 							if (chunk.done) {
 								overviewController = null;
 								overviewSettled();
-								appendOverviewFooter();
 								return null;
 							}
 							buffer += decoder.decode(chunk.value || new Uint8Array(), { stream: true });
@@ -840,9 +837,19 @@
 			currentQuery = query;
 
 			setStatus(T.searching);
-			// hideOverview also stops a summary of the previous query still streaming.
+			// Stops a summary of the previous query that is still streaming.
 			hideOverview();
-			renderToggle();
+			// Enabled: the box with its disable switch stands while the search runs.
+			// Whether the repository offers the overview at all is only known from the
+			// last answer; before the first one, stored consent is enough.
+			if (
+				overviewMode !== 'off' &&
+				overviewAvailable !== false &&
+				overviewRequiresTerms &&
+				termsValid()
+			) {
+				showOverviewShell();
+			}
 			resultsBox.innerHTML = '';
 			renderQueries([]);
 
@@ -873,7 +880,6 @@
 					if (typeof data.overviewTermsMonths === 'number') {
 						usertermsMonths = parseDurationMonths(data.overviewTermsMonths);
 					}
-					renderToggle();
 
 					dbHits = hits;
 					ragHits = [];
@@ -901,12 +907,16 @@
 					if (overviewAvailable) {
 						if (termsValid()) requestOverview(query);
 						else showOverviewGate();
+					} else {
+						// The box shown while searching, for an overview that is switched off.
+						hideOverview();
 					}
 					renderResults();
 				})
 				.catch(function (err) {
 					searching = false;
 					metaLabels = {};
+					hideOverview();
 					setStatus('');
 					resultsBox.innerHTML =
 						'<p class="' +
@@ -920,7 +930,6 @@
 		/* -- init -- */
 
 		loadAcceptance();
-		renderToggle();
 
 		form.addEventListener('submit', function (event) {
 			event.preventDefault();
