@@ -104,12 +104,16 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	 * input validation), and outside the try below so a rejection can never be
 	 * masked as a generic 500. Same order and reasoning as /api/embed.
 	 */
-	const termsAcceptedAt = validateTermsAcceptedAt(
-		body && typeof body === 'object'
-			? (body as { termsAcceptedAt?: unknown }).termsAcceptedAt
-			: undefined,
-		usertermsMaxAgeMsForMonths(overview.usertermsDurationMonths)
-	);
+	// Day precision (YYYY-MM-DD) for what is logged: the date is all the expiry
+	// check needs, and an older widget or another client may still send the full
+	// time - it does not reach ChatLog.
+	const termsAcceptedAt =
+		validateTermsAcceptedAt(
+			body && typeof body === 'object'
+				? (body as { termsAcceptedAt?: unknown }).termsAcceptedAt
+				: undefined,
+			usertermsMaxAgeMsForMonths(overview.usertermsDurationMonths)
+		)?.slice(0, 10) ?? null;
 	if (overview.requireUserterms && !termsAcceptedAt) {
 		// The widget reacts to this exact body: it clears the stored acceptance and
 		// shows the consent panel again.

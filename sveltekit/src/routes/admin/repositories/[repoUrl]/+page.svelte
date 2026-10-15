@@ -743,7 +743,8 @@
 					How to search
 					<select name="searchMode" bind:value={searchModeValue}>
 						<option value="fulltext">Database only (no embeddings)</option>
-						<option value="vector">Semantic (embeds every query)</option>
+						<!-- Ignored by /api/search: it answers without consent and must not embed. -->
+						<option value="vector" disabled>Semantic - not allowed without consent (ignored)</option>
 					</select>
 				</label>
 				<label>

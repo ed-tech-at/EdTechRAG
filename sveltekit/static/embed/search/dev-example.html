@@ -144,9 +144,10 @@
 			Postgres-Volltextsuche über die gespeicherten Chunks, ein SQL-Aufruf, kein
 			API-Aufruf. Gesucht wird mit Präfix-Matching, deshalb findet <code>noten</code> auch
 			<code>Notenexport</code>; findet diese Stufe nichts, greift zusätzlich eine
-			Teilwortsuche. Umstellbar auf semantische Suche unter
-			<code>/admin/repositories/&lt;url&gt;</code> („How to search") – die kostet dann
-			einen Embedding-Aufruf pro Suche.
+			Teilwortsuche. Die Liste sucht <strong>immer</strong> so, auch wenn unter
+			<code>/admin/repositories/&lt;url&gt;</code> („How to search") „Semantic“ gespeichert
+			ist: ohne Zustimmung verlässt die Suchanfrage den Server nicht – kein Embedding,
+			kein Rewrite.
 		</p>
 		<p>
 			Mitgesendet wird die Sprache der Seite. Der Index enthält beide Sprachfassungen –
@@ -156,9 +157,10 @@
 
 		<h2>Der AI-Overview</h2>
 		<p>
-			Die Treffer erscheinen <strong>sofort</strong>. Der Overview darüber zeigt zuerst nur
-			die Zustimmung: Hinweis, Link zu den Bedingungen, ein Knopf. Erst danach wird er
-			gestreamt – zeichenweise, nicht am Ende auf einmal.
+			Die Treffer erscheinen <strong>sofort</strong>. Darüber steht zuerst nur ein Knopf
+			„AI-Zusammenfassung aktivieren“ mit dem Link zu den Bedingungen. Erst danach wird
+			die Zusammenfassung gestreamt – zeichenweise, nicht am Ende auf einmal – und bei
+			jeder weiteren Suche automatisch, solange sie aktiviert ist.
 		</p>
 		<p>
 			Der Overview sucht <strong>immer semantisch</strong> (RAG), unabhängig von der
@@ -169,11 +171,14 @@
 			Gruppen wäre, steht nur oben.
 		</p>
 		<p>
-			In der Fußzeile des Overviews stehen Hinweis, Link zu den Bedingungen und die drei
-			Punkte für den Widerruf beisammen. Widerruf entfernt auch die semantische Gruppe
-			wieder; die Datenbanksuche läuft weiter. Gespeichert wird die Zustimmung unter
-			<code>edtechrag-search-overview-&lt;embedId&gt;</code> im localStorage – ein eigener
-			Schlüssel, damit Chat- und Suchzustimmung getrennt bleiben.
+			Solange sie aktiviert ist, steht über dem Overview der Knopf „AI-Zusammenfassung
+			deaktivieren“ – immer sichtbar, auch während die Suche läuft und die Zusammenfassung
+			noch geschrieben wird. Ein Klick deaktiviert sofort, ohne Rückfrage, bricht eine
+			laufende Zusammenfassung ab und entfernt die semantische Gruppe; die Datenbanksuche
+			läuft weiter. Gespeichert wird die Zustimmung <strong>tagesgenau</strong>
+			(<code>YYYY-MM-DD</code>) unter <code>edtechrag-search-overview-&lt;embedId&gt;</code>
+			im localStorage – ein eigener Schlüssel, damit Chat- und Suchzustimmung getrennt
+			bleiben.
 		</p>
 		<p>
 			Ob es einen Overview überhaupt gibt, entscheidet <code>/admin/repositories/&lt;url&gt;</code>

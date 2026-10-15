@@ -110,6 +110,8 @@ export type SearchConfig = {
 	 * 'vector' is the semantic path the chatbot uses: it embeds the query and
 	 * compares vectors. Better for questions phrased differently from the text,
 	 * worse for exact terms - and it costs one API call per search.
+	 * /api/search IGNORES it and always searches full text: the result list is
+	 * shown without consent, and the query must not leave the server before it.
 	 *
 	 * This governs the RESULT LIST only. The AI overview always retrieves
 	 * semantically (RAG) and shows its own matches above the list - but only after
