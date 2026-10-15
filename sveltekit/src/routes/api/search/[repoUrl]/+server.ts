@@ -1,5 +1,4 @@
 import prisma from '$lib/server/db';
-import { retrieveWithRewrite } from '$lib/server/queryRewrite';
 import { embedCorsHeaders, getAllowedSearchOrigin } from '$lib/server/repositoryAccess';
 import { toSearchHits } from '$lib/server/search';
 import { findRepositoryText } from '$lib/server/textSearch';
@@ -118,27 +117,19 @@ export const POST: RequestHandler = async ({ request, params }) => {
 		 */
 		const chunkBudget = Math.min(search.resultLimit * 3, 60);
 
-		const found =
-			search.mode === 'fulltext'
-				? // Database only: one SQL query, no embedding call and no LLM call. The
-					// searched terms take the place of the rewritten queries in the
-					// response - both answer "what was actually looked for".
-					await findRepositoryText(repoUrl, query, chunkBudget, lang).then((r) => ({
-						results: r.results,
-						queries: r.terms,
-						rewriteApplied: false
-					}))
-				: await retrieveWithRewrite({
-						repoUrl,
-						prompt: query,
-						ragConfig,
-						documents: chunkBudget,
-						lang
-					}).then((r) => ({
-						results: r.results,
-						queries: r.rewriteApplied ? r.queries : [],
-						rewriteApplied: r.rewriteApplied
-					}));
+		/*
+		 * ALWAYS full text, whatever searchMode says. This endpoint answers WITHOUT
+		 * consent, so it must not send the query anywhere: no embedding call and no
+		 * LLM rewrite. The semantic hits come with the AI overview
+		 * (/api/search-overview), which sits behind the consent gate - that is what
+		 * the privacy notice of the search page promises.
+		 *
+		 * The searched terms take the place of the rewritten queries in the response.
+		 */
+		const found = await findRepositoryText(repoUrl, query, chunkBudget, lang).then((r) => ({
+			results: r.results,
+			queries: r.terms
+		}));
 
 		const { results, queries } = found;
 		const hits = toSearchHits(results, ragConfig, search);
@@ -147,9 +138,9 @@ export const POST: RequestHandler = async ({ request, params }) => {
 			{
 				success: true,
 				query,
-				mode: search.mode,
-				// Shown as chips in the widget: the rewritten queries in 'vector' mode,
-				// the searched terms in 'fulltext'.
+				mode: 'fulltext',
+				// The searched terms; the widget shows them only when they differ from
+				// what was typed.
 				queries,
 				results: hits,
 				// 'en' matches the widget's own fallback (resolveLang) for the case of a
