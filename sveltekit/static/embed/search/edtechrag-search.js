@@ -148,6 +148,46 @@
 		}
 	}
 
+	/*
+	 * HTML from data-ai-overview-notice, shown above the enable button.
+	 *
+	 * The host page writes it, so it is not foreign input - but it usually comes out
+	 * of a CMS field or an environment variable, and one pasted <script> or onclick
+	 * should not turn into running code inside the widget. Parsed into an inert
+	 * <template>, then everything active is dropped: script-like elements, event
+	 * handler attributes and any link target that is not http(s), mailto or
+	 * relative. Formatting and links survive.
+	 */
+	var NOTICE_DROP = 'script,style,iframe,object,embed,link,meta,base,form,input,button,textarea,select';
+
+	function sanitizeNotice(raw) {
+		var tpl = document.createElement('template');
+		tpl.innerHTML = raw;
+		var root = tpl.content;
+		Array.prototype.forEach.call(root.querySelectorAll(NOTICE_DROP), function (n) {
+			n.parentNode.removeChild(n);
+		});
+		Array.prototype.forEach.call(root.querySelectorAll('*'), function (n) {
+			Array.prototype.slice.call(n.attributes).forEach(function (a) {
+				var name = a.name.toLowerCase();
+				if (name.indexOf('on') === 0) n.removeAttribute(a.name);
+				else if (name === 'href' || name === 'src' || name === 'xlink:href') {
+					var v = a.value.replace(/[\s\u0000-\u001f]+/g, '').toLowerCase();
+					if (/^[a-z][a-z0-9+.-]*:/.test(v) && !/^(https?|mailto):/.test(v)) {
+						n.removeAttribute(a.name);
+					}
+				}
+			});
+			// Links leave the page in a new tab, like the terms link: the visitor is
+			// in the middle of a search and should not lose it.
+			if (n.tagName === 'A' && n.getAttribute('href')) {
+				n.setAttribute('target', '_blank');
+				n.setAttribute('rel', 'noopener noreferrer');
+			}
+		});
+		return root;
+	}
+
 	function parseDurationMonths(raw) {
 		var months = parseInt(raw, 10);
 		if (!isFinite(months)) return USERTERMS_DEFAULT_MONTHS;
@@ -242,6 +282,10 @@
 		var overviewMode = d.aiOverview === 'off' ? 'off' : 'optin';
 		var usertermsUrl = normalizeTermsUrl(d.usertermsUrl);
 		var usertermsMonths = parseDurationMonths(d.usertermsDuration);
+		// Optional HTML above the enable button - e.g. a short privacy note with a
+		// link. One attribute per embed; a bilingual site sets it per language like
+		// data-lang.
+		var overviewNotice = (d.aiOverviewNotice || '').trim();
 
 		// Own key, separate from the chatbot's: consenting to a summary is not
 		// consenting to a conversation, and withdrawing one must not revoke the other.
@@ -627,14 +671,20 @@
 
 		/*
 		 * The offer: ONE button that enables the summary, and next to it the terms it
-		 * is enabled under. No panel, no intro text - what happens with the query is in
-		 * the privacy notice of the page and in the terms; the button says what it does.
+		 * is enabled under. Above it, if the page set data-ai-overview-notice, that
+		 * HTML - the place for what happens with the query before it is sent.
 		 */
 		function showOverviewGate() {
 			abortOverview();
 			overviewPending = true;
 			overviewBox.innerHTML = '';
 			overviewBox.classList.add(cn('overview-gate'));
+
+			if (overviewNotice) {
+				var notice = el('div', cn('overview-notice'));
+				notice.appendChild(sanitizeNotice(overviewNotice));
+				overviewBox.appendChild(notice);
+			}
 
 			var enable = el('button', cn('overview-enable'), { type: 'button' });
 			enable.textContent = T.overviewEnable;

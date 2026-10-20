@@ -75,6 +75,7 @@
   data-ai-overview="optin"
   data-userterms-url="https://e-flaait.tugraz.at/edtechrag/benutzerbedingungen"
   data-userterms-duration="12"
+  data-ai-overview-notice="&amp;lt;p&amp;gt;Ihre Suchanfrage wird an Microsoft Azure übermittelt. &amp;lt;a href=&amp;quot;/datenschutz&amp;quot;&amp;gt;Datenschutz&amp;lt;/a&amp;gt;&amp;lt;/p&amp;gt;"
   data-edtechrag-base-url="https://e-flaait.tugraz.at/edtechrag/"
 &gt;&lt;/div&gt;
 
@@ -117,6 +118,15 @@
 				<tr>
 					<td><code>data-userterms-url</code>, <code>data-userterms-duration</code></td>
 					<td>Bedingungen und Gültigkeit in Monaten (Standard 12)</td>
+				</tr>
+				<tr>
+					<td><code>data-ai-overview-notice</code></td>
+					<td>
+						optional: HTML, das über dem Knopf „AI-Zusammenfassung aktivieren“ steht, z.&nbsp;B.
+						ein kurzer Datenschutzhinweis mit Link. Skripte, <code>on…</code>-Attribute und
+						<code>javascript:</code>-Links werden entfernt; Links öffnen in einem neuen Tab.
+						Pro Sprache eigenes Attribut setzen (wie <code>data-lang</code>).
+					</td>
 				</tr>
 				<tr>
 					<td><code>data-design</code></td>
@@ -221,6 +231,7 @@
 				data-ai-overview="optin"
 				data-userterms-url="/edtechrag/benutzerbedingungen"
 				data-userterms-duration="12"
+				data-ai-overview-notice="&lt;p&gt;Ihre Suchanfrage wird an Microsoft Azure übermittelt. &lt;a href=&quot;/datenschutz&quot;&gt;Datenschutz&lt;/a&gt;&lt;/p&gt;"
 				data-edtechrag-base-url="/"
 			></div>
 		</div>

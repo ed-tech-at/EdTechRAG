@@ -378,6 +378,28 @@
 	font-size: 0.8125em;
 }
 
+/* Der Hinweis der Seite ueber dem Knopf: volle Breite, damit Knopf und Link in
+   der Flex-Zeile darunter stehen und nicht daneben. */
+.at-ed-tech-edtechrag-src-overview-notice {
+	flex: 1 1 100%;
+	font-size: 0.875em;
+	line-height: 1.5;
+	color: var(--at-ed-tech-edtechrag-src-muted);
+}
+
+.at-ed-tech-edtechrag-src-overview-notice > :first-child {
+	margin-top: 0;
+}
+
+.at-ed-tech-edtechrag-src-overview-notice > :last-child {
+	margin-bottom: 0;
+}
+
+.at-ed-tech-edtechrag-src-overview-notice a {
+	color: var(--at-ed-tech-edtechrag-src-accent);
+	text-decoration: underline;
+}
+
 .at-ed-tech-edtechrag-src-overview-terms .at-ed-tech-edtechrag-src-overview-terms-link {
 	text-decoration: underline;
 }
