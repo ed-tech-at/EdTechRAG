@@ -96,7 +96,8 @@ export const POST: RequestHandler = async ({ request, params }) => {
 							context,
 							answer,
 							repositoryUrl: repoUrl,
-							endpoint: '/api/chat/[repoUrl]'
+							endpoint: '/api/chat/[repoUrl]',
+							history: history.length ? history : undefined
 						}
 					});
 				} catch (err) {

@@ -118,7 +118,8 @@ export const POST: RequestHandler = async ({ request, params }) => {
 							context: systemprompt + '\n-----\n\n-----\n' + context,
 							answer,
 							repositoryUrl: repoUrl,
-							endpoint: '/api/chat-parameter/[repoUrl]'
+							endpoint: '/api/chat-parameter/[repoUrl]',
+							history: history.length ? history : undefined
 						}
 					});
 				} catch (err) {
