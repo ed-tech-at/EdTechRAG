@@ -81,19 +81,23 @@ export function serialiseChatLog(log: ChatLogRecord): ChatLogItem {
 }
 
 export async function loadConversationIndex(repoUrl: string): Promise<IndexRow[]> {
+	// The webview/simple/parameter pages also send "search"/"context" turns in the history; the
+	// embed widgets send only user/assistant. Only the latter pair the turns up, so everything
+	// else is dropped before measuring the history.
 	const rows = await prisma.$queryRaw<IndexRow[]>`
 		SELECT "id", "createdAt", "username", "question",
 		       md5(COALESCE("answer", '')) AS "answerHash",
-		       CASE WHEN jsonb_typeof("history") = 'array' THEN jsonb_array_length("history") ELSE 0 END
-		         AS "historyLength",
-		       CASE WHEN jsonb_typeof("history") = 'array' THEN "history"->-2->>'content' ELSE NULL END
-		         AS "lastUserInHistory",
-		       md5(COALESCE(
-		         CASE WHEN jsonb_typeof("history") = 'array' THEN "history"->-1->>'content' ELSE NULL END,
-		         ''
-		       )) AS "lastAnswerHashInHistory"
-		FROM "ChatLog"
-		WHERE "repositoryUrl" = ${repoUrl}
+		       jsonb_array_length("turns") AS "historyLength",
+		       "turns"->-2->>'content' AS "lastUserInHistory",
+		       md5(COALESCE("turns"->-1->>'content', '')) AS "lastAnswerHashInHistory"
+		FROM (
+		  SELECT "id", "createdAt", "username", "question", "answer",
+		         CASE WHEN jsonb_typeof("history") = 'array'
+		              THEN jsonb_path_query_array("history", '$[*] ? (@.role == "user" || @.role == "assistant")')
+		              ELSE '[]'::jsonb END AS "turns"
+		  FROM "ChatLog"
+		  WHERE "repositoryUrl" = ${repoUrl}
+		) AS "logs"
 		ORDER BY "createdAt" ASC, "id" ASC
 	`;
 	return rows.map((row) => ({ ...row, historyLength: Number(row.historyLength) }));
